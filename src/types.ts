@@ -44,7 +44,7 @@ export const Role = {
   ARTIST: 'ARTIST',
   LLM: 'LLM'
 } as const;
-type Role = typeof Role[keyof typeof Role];
+export type Role = typeof Role[keyof typeof Role];
 
 // AUDIENCE TYPES
 export interface Audience {
@@ -72,4 +72,4 @@ export const AudienceCondition = {
   NO_KNOWLEDGE: 'NO_KNOWLEDGE',
   FULL_TRANSPARENCY: 'FULL_TRANSPARENCY'
 } as const;
-type AudienceCondition = typeof AudienceCondition[keyof typeof AudienceCondition];
+export type AudienceCondition = typeof AudienceCondition[keyof typeof AudienceCondition];
