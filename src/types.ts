@@ -16,7 +16,7 @@ export interface ArtistSurvey {
 export interface Poem {
   id: string
   passageId: string // passageId in Passage.id
-  text: string
+  text: number[] // this array holds the indexes of each word chosen from the passage
   llmConversation: Message[]
 }
 
@@ -38,7 +38,7 @@ export const ArtistCondition = {
   WRITING: 'WRITING',
   TOTAL_ACCESS: 'TOTAL_ACCESS'
 } as const;
-type ArtistCondition = typeof ArtistCondition[keyof typeof ArtistCondition];
+export type ArtistCondition = typeof ArtistCondition[keyof typeof ArtistCondition];
 
 export const Role = {
   ARTIST: 'ARTIST',
