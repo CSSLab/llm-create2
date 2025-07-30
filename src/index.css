@@ -1,18 +1,63 @@
-:root {
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-primary {
+    @apply bg-grey text-white w-48 py-6 uppercase hover:opacity-70
+  }
+
+  .btn-small {
+    @apply bg-dark-grey text-white px-2 py-1 w-max text-xs uppercase hover:opacity-70
+  }
+
+  .btn-small-inverted {
+    @apply border border-grey text-grey px-2 w-max text-xs py-1 uppercase hover:opacity-70
+  }
+
+  .input-primary {
+    @apply bg-white 
+  }
+
+  .text-h1 {
+    @apply text-left text-xl md:text-3xl font-serif font-light text-dark-grey
+  }
+  .text-h1-dark {
+    @apply text-h1 text-white
+  }
+
+  .text-main {
+    @apply text-sm md:text-base text-left font-sans text-dark-grey 
+  }
+
+  .text-main-dark{
+    @apply text-main text-light-grey-2
+  }
+
+  .text-sub {
+    @apply text-sm text-left font-sans text-grey
+  }
+
+  .text-sub-dark {
+    @apply text-sub text-light-grey-2
+  }
+
+}
+/* :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
-  font-weight: 400;
+  font-weight: 400; */
 
-  color-scheme: light dark;
+  /* color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #242424; */
 
-  font-synthesis: none;
+  /* font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
+} */
+/* 
 a {
   font-weight: 500;
   color: #646cff;
@@ -65,4 +110,4 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
-}
+} */
