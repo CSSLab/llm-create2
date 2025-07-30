@@ -7,11 +7,11 @@ const ChooseYourCharacter = () => {
     const navigate = useNavigate();
 
     const handleArtistSubmit = () => {
-         navigate("/artist/instructions")
+         navigate("/artist/pre-survey")
     }
 
     const handleAudienceSubmit = () => {
-         navigate("/audience/instructions")
+         navigate("/audience/pre-survey")
     }
     
 
