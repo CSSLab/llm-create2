@@ -1,6 +1,7 @@
 // ARTIST TYPES
 export interface Artist {
   condition: ArtistCondition;
+  notes: string;
   surveyResponse: ArtistSurvey;
   poem: Poem;
 }

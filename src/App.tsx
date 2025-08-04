@@ -20,12 +20,13 @@ import AudienceStep2 from "./pages/audience/step2/Step2";
 import AudienceTransitionStep2 from "./pages/audience/step2/TransitionStep2";
 import AudiencePostSurvey from "./pages/audience/PostSurvey";
 import { useState, createContext } from "react";
-import type { UserData } from "./types";
+import type { UserData, Artist, Audience } from "./types";
 import { Provider } from "./components/ui/provider";
 
 interface DataContextValue {
   userData: UserData | null;
   addUserData: (newData: Partial<UserData>) => void;
+  addRoleSpecificData: (updates: Partial<Artist> | Partial<Audience>) => void;
 }
 
 export const DataContext = createContext<DataContextValue | null>(null);
@@ -34,29 +35,44 @@ function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
 
   const addUserData = (newData: Partial<UserData>) => {
+    setUserData((prev) => {
+      const data = {
+        ...(prev || {}),
+        ...newData,
+        data: {
+          ...(prev?.data || {}),
+          ...(newData.data || {}),
+        },
+      };
+
+      return data as UserData;
+    });
+  };
+
+  const addRoleSpecificData = (
+    updates: Partial<Artist> | Partial<Audience>
+  ) => {
     setUserData((prev: any) => {
-      if (!prev) {
-        return {
-          ...newData,
-          data: {
-            ...(newData.data || {}),
-          },
-        } as UserData;
+      if (!prev || !prev.data) {
+        throw new Error(
+          "Tried to update data when userData is null or incomplete."
+        );
       }
 
       return {
         ...prev,
-        ...newData,
         data: {
           ...prev.data,
-          ...(newData.data || {}),
+          ...updates,
         },
       };
     });
   };
 
   return (
-    <DataContext.Provider value={{ userData, addUserData }}>
+    <DataContext.Provider
+      value={{ userData, addUserData, addRoleSpecificData }}
+    >
       <Provider>
         <div className="w-screen h-screen">
           <Router>
