@@ -13,7 +13,7 @@ const Captcha = () => {
         generateCaptchaCheck();
     }, []);
 
-    const hnadleChange = (event: any) => setInputCaptcha(event.target.value);
+    const handleChange = (event: any) => setInputCaptcha(event.target.value);
 
     const generateCaptchaCheck = () => {
         let captcha_text = "";
@@ -50,6 +50,12 @@ const Captcha = () => {
         }
     }, [captchaMessage]);
 
+    const handleKeyDown = (event: any) => {
+      if (event.key === 'Enter') {     
+        handleSubmit();   
+      }
+    };
+
     const handleSubmit = () => {
         if (inputCaptcha === captchaMessage) {
             navigate("/consent");
@@ -73,7 +79,8 @@ const Captcha = () => {
                     className="w-48 px-2 outline-1 outline-light-grey-2 outline focus:outline-grey focus:outline-2"
                     variant="outline"
                     value={inputCaptcha}
-                    onChange={hnadleChange}
+                    onChange={handleChange}
+                    onKeyDown={handleKeyDown}
                     placeholder='Type code here'
                    
                 />
