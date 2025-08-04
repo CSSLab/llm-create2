@@ -20,26 +20,27 @@ import AudienceStep2 from "./pages/audience/step2/Step2";
 import AudienceTransitionStep2 from "./pages/audience/step2/TransitionStep2";
 import AudiencePostSurvey from "./pages/audience/PostSurvey";
 import { useState, createContext } from "react";
-import type { UserData, Artist, Audience } from "./types";
+import type { UserData } from "./types";
 
 interface DataContextValue {
   userData: UserData | null;
-  addUserData: (newData: Partial<Artist> | Partial<Audience>) => void;
+  addUserData: (newData: Partial<UserData>) => void;
 }
 
 export const DataContext = createContext<DataContextValue | null>(null);
 
 const [userData, setUserData] = useState<UserData | null>(null);
 
-const addUserData = (newField: Partial<Artist> | Partial<Audience>) => {
+const addUserData = (newData: Partial<UserData>) => {
   setUserData((prev: any) => {
     if (!prev) return null;
 
     return {
       ...prev,
+      ...newData,
       data: {
         ...prev.data,
-        ...newField,
+        ...newData.data, // merge nested `data`
       },
     };
   });
