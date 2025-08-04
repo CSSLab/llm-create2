@@ -32,9 +32,6 @@ const AristPreSurvey = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { userData } = context;
-
-  console.log("User data:", userData);
 
   const handleAnswer = (id: string, answer: string) => {
     setAnswers((prev) => ({

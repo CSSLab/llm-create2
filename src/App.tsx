@@ -21,6 +21,7 @@ import AudienceTransitionStep2 from "./pages/audience/step2/TransitionStep2";
 import AudiencePostSurvey from "./pages/audience/PostSurvey";
 import { useState, createContext } from "react";
 import type { UserData } from "./types";
+import { Provider } from "./components/ui/provider";
 
 interface DataContextValue {
   userData: UserData | null;
@@ -29,74 +30,95 @@ interface DataContextValue {
 
 export const DataContext = createContext<DataContextValue | null>(null);
 
-const [userData, setUserData] = useState<UserData | null>(null);
-
-const addUserData = (newData: Partial<UserData>) => {
-  setUserData((prev: any) => {
-    if (!prev) return null;
-
-    return {
-      ...prev,
-      ...newData,
-      data: {
-        ...prev.data,
-        ...newData.data, // merge nested `data`
-      },
-    };
-  });
-};
-
 function App() {
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  const addUserData = (newData: Partial<UserData>) => {
+    setUserData((prev: any) => {
+      if (!prev) {
+        return {
+          ...newData,
+          data: {
+            ...(newData.data || {}),
+          },
+        } as UserData;
+      }
+
+      return {
+        ...prev,
+        ...newData,
+        data: {
+          ...prev.data,
+          ...(newData.data || {}),
+        },
+      };
+    });
+  };
+
   return (
     <DataContext.Provider value={{ userData, addUserData }}>
-      <div className="w-screen h-screen">
-        <Router>
-          <Routes>
-            <Route path="/" element={<Captcha />} />
-            <Route path="/consent" element={<ConsentForm />} />
+      <Provider>
+        <div className="w-screen h-screen">
+          <Router>
+            <Routes>
+              <Route path="/" element={<Captcha />} />
+              <Route path="/consent" element={<ConsentForm />} />
 
-            <Route path="/artist/pre-survey" element={<AristPreSurvey />} />
-            <Route
-              path="/audience/pre-survey"
-              element={<AudiencePreSurvey />}
-            />
+              <Route path="/artist/pre-survey" element={<AristPreSurvey />} />
+              <Route
+                path="/audience/pre-survey"
+                element={<AudiencePreSurvey />}
+              />
 
-            <Route
-              path="/artist/instructions"
-              element={<ArtistInstructions />}
-            />
-            <Route
-              path="/audience/instructions"
-              element={<AudienceInstructions />}
-            />
+              <Route
+                path="/artist/instructions"
+                element={<ArtistInstructions />}
+              />
+              <Route
+                path="/audience/instructions"
+                element={<AudienceInstructions />}
+              />
 
-            <Route path="/artist/step-1" element={<ArtistTransitionStep1 />} />
-            <Route path="/artist/brainstorm" element={<ArtistStep1 />} />
-            <Route path="/artist/step-2" element={<ArtistTransitionStep2 />} />
-            <Route path="/artist/blackout" element={<ArtistStep2 />} />
+              <Route
+                path="/artist/step-1"
+                element={<ArtistTransitionStep1 />}
+              />
+              <Route path="/artist/brainstorm" element={<ArtistStep1 />} />
+              <Route
+                path="/artist/step-2"
+                element={<ArtistTransitionStep2 />}
+              />
+              <Route path="/artist/blackout" element={<ArtistStep2 />} />
 
-            <Route
-              path="/audience/step-1"
-              element={<AudienceTransitionStep1 />}
-            />
-            <Route path="/audience/read" element={<AudienceStep1 />} />
-            <Route
-              path="/audience/step-2"
-              element={<AudienceTransitionStep2 />}
-            />
-            <Route path="/audience/poem-surveys" element={<AudienceStep2 />} />
+              <Route
+                path="/audience/step-1"
+                element={<AudienceTransitionStep1 />}
+              />
+              <Route path="/audience/read" element={<AudienceStep1 />} />
+              <Route
+                path="/audience/step-2"
+                element={<AudienceTransitionStep2 />}
+              />
+              <Route
+                path="/audience/poem-surveys"
+                element={<AudienceStep2 />}
+              />
 
-            <Route path="/artist/post-survey" element={<ArtistPostSurvey />} />
-            <Route
-              path="/audience/post-survey"
-              element={<AudiencePostSurvey />}
-            />
+              <Route
+                path="/artist/post-survey"
+                element={<ArtistPostSurvey />}
+              />
+              <Route
+                path="/audience/post-survey"
+                element={<AudiencePostSurvey />}
+              />
 
-            <Route path="/thank-you" element={<ThankYou />} />
-            <Route path="/choice" element={<ChooseYourCharacter />} />
-          </Routes>
-        </Router>
-      </div>
+              <Route path="/thank-you" element={<ThankYou />} />
+              <Route path="/choice" element={<ChooseYourCharacter />} />
+            </Routes>
+          </Router>
+        </div>
+      </Provider>
     </DataContext.Provider>
   );
 }
