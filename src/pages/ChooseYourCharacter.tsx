@@ -13,10 +13,12 @@ const ChooseYourCharacter = () => {
   const { addUserData } = context;
 
   const handleArtistSubmit = () => {
+    addUserData({ role: "artist" });
     navigate("/artist/pre-survey");
   };
 
   const handleAudienceSubmit = () => {
+    addUserData({ role: "audience" });
     navigate("/audience/pre-survey");
   };
 
