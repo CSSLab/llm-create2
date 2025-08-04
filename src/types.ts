@@ -73,3 +73,7 @@ export const AudienceCondition = {
   FULL_TRANSPARENCY: 'FULL_TRANSPARENCY'
 } as const;
 export type AudienceCondition = typeof AudienceCondition[keyof typeof AudienceCondition];
+
+export type UserData = 
+  | { role: 'artist'; data: Artist }
+  | { role: 'audience'; data: Audience };
