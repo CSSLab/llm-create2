@@ -8,8 +8,6 @@ import { Textarea } from "@chakra-ui/react";
 import type { ArtistCondition } from "../../../types";
 import { DataContext } from "../../../App";
 
-const apiKey = import.meta.env.VITE_API_KEY;
-
 const ArtistStep2 = () => {
   const [notes, setNotes] = useState("");
   const context = useContext(DataContext);

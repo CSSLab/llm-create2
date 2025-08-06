@@ -23,7 +23,7 @@ export interface Poem {
 export interface Message {
   id: string;
   role: Role;
-  message: string;
+  text: string;
   timestamp: Date;
 }
 
