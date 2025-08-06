@@ -89,15 +89,15 @@ export default function ChatTab() {
             </p>
           </div>
         )}
-        {messages.map((msg, index) => (
+        {messages.map((msg) => (
           <div
             key={msg.id}
             className={`py-2 rounded-lg transition-all duration-300 ease-out opacity-0 translate-y-2 animate-fade-in 
-      ${
-        msg.role === Role.ARTIST
-          ? "px-4 bg-light-grey-2 bg-opacity-40 justify-self-end self-end text-right w-max"
-          : "self-start text-left"
-      }`}
+            ${
+              msg.role === Role.ARTIST
+                ? "px-4 bg-light-grey-2 bg-opacity-40 justify-self-end self-end text-right w-max"
+                : "self-start text-left"
+            }`}
           >
             {msg.text}
           </div>
