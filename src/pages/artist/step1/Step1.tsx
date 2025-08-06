@@ -29,7 +29,7 @@ const ArtistStep1 = () => {
       background="bg3"
       title="Step 1: Brainstorm"
       description="This is your time to familiarize yourself with the text and brainstorm for your poem."
-      duration={30}
+      duration={3000}
       afterDuration={onComplete}
     >
       <div className="w-full h-full flex flex-col md:flex-row md:space-x-12">
