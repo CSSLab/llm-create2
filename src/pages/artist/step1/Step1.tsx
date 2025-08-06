@@ -17,9 +17,7 @@ const ArtistStep1 = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
   const { userData } = context;
-  const [userType] = useState<ArtistCondition>(
-    userData?.data.condition as ArtistCondition
-  );
+  const [userType] = useState<ArtistCondition>("SPARK");
   const navigate = useNavigate();
 
   const onComplete = () => {

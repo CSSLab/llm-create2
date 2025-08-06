@@ -8,7 +8,11 @@ import OpenAI from "openai";
 const apiKey = import.meta.env.VITE_API_KEY;
 
 export default function ChatTab() {
-  const client = new OpenAI();
+  const client = new OpenAI({
+    apiKey: apiKey,
+    dangerouslyAllowBrowser: true,
+  });
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
 
