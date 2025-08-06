@@ -31,7 +31,7 @@ const renderBlackout = (
   return (
     <div
       onClick={onClick}
-      className="cursor-pointer bg-white text-main rounded-lg w-full p-4 border border-light-grey-2 text-base flex flex-col space-y-2 transition hover:border-2 hover:border-grey"
+      className="cursor-pointer bg-white text-main rounded-lg w-full p-4 border border-light-grey-2 text-base flex flex-col space-y-2 transition hover:border-grey hover:ring-1 hover:ring-grey"
     >
       <div className="text-h1 text-lg">Poem {poemid}</div>
       <div className="flex flex-wrap leading-relaxed">
@@ -40,7 +40,7 @@ const renderBlackout = (
         return (
          <span
               key={i}
-              className={`cursor-pointer transition px-1 duration-200 text-main ` + (isVisible ? '' : 'bg-dark-grey')}
+              className={`cursor-pointer transition px-1 duration-200 text-main ` + (isVisible ? '' : 'bg-dark-grey bg-opacity-70')}
             >
               {word + ` `}
             </span>
