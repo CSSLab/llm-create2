@@ -5,9 +5,9 @@ import { Role } from "../../types";
 import { nanoid } from "nanoid";
 import OpenAI from "openai";
 
-const apiKey = import.meta.env.VITE_API_KEY;
-
 export default function ChatTab() {
+  const apiKey = import.meta.env.VITE_LLM_KEY;
+
   const client = new OpenAI({
     apiKey: apiKey,
     dangerouslyAllowBrowser: true,
