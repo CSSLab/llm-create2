@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css'
 import './index.css';
 import { Provider } from './components/ui/provider';
-import Captcha from './pages/Captcha';
 import ConsentForm from './pages/ConsentForm';
 import AristPreSurvey from './pages/artist/PreSurvey';
 import ArtistInstructions from './pages/artist/instructions/Instructions';
@@ -20,7 +19,7 @@ import AudienceStep1 from './pages/audience/step1/Step1';
 import AudienceStep2 from './pages/audience/step2/Step2';
 import AudienceTransitionStep2 from './pages/audience/step2/TransitionStep2';
 import AudiencePostSurvey from './pages/audience/PostSurvey';
-
+import Captcha from './pages/Captcha';
 
 
 function App() {

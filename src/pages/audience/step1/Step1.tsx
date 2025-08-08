@@ -40,7 +40,7 @@ const renderBlackout = (
         return (
          <span
               key={i}
-              className={`cursor-pointer transition px-1 duration-200 text-main ` + (isVisible ? '' : 'bg-dark-grey bg-opacity-70')}
+              className={`cursor-pointer transition px-1 duration-200 text-main ` + (isVisible ? '' : 'bg-dark-grey')}
             >
               {word + ` `}
             </span>
@@ -57,7 +57,7 @@ const AudienceStep1: React.FC = () => {
     const handleSubmit = () => {
             navigate("/audience/step-2")
     }
-  const [revealedPoems, setRevealedPoems] = useState<number[]>([]);
+  const [revealedPoems, setRevealedPoems] = useState<number[]>([1,2,3]);
 
   const togglePoemReveal = (id: number) => {
     setRevealedPoems((prev) =>
