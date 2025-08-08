@@ -5,7 +5,7 @@ import BlackoutPoetry from "../../../components/blackout/Blackout";
 import { Tabs } from "@chakra-ui/react";
 import ChatTab from "../../../components/chatbot/Chatbot";
 import { Textarea } from "@chakra-ui/react";
-import type { ArtistCondition, Message } from "../../../types";
+import type { Artist, ArtistCondition, Message } from "../../../types";
 import { DataContext } from "../../../App";
 
 const ArtistStep2 = () => {
@@ -17,7 +17,8 @@ const ArtistStep2 = () => {
   const [userType] = useState<ArtistCondition>(
     userData?.data.condition as ArtistCondition
   );
-  const [notes, setNotes] = useState("");
+  const artistData = userData?.data as Artist;
+  const [notes, setNotes] = useState(artistData.poem.sparkNotes);
   const [writeMessages, setWriteMessages] = useState<Message[]>([]);
 
   const navigate = useNavigate();

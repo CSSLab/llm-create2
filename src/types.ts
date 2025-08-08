@@ -19,6 +19,8 @@ export interface Poem {
   text: number[]; // this array holds the indexes of each word chosen from the passage
   sparkConversation?: Message[]; // LLM conversation in spark phase
   writeConversation?: Message[]; // LLM conversation in writing phase
+  sparkNotes: string;
+  writeNotes: string;
 }
 
 export interface Message {

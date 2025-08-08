@@ -30,6 +30,7 @@ const ArtistStep1 = () => {
   );
   const [sparkMessages, setSparkMessages] = useState<Message[]>([]);
   const sparkMessagesRef = useRef<Message[]>([]);
+  const sparkNotesRef = useRef<string>("");
   const [userType] = useState<ArtistCondition>("SPARK");
 
   const userPoem: Poem = {
@@ -38,10 +39,13 @@ const ArtistStep1 = () => {
     text: [],
     sparkConversation: [],
     writeConversation: [],
+    sparkNotes: "",
+    writeNotes: "",
   };
 
   const onComplete = useCallback(() => {
     userPoem.sparkConversation = sparkMessagesRef.current;
+    userPoem.sparkNotes = sparkNotesRef.current;
     addRoleSpecificData({ poem: userPoem });
     navigate("/artist/step-2");
   }, []);
@@ -53,7 +57,8 @@ const ArtistStep1 = () => {
 
   useEffect(() => {
     sparkMessagesRef.current = sparkMessages;
-  }, [sparkMessages]);
+    sparkNotesRef.current = notes;
+  }, [sparkMessages, notes]);
 
   return (
     <PageTemplate
