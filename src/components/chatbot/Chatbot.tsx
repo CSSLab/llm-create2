@@ -5,19 +5,22 @@ import { Role } from "../../types";
 import { nanoid } from "nanoid";
 import OpenAI from "openai";
 
-export default function ChatTab() {
+interface ChatTabProps {
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+}
+
+export default function ChatTab({ messages, setMessages }: ChatTabProps) {
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [isLLMLoading, setIsLLMLoading] = useState(false);
+  const [input, setInput] = useState("");
+
   const apiKey = import.meta.env.VITE_LLM_KEY;
 
   const client = new OpenAI({
     apiKey: apiKey,
     dangerouslyAllowBrowser: true,
   });
-
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLLMLoading, setIsLLMLoading] = useState(false);
-  const [input, setInput] = useState("");
-
-  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (chatContainerRef.current) {
