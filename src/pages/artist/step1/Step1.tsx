@@ -4,26 +4,38 @@ import { useState, useContext, useCallback, useMemo } from "react";
 import { Tabs } from "@chakra-ui/react";
 import ChatTab from "../../../components/chatbot/Chatbot";
 import { Textarea } from "@chakra-ui/react";
-import type { ArtistCondition, Message } from "../../../types";
+import type { ArtistCondition, Message, Poem } from "../../../types";
 import { DataContext } from "../../../App";
 import StarTimer from "../../../components/shared/starTimer";
+import { nanoid } from "nanoid";
 
 const ArtistStep1 = () => {
   const context = useContext(DataContext);
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-
+  const { addRoleSpecificData } = context;
   const navigate = useNavigate();
 
   const [notes, setNotes] = useState("");
   const [passage] = useState(
     "Twilight settled over Zuckerman’s barn, and a feeling of peace. Fern knew it was almost suppertime but she couldn’t bear to leave. Swallows passed on silent wings, in and out of the doorways, bringing food to their young ones. From across the road a bird sang “Whippoorwill, whippoorwill!” Lurvy sat down under an apple tree and lit his pipe; the animals sniffed the familiar smell of strong tobacco. Wilbur heard the trill of the tree toad and the occasional slamming of the kitchen door. All these sounds made him feel comfortable and happy, for he loved life and loved to be a part of the world on a summer evening. But as he lay there he remembered what the old sheep had told him. The thought of death came to him and he began to tremble with fear."
   );
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [sparkMessages, setSparkMessages] = useState<Message[]>([]);
   const [userType] = useState<ArtistCondition>("SPARK");
 
+  const userPoem: Poem = {
+    id: nanoid(),
+    passageId: "",
+    text: [],
+    sparkConversation: [],
+    writeConversation: [],
+  };
+
   const onComplete = useCallback(() => {
+    console.log("Spark messages:", sparkMessages);
+    userPoem.sparkConversation = sparkMessages;
+    addRoleSpecificData({ poem: userPoem });
     navigate("/artist/step-2");
   }, []);
 
@@ -57,7 +69,10 @@ const ArtistStep1 = () => {
               )}
             </Tabs.List>
             <Tabs.Content value="tab-2" className="w-full h-4/5">
-              <ChatTab messages={messages} setMessages={setMessages} />
+              <ChatTab
+                messages={sparkMessages}
+                setMessages={setSparkMessages}
+              />
             </Tabs.Content>
             <Tabs.Content value="tab-1" className="w-full h-4/5">
               <Textarea

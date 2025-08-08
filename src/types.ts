@@ -17,7 +17,8 @@ export interface Poem {
   id: string;
   passageId: string; // passageId in Passage.id
   text: number[]; // this array holds the indexes of each word chosen from the passage
-  llmConversation: Message[];
+  sparkConversation?: Message[]; // LLM conversation in spark phase
+  writeConversation?: Message[]; // LLM conversation in writing phase
 }
 
 export interface Message {

@@ -5,11 +5,10 @@ import BlackoutPoetry from "../../../components/blackout/Blackout";
 import { Tabs } from "@chakra-ui/react";
 import ChatTab from "../../../components/chatbot/Chatbot";
 import { Textarea } from "@chakra-ui/react";
-import type { ArtistCondition } from "../../../types";
+import type { ArtistCondition, Message } from "../../../types";
 import { DataContext } from "../../../App";
 
 const ArtistStep2 = () => {
-  const [notes, setNotes] = useState("");
   const context = useContext(DataContext);
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
@@ -18,7 +17,12 @@ const ArtistStep2 = () => {
   const [userType] = useState<ArtistCondition>(
     userData?.data.condition as ArtistCondition
   );
+  const [notes, setNotes] = useState("");
+  const [writeMessages, setWriteMessages] = useState<Message[]>([]);
+
   const navigate = useNavigate();
+
+  console.log(userData);
 
   const onComplete = () => {
     navigate("/artist/post-survey");
@@ -50,7 +54,10 @@ const ArtistStep2 = () => {
               )}
             </Tabs.List>
             <Tabs.Content value="tab-2" className="w-full h-4/5">
-              <ChatTab />
+              <ChatTab
+                messages={writeMessages}
+                setMessages={setWriteMessages}
+              />
             </Tabs.Content>
             <Tabs.Content value="tab-1" className="w-full h-4/5">
               <Textarea
