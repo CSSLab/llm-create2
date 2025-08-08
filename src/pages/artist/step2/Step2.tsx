@@ -14,16 +14,15 @@ const ArtistStep2 = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
   const { userData } = context;
-  const [userType] = useState<ArtistCondition>(
-    userData?.data.condition as ArtistCondition
-  );
   const artistData = userData?.data as Artist;
-  const [notes, setNotes] = useState(artistData.poem.sparkNotes);
-  const [writeMessages, setWriteMessages] = useState<Message[]>([]);
 
   const navigate = useNavigate();
 
-  console.log(userData);
+  const [userType] = useState<ArtistCondition>(
+    userData?.data.condition as ArtistCondition
+  );
+  const [notes, setNotes] = useState(artistData.poem.sparkNotes);
+  const [writeMessages, setWriteMessages] = useState<Message[]>([]);
 
   const onComplete = () => {
     navigate("/artist/post-survey");

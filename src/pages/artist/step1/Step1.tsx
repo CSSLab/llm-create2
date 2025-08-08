@@ -22,15 +22,17 @@ const ArtistStep1 = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
   const { addRoleSpecificData } = context;
+
   const navigate = useNavigate();
+
+  const sparkMessagesRef = useRef<Message[]>([]);
+  const sparkNotesRef = useRef<string>("");
 
   const [notes, setNotes] = useState("");
   const [passage] = useState(
     "Twilight settled over Zuckerman’s barn, and a feeling of peace. Fern knew it was almost suppertime but she couldn’t bear to leave. Swallows passed on silent wings, in and out of the doorways, bringing food to their young ones. From across the road a bird sang “Whippoorwill, whippoorwill!” Lurvy sat down under an apple tree and lit his pipe; the animals sniffed the familiar smell of strong tobacco. Wilbur heard the trill of the tree toad and the occasional slamming of the kitchen door. All these sounds made him feel comfortable and happy, for he loved life and loved to be a part of the world on a summer evening. But as he lay there he remembered what the old sheep had told him. The thought of death came to him and he began to tremble with fear."
   );
   const [sparkMessages, setSparkMessages] = useState<Message[]>([]);
-  const sparkMessagesRef = useRef<Message[]>([]);
-  const sparkNotesRef = useRef<string>("");
   const [userType] = useState<ArtistCondition>("SPARK");
 
   const userPoem: Poem = {

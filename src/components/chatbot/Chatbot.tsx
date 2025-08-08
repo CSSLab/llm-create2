@@ -11,16 +11,16 @@ interface ChatTabProps {
 }
 
 export default function ChatTab({ messages, setMessages }: ChatTabProps) {
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [isLLMLoading, setIsLLMLoading] = useState(false);
-  const [input, setInput] = useState("");
-
+  // Set up open AI client
   const apiKey = import.meta.env.VITE_LLM_KEY;
-
   const client = new OpenAI({
     apiKey: apiKey,
     dangerouslyAllowBrowser: true,
   });
+
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [isLLMLoading, setIsLLMLoading] = useState(false);
+  const [input, setInput] = useState("");
 
   useEffect(() => {
     if (chatContainerRef.current) {
