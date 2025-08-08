@@ -35,7 +35,7 @@ const ArtistStep1 = () => {
   const [sparkMessages, setSparkMessages] = useState<Message[]>([]);
   const [userType] = useState<ArtistCondition>("SPARK");
 
-  const userPoem: Poem = {
+  const artistPoem: Poem = {
     id: nanoid(),
     passageId: "",
     text: [],
@@ -46,9 +46,9 @@ const ArtistStep1 = () => {
   };
 
   const onComplete = useCallback(() => {
-    userPoem.sparkConversation = sparkMessagesRef.current;
-    userPoem.sparkNotes = sparkNotesRef.current;
-    addRoleSpecificData({ poem: userPoem });
+    artistPoem.sparkConversation = sparkMessagesRef.current;
+    artistPoem.sparkNotes = sparkNotesRef.current;
+    addRoleSpecificData({ poem: artistPoem });
     navigate("/artist/step-2");
   }, []);
 
