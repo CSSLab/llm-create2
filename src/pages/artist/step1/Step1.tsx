@@ -41,7 +41,8 @@ const ArtistStep1 = () => {
   };
 
   const onComplete = useCallback(() => {
-    console.log(sparkMessagesRef.current);
+    userPoem.sparkConversation = sparkMessagesRef.current;
+    addRoleSpecificData({ poem: userPoem });
     navigate("/artist/step-2");
   }, []);
 
@@ -51,7 +52,6 @@ const ArtistStep1 = () => {
   );
 
   useEffect(() => {
-    console.log("Remount");
     sparkMessagesRef.current = sparkMessages;
   }, [sparkMessages]);
 
