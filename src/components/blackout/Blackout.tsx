@@ -1,26 +1,23 @@
 import React, { useState } from "react";
 import { Button } from "@chakra-ui/react";
 import { RiEyeCloseLine } from "react-icons/ri";
-import {
-  MdOutlineRestartAlt,
-  MdContentCopy,
-  MdOutlineMenuBook,
-} from "react-icons/md";
+// import { MdOutlineEdit } from "react-icons/md";
+import { MdOutlineMenuBook } from "react-icons/md";
+import { MdOutlineRestartAlt } from "react-icons/md";
+import { MdContentCopy } from "react-icons/md";
 
-interface BlackoutPoetryProps {
-  selectedWordIndexes: number[];
-  setSelectedWordIndexes: React.Dispatch<React.SetStateAction<number[]>>;
+interface BlackoutProps {
+  onSubmit?: () => void;
 }
 
-const BlackoutPoetry: React.FC<BlackoutPoetryProps> = ({
-  selectedWordIndexes,
-  setSelectedWordIndexes,
-}) => {
+const BlackoutPoetry: React.FC<BlackoutProps> = ({ onSubmit }) => {
   const [passageText] = useState(
     "Twilight settled over Zuckerman’s barn, and a feeling of peace. Fern knew it was almost suppertime but she couldn’t bear to leave. Swallows passed on silent wings, in and out of the doorways, bringing food to their young ones. From across the road a bird sang “Whippoorwill, whippoorwill!” Lurvy sat down under an apple tree and lit his pipe; the animals sniffed the familiar smell of strong tobacco. Wilbur heard the trill of the tree toad and the occasional slamming of the kitchen door. All these sounds made him feel comfortable and happy, for he loved life and loved to be a part of the world on a summer evening. But as he lay there he remembered what the old sheep had told him. The thought of death came to him and he began to tremble with fear."
   );
   const words = passageText.split(" ");
-
+  const [selectedWords, setSelectedWords] = useState<boolean[]>(
+    Array(words.length).fill(false)
+  );
   const [viewMode, setViewMode] = useState<"edit" | "blackout">("edit");
 
   const copyPassage = () => {
@@ -28,22 +25,15 @@ const BlackoutPoetry: React.FC<BlackoutPoetryProps> = ({
   };
 
   const toggleSelect = (index: number) => {
-    console.log(selectedWordIndexes);
-    if (viewMode === "edit") {
-      setSelectedWordIndexes((prev) => {
-        if (prev.includes(index)) {
-          // Remove index
-          return prev.filter((i) => i !== index);
-        } else {
-          // Add index
-          return [...prev, index];
-        }
-      });
-    }
+    // if (viewMode === 'edit') {
+    const updated = [...selectedWords];
+    updated[index] = !updated[index];
+    setSelectedWords(updated);
+    // }
   };
 
   const resetSelection = () => {
-    setSelectedWordIndexes([]);
+    setSelectedWords(Array(words.length).fill(false));
   };
 
   return (
@@ -75,13 +65,14 @@ const BlackoutPoetry: React.FC<BlackoutPoetryProps> = ({
           </Button>
         </div>
 
-        {/* <Button className="btn-small px-4" onClick={onSubmit}> */}
-        <Button className="btn-small px-4">Submit</Button>
+        <Button className="btn-small px-4" onClick={onSubmit}>
+          Submit
+        </Button>
       </div>
 
       <div className="py-6 leading-relaxed flex flex-wrap">
         {words.map((word, i) => {
-          const isSelected = selectedWordIndexes.includes(i);
+          const isSelected = selectedWords[i];
 
           const textColor =
             viewMode === "blackout"
@@ -98,7 +89,7 @@ const BlackoutPoetry: React.FC<BlackoutPoetryProps> = ({
               onClick={() => toggleSelect(i)}
               className={`cursor-pointer transition px-1 duration-200 ${textColor}`}
             >
-              {word + " "}
+              {word + ` `}
             </span>
           );
         })}
