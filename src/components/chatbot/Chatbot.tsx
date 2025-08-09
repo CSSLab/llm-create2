@@ -66,13 +66,6 @@ export default function ChatTab() {
           <Button className="btn-small" onClick={() => sendMessage()}>
             <FiSend />
           </Button>
-
-          {/* <button
-                  type="submit"
-                  className="px-4 h-max py-2 bg-grey text-white rounded-md hover:bg-opacity-70"
-                >
-                  Send
-                </button> */}
         </form>
       </div>
     </div>
