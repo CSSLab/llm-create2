@@ -31,7 +31,7 @@ const renderBlackout = (
   return (
     <div
       onClick={onClick}
-      className="cursor-pointer bg-white text-main rounded-lg w-full p-4 border border-light-grey-2 text-base flex flex-col space-y-2 transition hover:border-2 hover:border-grey"
+      className="cursor-pointer bg-white text-main rounded-lg w-full p-4 border border-light-grey-2 text-base flex flex-col space-y-2 transition hover:border-grey hover:ring-1 hover:ring-grey"
     >
       <div className="text-h1 text-lg">Poem {poemid}</div>
       <div className="flex flex-wrap leading-relaxed">
@@ -57,7 +57,7 @@ const AudienceStep1: React.FC = () => {
     const handleSubmit = () => {
             navigate("/audience/step-2")
     }
-  const [revealedPoems, setRevealedPoems] = useState<number[]>([]);
+  const [revealedPoems, setRevealedPoems] = useState<number[]>([1,2,3]);
 
   const togglePoemReveal = (id: number) => {
     setRevealedPoems((prev) =>

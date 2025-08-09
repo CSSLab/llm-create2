@@ -81,14 +81,14 @@ export default function ChatTab({ messages, setMessages }: ChatTabProps) {
     <div className="flex flex-col h-full w-full mx-auto overflow-hidden">
       {/* Chat messages */}
       <div
-        className="flex-1 overflow-y-auto w-full p-4 bg-white space-y-3"
+        className="flex-1 overflow-y-auto w-full p-4 space-y-3"
         ref={chatContainerRef}
       >
         {messages.length === 0 && (
           <div className="w-full h-full flex flex-col items-center justify-center">
-            <p className="text-h1 text-lg text-grey">LLM Assistant</p>
+            <p className="text-h1 text-lg text-grey">Blackout Assistant</p>
             <p className="text-main text-grey text-center text-sm ">
-              Start chatting with the LLM
+              Start chatting with the assistant
             </p>
           </div>
         )}
@@ -98,7 +98,7 @@ export default function ChatTab({ messages, setMessages }: ChatTabProps) {
             className={`py-2 rounded-lg transition-all duration-300 ease-out opacity-0 translate-y-2 animate-fade-in 
             ${
               msg.role === Role.ARTIST
-                ? "px-4 bg-light-grey-2 bg-opacity-40 justify-self-end self-end text-right w-max"
+                ? "px-4 bg-dark-grey bg-opacity-90 text-white justify-self-end self-end text-right w-max"
                 : "self-start text-left"
             }`}
           >
@@ -117,7 +117,6 @@ export default function ChatTab({ messages, setMessages }: ChatTabProps) {
         )}
       </div>
 
-      {/* Input area */}
       <div className="p-3">
         <form
           onSubmit={(e) => {

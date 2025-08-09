@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { Button } from "@chakra-ui/react";
 import { RiEyeCloseLine } from "react-icons/ri";
 import {
-  MdOutlineEdit,
   MdOutlineRestartAlt,
   MdContentCopy,
+  MdOutlineMenuBook,
 } from "react-icons/md";
 
 interface BlackoutPoetryProps {
@@ -48,20 +48,35 @@ const BlackoutPoetry: React.FC<BlackoutPoetryProps> = ({
 
   return (
     <div className="w-full h-max flex flex-col space-y-6">
-      <div className="w-full h-max flex flex-row space-x-2">
-        <Button
-          className={viewMode === "edit" ? "btn-small-inverted" : "btn-small"}
-          onClick={() => setViewMode(viewMode === "edit" ? "blackout" : "edit")}
-        >
-          {viewMode === "edit" ? <RiEyeCloseLine /> : <MdOutlineEdit />}
-          {viewMode === "edit" ? "View Blackout" : "Back to Editing"}
-        </Button>
-        <Button className="btn-small-inverted" onClick={resetSelection}>
-          <MdOutlineRestartAlt /> Reset poem
-        </Button>
-        <Button className="btn-small-inverted" onClick={copyPassage}>
-          <MdContentCopy />
-        </Button>
+      <div className="w-full h-max flex flex-row justify-between">
+        <div className="w-max flex flex-row space-x-2">
+          <Button
+            className={
+              viewMode === "edit" ? "btn-small-inverted" : "btn-small bg-grey"
+            }
+            onClick={() =>
+              setViewMode(viewMode === "edit" ? "blackout" : "edit")
+            }
+          >
+            {viewMode === "edit" ? <RiEyeCloseLine /> : <MdOutlineMenuBook />}{" "}
+            <p className="hidden md:block">
+              {viewMode === "edit" ? "View as Blackout" : "View as passage"}
+            </p>
+          </Button>
+          <Button
+            className="btn-small-inverted"
+            onClick={() => resetSelection()}
+          >
+            <MdOutlineRestartAlt />{" "}
+            <p className="hidden md:block">Reset poem</p>
+          </Button>
+          <Button className="btn-small-inverted" onClick={() => copyPassage()}>
+            <MdContentCopy />
+          </Button>
+        </div>
+
+        {/* <Button className="btn-small px-4" onClick={onSubmit}> */}
+        <Button className="btn-small px-4">Submit</Button>
       </div>
 
       <div className="py-6 leading-relaxed flex flex-wrap">
@@ -72,7 +87,7 @@ const BlackoutPoetry: React.FC<BlackoutPoetryProps> = ({
             viewMode === "blackout"
               ? isSelected
                 ? "text-main"
-                : "text-main bg-dark-grey"
+                : "text-main bg-dark-grey bg-opacity-70"
               : isSelected
               ? "text-main text-light-grey-1 underline"
               : "text-main bg-transparent";
