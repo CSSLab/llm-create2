@@ -1,11 +1,11 @@
-import{ useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@chakra-ui/react";
 import StarTimer from "../starTimer";
 import ChatTab from "../../chatbot/Chatbot";
+import type { Message } from "../../../types";
 import type { ReactNode } from "react";
 
 import { Button } from "@chakra-ui/react";
-
 
 interface PageTemplateProps {
   children?: ReactNode;
@@ -13,10 +13,15 @@ interface PageTemplateProps {
   title?: string;
   description?: string;
   left?: boolean;
-  buttonLeft?:boolean;
+  buttonLeft?: boolean;
   duration?: number;
-  afterDuration?: ()=>void;
-  llmAccess?:boolean;
+  afterDuration?: () => void;
+  llmAccess?: boolean;
+
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  notes: string;
+  setNotes: React.Dispatch<React.SetStateAction<string>>;
 }
 
 interface Button {
@@ -24,13 +29,21 @@ interface Button {
   action?: () => void;
 }
 
-
-function MultiPageTemplate({children, title, description, duration=undefined, afterDuration, llmAccess=false}: PageTemplateProps) {
+function MultiPageTemplate({
+  children,
+  title,
+  description,
+  duration = undefined,
+  afterDuration,
+  llmAccess = false,
+  messages,
+  setMessages,
+  notes,
+  setNotes,
+}: PageTemplateProps) {
   const [leftWidth, setLeftWidth] = useState(70); // %
   const [topHeight, setTopHeight] = useState(70); // %
-//   const [isChatOpen, setIsChatOpen] = useState(false); // mobile toggle
-  const [notes, setNotes] = useState('');
-
+  //   const [isChatOpen, setIsChatOpen] = useState(false); // mobile toggle
 
   const isDraggingX = useRef(false);
   const isDraggingY = useRef(false);
@@ -94,29 +107,32 @@ function MultiPageTemplate({children, title, description, duration=undefined, af
         {/* Left Panel */}
         <div
           className="flex flex-col w-full h-full bg-white"
-          style={{ width: ((llmAccess) ? `${leftWidth}%`: `100%`) }}
+          style={{ width: llmAccess ? `${leftWidth}%` : `100%` }}
         >
           {/* Main Content */}
-          <div className=" overflow-auto w-full p-16 pb-8 md:px-20 md:pt-20" style={{ height: `${topHeight}%` }}>
+          <div
+            className=" overflow-auto w-full p-16 pb-8 md:px-20 md:pt-20"
+            style={{ height: `${topHeight}%` }}
+          >
             <div className="w-full h-max space-y-4">
-              <div className={`w-full h-max flex text-h1 justify-between items-center flex-row text-h1`}>
+              <div
+                className={`w-full h-max flex text-h1 justify-between items-center flex-row text-h1`}
+              >
                 <p>{title}</p>
-                {(duration) && 
-                (
-                    <StarTimer duration={duration} onComplete={afterDuration}/>
-                )
-                }
-                  
-                 </div>
+                {duration && (
+                  <StarTimer duration={duration} onComplete={afterDuration} />
+                )}
+              </div>
 
-              <div className={`w-full h-max flex text-left text-sm font-sans text-grey`}>
+              <div
+                className={`w-full h-max flex text-left text-sm font-sans text-grey`}
+              >
                 <p>{description}</p>
               </div>
-  
-            <div className={`w-full flex overflow-auto py-4 h-max`}>
-              {children}
-            </div>
 
+              <div className={`w-full flex overflow-auto py-4 h-max`}>
+                {children}
+              </div>
             </div>
           </div>
 
@@ -133,32 +149,30 @@ function MultiPageTemplate({children, title, description, duration=undefined, af
             style={{ height: `${100 - topHeight}%` }}
           >
             <Textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Take some notes..."
-            className="text-main bg-white max-h-full flex-1 px-3 py-2 border rounded-md focus:outline-none focus:border-2 focus:border-grey"
-        />
-  
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Take some notes..."
+              className="text-main bg-white max-h-full flex-1 px-3 py-2 border rounded-md focus:outline-none focus:border-2 focus:border-grey"
+            />
           </div>
         </div>
-        {(llmAccess) && (
-            <>
-             {/* Vertical Divider */}
-                <div
-                className="w-1 bg-gray-300 h-10 self-center cursor-col-resize hover:bg-gray-500"
-                onMouseDown={startDragX}
-                onTouchStart={startDragX}
-                />
+        {llmAccess && (
+          <>
+            {/* Vertical Divider */}
+            <div
+              className="w-1 bg-gray-300 h-10 self-center cursor-col-resize hover:bg-gray-500"
+              onMouseDown={startDragX}
+              onTouchStart={startDragX}
+            />
 
             {/* Chatbot Panel */}
             <div className="flex-1 p-4 overflow-auto bg-light-grey-4">
-                <ChatTab />
+              <ChatTab messages={messages} setMessages={setMessages} />
             </div>
-        </>
+          </>
         )}
-       
       </div>
-      </div>
+    </div>
   );
 }
 

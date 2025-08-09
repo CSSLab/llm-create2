@@ -6,7 +6,12 @@ import OpenAI from "openai";
 import type { Message } from "../../types";
 import { Role } from "../../types";
 
-export default function ChatTab() {
+interface ChatTabProps {
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+}
+
+export default function ChatTab({ messages, setMessages }: ChatTabProps) {
   // Set up open AI client
   const apiKey = import.meta.env.VITE_LLM_KEY;
   const client = new OpenAI({
@@ -16,7 +21,6 @@ export default function ChatTab() {
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const [messages, setMessages] = useState<Message[]>([]);
   const [isLLMLoading, setIsLLMLoading] = useState(false);
   const [input, setInput] = useState("");
 
@@ -78,7 +82,10 @@ export default function ChatTab() {
   return (
     <div className="flex flex-col h-full w-full mx-auto overflow-hidden">
       {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto w-full p-4 space-y-3">
+      <div
+        className="flex-1 overflow-y-auto w-full p-4 space-y-3"
+        ref={chatContainerRef}
+      >
         {messages.length === 0 && (
           <div className="w-full h-full flex flex-col items-center justify-center">
             <p className="text-h1 text-lg text-grey">Blackout Assistant</p>
