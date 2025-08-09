@@ -1,4 +1,3 @@
-import PageTemplate from "../../../components/shared/pages/page";
 import { useNavigate } from "react-router-dom";
 import {
   useState,
@@ -8,13 +7,11 @@ import {
   useRef,
   useEffect,
 } from "react";
-import { Tabs } from "@chakra-ui/react";
-import ChatTab from "../../../components/chatbot/Chatbot";
-import { Textarea } from "@chakra-ui/react";
 import type { ArtistCondition, Message, Poem } from "../../../types";
 import { DataContext } from "../../../App";
 import StarTimer from "../../../components/shared/starTimer";
 import { nanoid } from "nanoid";
+import MultiPageTemplate from "../../../components/shared/pages/multiPage";
 
 const ArtistStep1 = () => {
   const context = useContext(DataContext);
@@ -63,47 +60,17 @@ const ArtistStep1 = () => {
   }, [sparkMessages, notes]);
 
   return (
-    <PageTemplate
-      background="bg3"
+    <MultiPageTemplate
       title="Step 1: Brainstorm"
-      description="This is your time to familiarize yourself with the text and brainstorm for your poem."
-      timerComponent={timerComponent}
+      description="This is your time to familiarize yourself with the text and brainstorm for your poem. Feel free to take notes of your ideas. Your notes will be accessible during the writing portion."
+      duration={900}
+      afterDuration={onComplete}
+      llmAccess={userType == "TOTAL_ACCESS" || userType == "SPARK"}
     >
-      <div className="w-full h-full flex flex-col md:flex-row md:space-x-12">
-        <div className="h-full w-full md:w-1/2 flex">
-          <p className="text-main text-sm md:text-base">{passage}</p>
-        </div>
-        <div className="w-full md:w-1/2 h-full">
-          <Tabs.Root
-            lazyMount
-            unmountOnExit
-            defaultValue="tab-1"
-            className="w-full h-full"
-          >
-            <Tabs.List className="space-x-4">
-              <Tabs.Trigger value="tab-1">Notes</Tabs.Trigger>
-              {(userType === "SPARK" || userType === "TOTAL_ACCESS") && (
-                <Tabs.Trigger value="tab-2">LLM</Tabs.Trigger>
-              )}
-            </Tabs.List>
-            <Tabs.Content value="tab-2" className="w-full h-4/5">
-              <ChatTab
-                messages={sparkMessages}
-                setMessages={setSparkMessages}
-              />
-            </Tabs.Content>
-            <Tabs.Content value="tab-1" className="w-full h-4/5">
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Take some notes..."
-                className="text-main h-full flex-1 px-3 py-2 border rounded-md focus:outline-none focus:border-2 focus:border-grey"
-              />
-            </Tabs.Content>
-          </Tabs.Root>
-        </div>
+      <div className="h-full w-full flex">
+        <p className="text-main text-sm md:text-base">{passage}</p>
       </div>
-    </PageTemplate>
+    </MultiPageTemplate>
   );
 };
 
