@@ -1,25 +1,78 @@
-import { Textarea } from "@chakra-ui/react";
-import { useState } from "react";
-import { Button } from "@chakra-ui/react";
+import { useEffect, useState, useRef } from "react";
 import { FiSend } from "react-icons/fi";
-
-interface Message {
-  from: "user" | "bot";
-  text: string;
-}
+import { Button, Textarea } from "@chakra-ui/react";
+import { nanoid } from "nanoid";
+import OpenAI from "openai";
+import type { Message } from "../../types";
+import { Role } from "../../types";
 
 export default function ChatTab() {
+  // Set up open AI client
+  const apiKey = import.meta.env.VITE_LLM_KEY;
+  const client = new OpenAI({
+    apiKey: apiKey,
+    dangerouslyAllowBrowser: true,
+  });
+
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isLLMLoading, setIsLLMLoading] = useState(false);
   const [input, setInput] = useState("");
 
-  const sendMessage = () => {
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages, isLLMLoading]);
+
+  const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMessage: Message = { from: "user", text: input };
-    const botMessage: Message = { from: "bot", text: `You said: "${input}"` };
+    const artistMessage: Message = {
+      id: nanoid(),
+      role: Role.ARTIST,
+      text: input,
+      timestamp: new Date(),
+    };
 
-    setMessages((prev) => [...prev, userMessage, botMessage]);
+    setMessages((prev) => [...prev, artistMessage]);
     setInput("");
+    setIsLLMLoading(true); // start typing animation
+
+    try {
+      const response = await client.responses.create({
+        model: "gpt-4.1-mini",
+        input: input,
+      });
+
+      const llmMessage: Message = {
+        id: nanoid(),
+        role: Role.LLM,
+        text: response.output_text,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, llmMessage]);
+    } catch (error) {
+      console.error("LLM response failed", error);
+    } finally {
+      setIsLLMLoading(false); // stop typing animation
+    }
+  };
+
+  const handleKeyDown = (e: any) => {
+    if (e.key === "Enter") {
+      if (e.shiftKey) {
+        return;
+      } else {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
   };
 
   return (
@@ -34,11 +87,12 @@ export default function ChatTab() {
             </p>
           </div>
         )}
-        {messages.map((msg, index) => (
+        {messages.map((msg) => (
           <div
-            key={index}
-            className={`py-2 rounded-lg ${
-              msg.from === "user"
+            key={msg.id}
+            className={`py-2 rounded-lg transition-all duration-300 ease-out opacity-0 translate-y-2 animate-fade-in 
+            ${
+              msg.role === Role.ARTIST
                 ? "px-4 bg-dark-grey bg-opacity-90 text-white justify-self-end self-end text-right w-max"
                 : "self-start text-left"
             }`}
@@ -46,6 +100,16 @@ export default function ChatTab() {
             {msg.text}
           </div>
         ))}
+
+        {isLLMLoading && (
+          <div className="flex items-center space-x-2 mt-2">
+            <div className="flex space-x-1">
+              <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce"></div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Input area */}
@@ -60,6 +124,7 @@ export default function ChatTab() {
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             className="text-main bg-white flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-grey"
           />
