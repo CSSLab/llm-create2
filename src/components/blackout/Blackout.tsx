@@ -8,16 +8,19 @@ import { MdContentCopy } from "react-icons/md";
 
 interface BlackoutProps {
   onSubmit?: () => void;
+  selectedWordIndexes: number[];
+  setSelectedWordIndexes: React.Dispatch<React.SetStateAction<number[]>>;
 }
 
-const BlackoutPoetry: React.FC<BlackoutProps> = ({ onSubmit }) => {
+const BlackoutPoetry: React.FC<BlackoutProps> = ({
+  onSubmit,
+  selectedWordIndexes,
+  setSelectedWordIndexes,
+}) => {
   const [passageText] = useState(
     "Twilight settled over Zuckerman’s barn, and a feeling of peace. Fern knew it was almost suppertime but she couldn’t bear to leave. Swallows passed on silent wings, in and out of the doorways, bringing food to their young ones. From across the road a bird sang “Whippoorwill, whippoorwill!” Lurvy sat down under an apple tree and lit his pipe; the animals sniffed the familiar smell of strong tobacco. Wilbur heard the trill of the tree toad and the occasional slamming of the kitchen door. All these sounds made him feel comfortable and happy, for he loved life and loved to be a part of the world on a summer evening. But as he lay there he remembered what the old sheep had told him. The thought of death came to him and he began to tremble with fear."
   );
   const words = passageText.split(" ");
-  const [selectedWords, setSelectedWords] = useState<boolean[]>(
-    Array(words.length).fill(false)
-  );
   const [viewMode, setViewMode] = useState<"edit" | "blackout">("edit");
 
   const copyPassage = () => {
@@ -25,15 +28,21 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({ onSubmit }) => {
   };
 
   const toggleSelect = (index: number) => {
-    // if (viewMode === 'edit') {
-    const updated = [...selectedWords];
-    updated[index] = !updated[index];
-    setSelectedWords(updated);
-    // }
+    if (viewMode === "edit") {
+      setSelectedWordIndexes((prev) => {
+        if (prev.includes(index)) {
+          // Remove index
+          return prev.filter((i) => i !== index);
+        } else {
+          // Add index
+          return [...prev, index];
+        }
+      });
+    }
   };
 
   const resetSelection = () => {
-    setSelectedWords(Array(words.length).fill(false));
+    setSelectedWordIndexes([]);
   };
 
   return (
@@ -72,7 +81,7 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({ onSubmit }) => {
 
       <div className="py-6 leading-relaxed flex flex-wrap">
         {words.map((word, i) => {
-          const isSelected = selectedWords[i];
+          const isSelected = selectedWordIndexes[i];
 
           const textColor =
             viewMode === "blackout"
