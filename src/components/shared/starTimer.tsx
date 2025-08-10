@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 
 interface StarTimerProps {
-  duration?: number;      // Duration in seconds
+  duration?: number; // Duration in seconds
   onComplete?: () => void; // Callback when timer finishes
 }
 
@@ -14,7 +14,10 @@ const StarTimer: React.FC<StarTimerProps> = ({ duration = 10, onComplete }) => {
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(
+      2,
+      "0"
+    )}`;
   };
 
   useEffect(() => {
@@ -56,9 +59,7 @@ const StarTimer: React.FC<StarTimerProps> = ({ duration = 10, onComplete }) => {
           />
         </svg>
       </div>
-      <div className="text-main">
-        {formatTime(timeRemaining)}
-      </div>
+      <div className="text-main">{formatTime(timeRemaining)}</div>
     </div>
   );
 };

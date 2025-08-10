@@ -2,32 +2,39 @@
 // import { useNavigate } from 'react-router-dom';
 // import HalfPageTemplate from '../components/shared/pages/halfPage';
 // import { Button, Input } from '@chakra-ui/react';
-import PageTemplate from '../components/shared/pages/page';
-import { Checkbox } from '@chakra-ui/react';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import PageTemplate from "../components/shared/pages/page";
+import { Checkbox } from "@chakra-ui/react";
+import { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { DataContext } from "../App";
+import { nanoid } from "nanoid";
 
 const ConsentForm = () => {
-    const [checked, setChecked] = useState(false);
-    const navigate = useNavigate();
+  const [checked, setChecked] = useState(false);
+  const navigate = useNavigate();
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error("Component must be used within a DataContext.Provider");
+  }
+  const { addUserData } = context;
 
-    const handleSubmit = () => {
-        if (checked) {
-            navigate("/choice")
-        } else {
-             alert("Please give your consent to proceed");
-        }
-
+  const handleSubmit = () => {
+    if (checked) {
+      addUserData({ id: nanoid() });
+      navigate("/choice");
+    } else {
+      alert("Please give your consent to proceed");
     }
+  };
 
-    return (
-       <PageTemplate title='University of Toronto Research Project Participation Consent Form' nextButton={{text: 'Submit', action: handleSubmit}}>
-        <div className="w-full h-full flex-row content-center">
-
-        
+  return (
+    <PageTemplate
+      title="University of Toronto Research Project Participation Consent Form"
+      nextButton={{ text: "Submit", action: handleSubmit }}
+    >
+      <div className="w-full h-full flex-row content-center">
         <div className="w-full h-4/5 border border-dark-grey overflow-y-auto rounded-xl bg-white p-4">
-
-         <p className="text-main mb-2">
+          <p className="text-main mb-2">
             Researchers at the <strong>University of Toronto</strong> are
             studying how people’s usage of <em>Artificial Intelligence</em>{" "}
             impacts their creative thinking abilities. Nowadays, people are
@@ -56,7 +63,11 @@ const ConsentForm = () => {
           </p>
           <p className="text-main mb-2">
             We expect the survey to take around <strong>7 minutes</strong> to
-            complete.If you are a Prolific worker, you will receive the monetary amount detailed on Prolific as compensation for your time. If you were recruited offline, you will be entered into a draw for 5 USD Amazon gift cards. Odds are detailed in the advertisement post, but you can expect a winning probability of at least 30%.
+            complete.If you are a Prolific worker, you will receive the monetary
+            amount detailed on Prolific as compensation for your time. If you
+            were recruited offline, you will be entered into a draw for 5 USD
+            Amazon gift cards. Odds are detailed in the advertisement post, but
+            you can expect a winning probability of at least 30%.
           </p>
           <p className="text-main mb-2">
             As the results of this evaluation will be of interest to a wide
@@ -68,10 +79,17 @@ const ConsentForm = () => {
             part of the de-identified data used for any published reports.
           </p>
           <p className="text-main mb-2">
-            You may decline to participate or withdraw at any time without penalty. If you decide to withdraw from the study after participating, you may do so any time before the results are published. If you wish to withdraw during your participation in Prolific, you may simply close the browser window with the experiment and return the task.
+            You may decline to participate or withdraw at any time without
+            penalty. If you decide to withdraw from the study after
+            participating, you may do so any time before the results are
+            published. If you wish to withdraw during your participation in
+            Prolific, you may simply close the browser window with the
+            experiment and return the task.
           </p>
-              <p className="text-main mb-2">
-            Note that you will be compensated only after you have completed the activity and have successfully verified your Prolific ID. Please allow 2-3 days for this process.
+          <p className="text-main mb-2">
+            Note that you will be compensated only after you have completed the
+            activity and have successfully verified your Prolific ID. Please
+            allow 2-3 days for this process.
           </p>
           <p className="text-main mb-2">
             For an independent opinion regarding the research and the rights of
@@ -100,8 +118,10 @@ const ConsentForm = () => {
             members of his research team responsible for the experiment
             interface and survey are <strong>Harsh Kumar</strong> (
             <u>harsh@cs.toronto.edu</u>), <strong>Sarah Wang</strong> (
-            <u>sarahxp.wang@mail.utoronto.ca</u>), and <strong>Helena Glowacki</strong> (<u>helena.glowacki@mail.utoronto.ca</u>). If you have any questions or
-            concerns, please contact either Harsh Kumar or Ewan Jordan.
+            <u>sarahxp.wang@mail.utoronto.ca</u>), and{" "}
+            <strong>Helena Glowacki</strong> (
+            <u>helena.glowacki@mail.utoronto.ca</u>). If you have any questions
+            or concerns, please contact either Harsh Kumar or Ewan Jordan.
           </p>
           <p className="text-main mb-2">
             Please print or save a copy of this form for your records.
@@ -125,17 +145,22 @@ const ConsentForm = () => {
           </ul>
         </div>
         <div className="w-full h-max flex justify-center py-8">
-            <Checkbox.Root defaultChecked variant={"solid"} checked={checked} onCheckedChange={(e) => setChecked(!!e.checked)}>
-              <Checkbox.HiddenInput />
-              <Checkbox.Control className="outline outline-1 outline-grey"/>
-              <Checkbox.Label className="text-main">I agree to this consent form*</Checkbox.Label>
-            </Checkbox.Root>
-
+          <Checkbox.Root
+            defaultChecked
+            variant={"solid"}
+            checked={checked}
+            onCheckedChange={(e) => setChecked(!!e.checked)}
+          >
+            <Checkbox.HiddenInput />
+            <Checkbox.Control className="outline outline-1 outline-grey" />
+            <Checkbox.Label className="text-main">
+              I agree to this consent form*
+            </Checkbox.Label>
+          </Checkbox.Root>
         </div>
-        </div>
-
-       </PageTemplate>
-    );
+      </div>
+    </PageTemplate>
+  );
 };
 
 export default ConsentForm;
