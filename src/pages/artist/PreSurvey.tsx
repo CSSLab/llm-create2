@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import HalfPageTemplate from "../../components/shared/pages/halfPage";
 import { useContext } from "react";
 import { DataContext } from "../../App";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../firebase";
 
 type QuestionType = "multiple" | "text";
 
@@ -13,6 +15,20 @@ interface SurveyQuestion {
   type: QuestionType;
   options?: string[]; // For multiple choice
   scale?: number; // For scale questions (e.g., 7-point scale)
+}
+
+// EXAMPLE OF MAKING A GET REQUEST
+async function getSurveyByArtistId(artistId: string) {
+  const surveysRef = collection(db, "artistSurvey");
+  const q = query(surveysRef, where("artistId", "==", artistId));
+  const querySnapshot = await getDocs(q);
+
+  const surveys: any = [];
+  querySnapshot.forEach((doc) => {
+    surveys.push({ id: doc.id, ...doc.data() });
+  });
+
+  return surveys;
 }
 
 const survey: SurveyQuestion[] = [
@@ -32,6 +48,11 @@ const AristPreSurvey = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
+
+  // EXAMPLE OF MAKING A GET REQUEST
+  getSurveyByArtistId("artist-id-1").then((data) => {
+    console.log(data);
+  });
 
   const handleAnswer = (id: string, answer: string) => {
     setAnswers((prev) => ({
