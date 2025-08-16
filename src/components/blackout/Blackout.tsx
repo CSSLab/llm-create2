@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@chakra-ui/react";
 import { RiEyeCloseLine } from "react-icons/ri";
-// import { MdOutlineEdit } from "react-icons/md";
 import { MdOutlineMenuBook } from "react-icons/md";
 import { MdOutlineRestartAlt } from "react-icons/md";
 import { MdContentCopy } from "react-icons/md";
@@ -81,7 +80,7 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
 
       <div className="py-6 leading-relaxed flex flex-wrap">
         {words.map((word, i) => {
-          const isSelected = selectedWordIndexes[i];
+          const isSelected = selectedWordIndexes.includes(i);
 
           const textColor =
             viewMode === "blackout"
