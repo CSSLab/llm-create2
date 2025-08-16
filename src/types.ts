@@ -7,6 +7,7 @@ export interface Artist {
 
 export interface ArtistSurvey {
   id: string;
+  artistId: string;
   q1: string;
   q2: string;
   q3: string;
@@ -31,6 +32,7 @@ export interface ArtistSurvey {
 
 export interface Poem {
   id: string;
+  artistId: string;
   passageId: string; // passageId in Passage.id
   text: number[]; // this array holds the indexes of each word chosen from the passage
   sparkConversation?: Message[]; // LLM conversation in spark phase

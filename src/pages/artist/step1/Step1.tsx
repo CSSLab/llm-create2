@@ -31,6 +31,7 @@ const ArtistStep1 = () => {
   const poemRef = doc(collection(db, "poem"));
   const artistPoem: Poem = {
     id: poemRef.id,
+    artistId: userData?.id || "", // Update this to throw an error
     passageId: "",
     text: [],
     sparkConversation: [],

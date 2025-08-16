@@ -48,6 +48,7 @@ const AudiencePostSurvey = () => {
 
     const artistSurvey: ArtistSurvey = {
       id: prevSurvey.id ?? "",
+      artistId: prevSurvey?.artistId || "", // Update this to throw an error
       q1: prevSurvey.q1 ?? "",
       q2: prevSurvey.q2 ?? "",
       q3: answers["q3"] ?? "",

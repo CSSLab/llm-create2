@@ -68,6 +68,7 @@ const AristPreSurvey = () => {
     const surveyRef = doc(collection(db, "artistSurvey"));
     const artistSurvey: ArtistSurvey = {
       id: surveyRef.id,
+      artistId: userData?.id || "", // Update this to throw an error
       q1: answers["q1"] ?? "",
       q2: answers["q2"] ?? "",
       q3: answers["q3"] ?? "",
