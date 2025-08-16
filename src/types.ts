@@ -6,11 +6,30 @@ export interface Artist {
   poem: Poem;
 }
 
-// TODO: Exact survey questions tbd
 export interface ArtistSurvey {
   id: string;
-  q1: string;
-  q10: string;
+
+  // Pre-survey
+  preDemographic1: number;
+  preDemographic2: number;
+  prePANAS: number[];
+
+  // Post-survey
+  postDemographic1: number;
+  postPANAS: number[];
+
+  intentions1: string;
+  intentions2: number[];
+
+  ownership1: number;
+  ownership2: number;
+  ownership3: number;
+
+  aiHelpfulness: number;
+
+  creditAttribution: number;
+
+  aiOpinion: number;
 }
 
 export interface Poem {
