@@ -50,8 +50,8 @@ const AudiencePostSurvey = () => {
     const artistSurvey: ArtistSurvey = {
       q1: prevSurvey.q1 ?? "",
       q2: prevSurvey.q2 ?? "",
-      q3: answers["q3"] ?? prevSurvey.q3 ?? "",
-      q4: answers["q4"] ?? prevSurvey.q4 ?? "",
+      q3: answers["q3"] ?? "",
+      q4: answers["q4"] ?? "",
     };
 
     addRoleSpecificData({ surveyResponse: artistSurvey });
