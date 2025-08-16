@@ -5,8 +5,6 @@ import { ArtistCondition } from "../../../types";
 import type { Message, Poem } from "../../../types";
 import { useContext } from "react";
 import { DataContext } from "../../../App";
-import { doc, collection } from "firebase/firestore";
-import { db } from "../../../firebase";
 
 const ArtistStep1 = () => {
   const navigate = useNavigate();
@@ -28,10 +26,7 @@ const ArtistStep1 = () => {
   const [sparkMessages, setSparkMessages] = useState<Message[]>([]);
   const [sparkNotes, setSparkNotes] = useState<string>("");
 
-  const poemRef = doc(collection(db, "poem"));
   const artistPoem: Poem = {
-    id: poemRef.id,
-    artistId: userData?.id || "", // Update this to throw an error
     passageId: "",
     text: [],
     sparkConversation: [],

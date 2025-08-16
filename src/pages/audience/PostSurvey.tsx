@@ -4,7 +4,10 @@ import { useNavigate } from "react-router-dom";
 import PageTemplate from "../../components/shared/pages/page";
 import { useContext } from "react";
 import { DataContext } from "../../App";
-import type { ArtistSurvey, SurveyQuestion } from "../../types";
+import type { Artist, ArtistSurvey, SurveyQuestion } from "../../types";
+import { writeBatch } from "firebase/firestore";
+import { db } from "../../firebase";
+import { doc, collection } from "firebase/firestore";
 
 const survey: SurveyQuestion[] = [
   {
@@ -40,15 +43,13 @@ const AudiencePostSurvey = () => {
     return survey.every((q) => (answers[q.id] || "").trim() !== "");
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!allQuestionsAnswered()) {
       alert("Please answer all the questions before submitting.");
       return;
     }
 
     const artistSurvey: ArtistSurvey = {
-      id: prevSurvey.id ?? "",
-      artistId: prevSurvey?.artistId || "", // Update this to throw an error
       q1: prevSurvey.q1 ?? "",
       q2: prevSurvey.q2 ?? "",
       q3: answers["q3"] ?? "",
@@ -56,7 +57,52 @@ const AudiencePostSurvey = () => {
     };
 
     addRoleSpecificData({ surveyResponse: artistSurvey });
-    navigate("/thank-you");
+
+    const artistRef = doc(collection(db, "artist"));
+    const surveyRef = doc(collection(db, "artistSurvey"));
+    const poemRef = doc(collection(db, "poem"));
+
+    const artist = {
+      condition: userData?.data.condition,
+      surveyResponse: surveyRef,
+      poem: poemRef,
+    };
+
+    const artistData = userData?.data as Artist;
+
+    const survey = artistData.surveyResponse;
+
+    const surveyData = {
+      artistId: artistRef.id,
+      q1: survey.q1,
+      q2: survey.q2,
+      q3: survey.q3,
+      q4: survey.q4,
+    };
+
+    const poem = artistData.poem;
+
+    const poemData = {
+      artistId: artistRef.id,
+      text: poem.text,
+      sparkConversation: poem.sparkConversation,
+      sparkNotes: poem.sparkNotes,
+      writeConversation: poem.writeConversation,
+      writeNotes: poem.writeNotes,
+    };
+
+    const batch = writeBatch(db);
+    batch.set(artistRef, artist);
+    batch.set(surveyRef, surveyData);
+    batch.set(poemRef, poemData);
+
+    try {
+      await batch.commit();
+      navigate("/thank-you");
+    } catch (error) {
+      console.error("Error saving data:", error);
+      alert("There was an error submitting your survey. Please try again.");
+    }
   };
 
   return (

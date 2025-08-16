@@ -3,8 +3,6 @@ import { Checkbox } from "@chakra-ui/react";
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { DataContext } from "../App";
-import { doc, collection } from "firebase/firestore";
-import { db } from "../firebase";
 
 const ConsentForm = () => {
   const [checked, setChecked] = useState(false);
@@ -13,12 +11,9 @@ const ConsentForm = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { addUserData } = context;
-  const artistRef = doc(collection(db, "artist"));
 
   const handleSubmit = () => {
     if (checked) {
-      addUserData({ id: artistRef.id });
       navigate("/choice");
     } else {
       alert("Please give your consent to proceed");

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import HalfPageTemplate from "../../components/shared/pages/halfPage";
 import { useContext } from "react";
 import { DataContext } from "../../App";
-import { doc, collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
 import type { ArtistSurvey, SurveyQuestion } from "../../types";
 
@@ -65,10 +65,7 @@ const AristPreSurvey = () => {
       return;
     }
 
-    const surveyRef = doc(collection(db, "artistSurvey"));
     const artistSurvey: ArtistSurvey = {
-      id: surveyRef.id,
-      artistId: userData?.id || "", // Update this to throw an error
       q1: answers["q1"] ?? "",
       q2: answers["q2"] ?? "",
       q3: answers["q3"] ?? "",
