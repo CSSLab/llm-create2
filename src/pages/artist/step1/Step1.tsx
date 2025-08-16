@@ -5,7 +5,6 @@ import { ArtistCondition } from "../../../types";
 import type { Message, Poem } from "../../../types";
 import { useContext } from "react";
 import { DataContext } from "../../../App";
-import { nanoid } from "nanoid";
 
 const ArtistStep1 = () => {
   const navigate = useNavigate();
@@ -27,7 +26,6 @@ const ArtistStep1 = () => {
   const [sparkNotes, setSparkNotes] = useState<string>("");
 
   const artistPoem: Poem = {
-    id: nanoid(),
     passageId: "",
     text: [],
     sparkConversation: [],

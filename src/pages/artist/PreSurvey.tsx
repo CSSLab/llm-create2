@@ -49,6 +49,9 @@ const AristPreSurvey = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
+  const { userData } = context;
+  console.log("Choose your task page:", userData);
+
   // EXAMPLE OF MAKING A GET REQUEST
   getSurveyByArtistId("artist-id-1").then((data) => {
     console.log(data);

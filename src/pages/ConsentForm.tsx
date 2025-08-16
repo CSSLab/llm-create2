@@ -1,13 +1,8 @@
-// import { useState, useEffect, useRef } from 'react';
-// import { useNavigate } from 'react-router-dom';
-// import HalfPageTemplate from '../components/shared/pages/halfPage';
-// import { Button, Input } from '@chakra-ui/react';
 import PageTemplate from "../components/shared/pages/page";
 import { Checkbox } from "@chakra-ui/react";
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { DataContext } from "../App";
-import { nanoid } from "nanoid";
 
 const ConsentForm = () => {
   const [checked, setChecked] = useState(false);
@@ -16,11 +11,9 @@ const ConsentForm = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { addUserData } = context;
 
   const handleSubmit = () => {
     if (checked) {
-      addUserData({ id: nanoid() });
       navigate("/choice");
     } else {
       alert("Please give your consent to proceed");
