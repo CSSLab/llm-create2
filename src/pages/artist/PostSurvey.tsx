@@ -4,25 +4,16 @@ import { useNavigate } from "react-router-dom";
 import PageTemplate from "../../components/shared/pages/page";
 import { useContext } from "react";
 import { DataContext } from "../../App";
-
-type QuestionType = "multiple" | "text";
-
-interface SurveyQuestion {
-  id: string;
-  question: string;
-  type: QuestionType;
-  options?: string[]; // For multiple choice
-  scale?: number; // For scale questions (e.g., 7-point scale)
-}
+import type { ArtistSurvey, SurveyQuestion } from "../../types";
 
 const survey: SurveyQuestion[] = [
   {
-    id: "q2",
+    id: "q3",
     question: "How are you feeling?",
     type: "multiple",
     options: ["Option A", "Option B", "Option C"],
   },
-  { id: "q3", question: "Any additional feedback?", type: "text" },
+  { id: "q4", question: "Any additional feedback?", type: "text" },
 ];
 
 const ArtistPostSurvey = () => {
@@ -30,8 +21,10 @@ const ArtistPostSurvey = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { userData } = context;
-  console.log(userData);
+  const { userData, addRoleSpecificData } = context;
+
+  const prevSurvey = (userData?.data?.surveyResponse ??
+    {}) as Partial<ArtistSurvey>;
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const navigate = useNavigate();
@@ -53,7 +46,14 @@ const ArtistPostSurvey = () => {
       return;
     }
 
-    console.log("Survey answers:", answers);
+    const artistSurvey: ArtistSurvey = {
+      q1: prevSurvey.q1 ?? "",
+      q2: prevSurvey.q2 ?? "",
+      q3: answers["q3"] ?? "",
+      q4: answers["q4"] ?? "",
+    };
+
+    addRoleSpecificData({ surveyResponse: artistSurvey });
     navigate("/thank-you");
   };
 
