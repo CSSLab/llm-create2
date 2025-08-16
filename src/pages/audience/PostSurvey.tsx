@@ -17,15 +17,17 @@ const survey: SurveyQuestion[] = [
 ];
 
 const AudiencePostSurvey = () => {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const context = useContext(DataContext);
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-
   const { userData, addRoleSpecificData } = context;
-  console.log("Choose your task page:", userData); // REMOVE
+
+  const prevSurvey = (userData?.data?.surveyResponse ??
+    {}) as Partial<ArtistSurvey>;
+
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
   const handleAnswer = (id: string, answer: string) => {
     setAnswers((prev) => ({
@@ -43,9 +45,6 @@ const AudiencePostSurvey = () => {
       alert("Please answer all the questions before submitting.");
       return;
     }
-
-    const prevSurvey = (userData?.data?.surveyResponse ??
-      {}) as Partial<ArtistSurvey>;
 
     const artistSurvey: ArtistSurvey = {
       q1: prevSurvey.q1 ?? "",
