@@ -6,16 +6,7 @@ import { useContext } from "react";
 import { DataContext } from "../../App";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
-
-type QuestionType = "multiple" | "text";
-
-interface SurveyQuestion {
-  id: string;
-  question: string;
-  type: QuestionType;
-  options?: string[]; // For multiple choice
-  scale?: number; // For scale questions (e.g., 7-point scale)
-}
+import type { ArtistSurvey, SurveyQuestion } from "../../types";
 
 // EXAMPLE OF MAKING A GET REQUEST
 async function getSurveyByArtistId(artistId: string) {
@@ -33,12 +24,12 @@ async function getSurveyByArtistId(artistId: string) {
 
 const survey: SurveyQuestion[] = [
   {
-    id: "q2",
+    id: "q1",
     question: "How are you feeling?",
     type: "multiple",
     options: ["Option A", "Option B", "Option C"],
   },
-  { id: "q3", question: "Any additional feedback?", type: "text" },
+  { id: "q2", question: "Any additional feedback?", type: "text" },
 ];
 
 const AristPreSurvey = () => {
@@ -49,10 +40,10 @@ const AristPreSurvey = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { userData } = context;
-  console.log("Choose your task page:", userData);
+  const { userData, addRoleSpecificData } = context;
+  console.log("Choose your task page:", userData); // REMOVE
 
-  // EXAMPLE OF MAKING A GET REQUEST
+  // REMOVE EXAMPLE OF MAKING A GET REQUEST
   getSurveyByArtistId("artist-id-1").then((data) => {
     console.log(data);
   });
@@ -74,7 +65,14 @@ const AristPreSurvey = () => {
       return;
     }
 
-    console.log("Survey answers:", answers);
+    const artistSurvey: ArtistSurvey = {
+      q1: answers["q1"] ?? "",
+      q2: answers["q2"] ?? "",
+      q3: answers["q3"] ?? "",
+      q4: answers["q4"] ?? "",
+    };
+
+    addRoleSpecificData({ surveyResponse: artistSurvey });
     navigate("/artist/instructions");
   };
 

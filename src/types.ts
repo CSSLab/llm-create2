@@ -7,8 +7,10 @@ export interface Artist {
 }
 
 export interface ArtistSurvey {
-  q1: number;
+  q1: string;
   q2: string;
+  q3: string;
+  q4: string;
 
   // // Pre-survey
   // preDemographic1: number;
@@ -94,3 +96,13 @@ export type AudienceCondition =
 export type UserData =
   | { role: "artist"; data: Artist }
   | { role: "audience"; data: Audience };
+
+export type QuestionType = "multiple" | "text";
+
+export interface SurveyQuestion {
+  id: string;
+  question: string;
+  type: QuestionType;
+  options?: string[]; // For multiple choice
+  scale?: number; // For scale questions (e.g., 7-point scale)
+}
