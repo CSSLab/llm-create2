@@ -47,6 +47,7 @@ const AudiencePostSurvey = () => {
     }
 
     const artistSurvey: ArtistSurvey = {
+      id: prevSurvey.id ?? "",
       q1: prevSurvey.q1 ?? "",
       q2: prevSurvey.q2 ?? "",
       q3: answers["q3"] ?? "",
