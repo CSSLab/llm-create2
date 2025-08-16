@@ -1,12 +1,12 @@
 // ARTIST TYPES
 export interface Artist {
   condition: ArtistCondition;
-  notes: string;
   surveyResponse: ArtistSurvey;
   poem: Poem;
 }
 
 export interface ArtistSurvey {
+  id: string;
   q1: string;
   q2: string;
   q3: string;
@@ -30,6 +30,7 @@ export interface ArtistSurvey {
 }
 
 export interface Poem {
+  id: string;
   passageId: string; // passageId in Passage.id
   text: number[]; // this array holds the indexes of each word chosen from the passage
   sparkConversation?: Message[]; // LLM conversation in spark phase
@@ -94,8 +95,8 @@ export type AudienceCondition =
   (typeof AudienceCondition)[keyof typeof AudienceCondition];
 
 export type UserData =
-  | { role: "artist"; data: Artist }
-  | { role: "audience"; data: Audience };
+  | { id: string; role: "artist"; data: Artist }
+  | { id: string; role: "audience"; data: Audience };
 
 export type QuestionType = "multiple" | "text";
 
