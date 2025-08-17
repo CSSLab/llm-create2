@@ -2,27 +2,23 @@ import { useEffect, useState, useRef } from "react";
 import { FiSend } from "react-icons/fi";
 import { Button, Textarea } from "@chakra-ui/react";
 import { nanoid } from "nanoid";
+import OpenAI from "openai";
 import type { Message } from "../../types";
 import { Role } from "../../types";
-import { getFunctions, httpsCallable } from "firebase/functions";
-import { app } from "../../firebase";
 
 interface ChatTabProps {
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 }
 
-interface AIResponse {
-  text: string;
-}
-
-const functions = getFunctions(app);
-const aiResponseCallable = httpsCallable<{ data: string }, AIResponse>(
-  functions,
-  "aiResponse"
-);
-
 export default function ChatTab({ messages, setMessages }: ChatTabProps) {
+  // Set up open AI client
+  const apiKey = import.meta.env.VITE_LLM_KEY;
+  const client = new OpenAI({
+    apiKey: apiKey,
+    dangerouslyAllowBrowser: true,
+  });
+
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const [isLLMLoading, setIsLLMLoading] = useState(false);
@@ -52,14 +48,15 @@ export default function ChatTab({ messages, setMessages }: ChatTabProps) {
     setIsLLMLoading(true); // start typing animation
 
     try {
-      const response = await aiResponseCallable({ data: input });
-
-      console.log("Response:", response);
+      const response = await client.responses.create({
+        model: "gpt-4.1-mini",
+        input: input,
+      });
 
       const llmMessage: Message = {
         id: nanoid(),
         role: Role.LLM,
-        text: response.data.text,
+        text: response.output_text,
         timestamp: new Date(),
       };
 

@@ -25,8 +25,8 @@
         "*.local"
       ],
       "predeploy": [
-        "npm --prefix functions run lint-fix",
-        "npm --prefix functions run build"
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
       ]
     }
   ]
