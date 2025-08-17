@@ -6,9 +6,7 @@ import { useContext } from "react";
 import { DataContext } from "../../App";
 import type { Artist, SurveyQuestion } from "../../types";
 import { db } from "../../firebase";
-import { doc, collection, setLogLevel, writeBatch } from "firebase/firestore";
-
-setLogLevel("debug");
+import { doc, collection, writeBatch } from "firebase/firestore";
 
 const survey: SurveyQuestion[] = [
   {

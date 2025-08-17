@@ -4,7 +4,9 @@ import { useNavigate } from "react-router-dom";
 import PageTemplate from "../../components/shared/pages/page";
 import { useContext } from "react";
 import { DataContext } from "../../App";
-import type { ArtistSurvey, SurveyQuestion } from "../../types";
+import type { SurveyQuestion, Artist } from "../../types";
+import { db } from "../../firebase";
+import { doc, collection, writeBatch } from "firebase/firestore";
 
 const survey: SurveyQuestion[] = [
   {
@@ -21,10 +23,7 @@ const ArtistPostSurvey = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { userData, addRoleSpecificData } = context;
-
-  const prevSurvey = (userData?.data?.surveyResponse ??
-    {}) as Partial<ArtistSurvey>;
+  const { userData } = context;
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const navigate = useNavigate();
@@ -40,21 +39,63 @@ const ArtistPostSurvey = () => {
     return survey.every((q) => (answers[q.id] || "").trim() !== "");
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!allQuestionsAnswered()) {
       alert("Please answer all the questions before submitting.");
       return;
     }
 
-    const artistSurvey: ArtistSurvey = {
-      q1: prevSurvey.q1 ?? "",
-      q2: prevSurvey.q2 ?? "",
-      q3: answers["q3"] ?? "",
-      q4: answers["q4"] ?? "",
+    const artistRef = doc(collection(db, "artist"));
+    const surveyRef = doc(collection(db, "artistSurvey"));
+    const poemRef = doc(collection(db, "poem"));
+
+    const artist = {
+      condition: userData?.data.condition,
+      surveyResponse: surveyRef,
+      poem: poemRef,
     };
 
-    addRoleSpecificData({ surveyResponse: artistSurvey });
-    navigate("/thank-you");
+    const artistData = userData?.data as Artist;
+
+    const survey = artistData.surveyResponse;
+
+    const surveyData = {
+      artistId: artistRef.id,
+      q1: survey.q1,
+      q2: survey.q2,
+      q3: answers["q3"],
+      q4: answers["q4"],
+    };
+
+    const poem = artistData.poem;
+
+    const poemData = {
+      artistId: artistRef.id,
+      text: poem.text,
+      sparkConversation: poem.sparkConversation,
+      sparkNotes: poem.sparkNotes,
+      writeConversation: poem.writeConversation,
+      writeNotes: poem.writeNotes,
+    };
+
+    console.log("Artist", artist);
+    console.log("Survey", surveyData);
+    console.log("Poem", poemData);
+
+    console.log({ artist, surveyData, poemData });
+
+    const batch = writeBatch(db);
+    batch.set(artistRef, artist);
+    batch.set(surveyRef, surveyData);
+    batch.set(poemRef, poemData);
+
+    try {
+      await batch.commit();
+      navigate("/thank-you");
+    } catch (error) {
+      console.error("Error saving data:", error);
+      alert("There was an error submitting your survey. Please try again.");
+    }
   };
 
   return (
