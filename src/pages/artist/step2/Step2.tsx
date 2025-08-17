@@ -24,7 +24,7 @@ const ArtistStep2 = () => {
   const [writeNotes, setWriteNotes] = useState(artistData.poem.sparkNotes);
   const [writeMessages, setWriteMessages] = useState<Message[]>([]);
   const [selectedWordIndexes, setSelectedWordIndexes] = useState<number[]>([]);
-  const [userType] = useState<ArtistCondition>("TOTAL_ACCESS");
+  const userType = userData?.data.condition as ArtistCondition;
 
   const onComplete = useCallback(() => {
     artistPoem.writeConversation = writeMessagesRef.current;
