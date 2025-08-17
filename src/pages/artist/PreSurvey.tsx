@@ -4,23 +4,7 @@ import { useNavigate } from "react-router-dom";
 import HalfPageTemplate from "../../components/shared/pages/halfPage";
 import { useContext } from "react";
 import { DataContext } from "../../App";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "../../firebase";
 import type { ArtistSurvey, SurveyQuestion } from "../../types";
-
-// EXAMPLE OF MAKING A GET REQUEST
-async function getSurveyByArtistId(artistId: string) {
-  const surveysRef = collection(db, "artistSurvey");
-  const q = query(surveysRef, where("artistId", "==", artistId));
-  const querySnapshot = await getDocs(q);
-
-  const surveys: any = [];
-  querySnapshot.forEach((doc) => {
-    surveys.push({ id: doc.id, ...doc.data() });
-  });
-
-  return surveys;
-}
 
 const survey: SurveyQuestion[] = [
   {
@@ -42,11 +26,6 @@ const AristPreSurvey = () => {
 
   const { userData, addRoleSpecificData } = context;
   console.log("Choose your task page:", userData); // REMOVE
-
-  // REMOVE EXAMPLE OF MAKING A GET REQUEST
-  getSurveyByArtistId("artist-id-1").then((data) => {
-    console.log(data);
-  });
 
   const handleAnswer = (id: string, answer: string) => {
     setAnswers((prev) => ({

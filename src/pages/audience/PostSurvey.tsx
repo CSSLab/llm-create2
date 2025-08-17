@@ -4,10 +4,11 @@ import { useNavigate } from "react-router-dom";
 import PageTemplate from "../../components/shared/pages/page";
 import { useContext } from "react";
 import { DataContext } from "../../App";
-import type { Artist, ArtistSurvey, SurveyQuestion } from "../../types";
-import { writeBatch } from "firebase/firestore";
+import type { Artist, SurveyQuestion } from "../../types";
 import { db } from "../../firebase";
-import { doc, collection } from "firebase/firestore";
+import { doc, collection, setLogLevel, writeBatch } from "firebase/firestore";
+
+setLogLevel("debug");
 
 const survey: SurveyQuestion[] = [
   {
@@ -25,10 +26,7 @@ const AudiencePostSurvey = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { userData, addRoleSpecificData } = context;
-
-  const prevSurvey = (userData?.data?.surveyResponse ??
-    {}) as Partial<ArtistSurvey>;
+  const { userData } = context;
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
@@ -49,15 +47,6 @@ const AudiencePostSurvey = () => {
       return;
     }
 
-    const artistSurvey: ArtistSurvey = {
-      q1: prevSurvey.q1 ?? "",
-      q2: prevSurvey.q2 ?? "",
-      q3: answers["q3"] ?? "",
-      q4: answers["q4"] ?? "",
-    };
-
-    addRoleSpecificData({ surveyResponse: artistSurvey });
-
     const artistRef = doc(collection(db, "artist"));
     const surveyRef = doc(collection(db, "artistSurvey"));
     const poemRef = doc(collection(db, "poem"));
@@ -76,8 +65,8 @@ const AudiencePostSurvey = () => {
       artistId: artistRef.id,
       q1: survey.q1,
       q2: survey.q2,
-      q3: survey.q3,
-      q4: survey.q4,
+      q3: answers["q3"],
+      q4: answers["q4"],
     };
 
     const poem = artistData.poem;
@@ -90,6 +79,10 @@ const AudiencePostSurvey = () => {
       writeConversation: poem.writeConversation,
       writeNotes: poem.writeNotes,
     };
+
+    console.log("Artist", artist);
+    console.log("Survey", surveyData);
+    console.log("Poem", poemData);
 
     const batch = writeBatch(db);
     batch.set(artistRef, artist);
