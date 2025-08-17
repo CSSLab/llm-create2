@@ -84,6 +84,8 @@ const AudiencePostSurvey = () => {
     console.log("Survey", surveyData);
     console.log("Poem", poemData);
 
+    console.log({ artist, surveyData, poemData });
+
     const batch = writeBatch(db);
     batch.set(artistRef, artist);
     batch.set(surveyRef, surveyData);

@@ -14,7 +14,6 @@ const ArtistStep2 = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
   const { userData, addRoleSpecificData } = context;
-  console.log("Brainstorm data", userData);
   const artistData = userData?.data as Artist;
   const artistPoem = artistData?.poem;
 

@@ -13,8 +13,7 @@ const ArtistStep1 = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { userData, addRoleSpecificData } = context;
-  console.log("Pre-survey data", userData);
+  const { addRoleSpecificData } = context;
 
   const sparkMessagesRef = useRef<Message[]>([]);
   const sparkNotesRef = useRef<string>("");

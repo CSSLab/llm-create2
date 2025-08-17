@@ -24,8 +24,7 @@ const AristPreSurvey = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { userData, addRoleSpecificData } = context;
-  console.log("Choose your task page:", userData); // REMOVE
+  const { addRoleSpecificData } = context;
 
   const handleAnswer = (id: string, answer: string) => {
     setAnswers((prev) => ({
