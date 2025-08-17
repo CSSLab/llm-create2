@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
 import MultiPageTemplate from "../../../components/shared/pages/multiPage";
-import type { Message, Poem, ArtistCondition } from "../../../types";
+import { ArtistCondition } from "../../../types";
+import type { Message, Poem } from "../../../types";
 import { useContext } from "react";
 import { DataContext } from "../../../App";
 
