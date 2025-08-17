@@ -1,16 +1,6 @@
 import PageTemplate from "../components/shared/pages/page";
-import { useContext } from "react";
-import { DataContext } from "../App";
 
 const ThankYou = () => {
-  const context = useContext(DataContext);
-  if (!context) {
-    throw new Error("Component must be used within a DataContext.Provider");
-  }
-
-  const { userData } = context;
-  console.log("Complete:", userData); // REMOVE
-
   return (
     <PageTemplate background="bg4">
       <div className="w-full h-full flex-col content-center justify-items-center space-y-4">
