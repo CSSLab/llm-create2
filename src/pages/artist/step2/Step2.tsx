@@ -24,12 +24,13 @@ const ArtistStep2 = () => {
   const [writeNotes, setWriteNotes] = useState(artistData.poem.sparkNotes);
   const [writeMessages, setWriteMessages] = useState<Message[]>([]);
   const [selectedWordIndexes, setSelectedWordIndexes] = useState<number[]>([]);
-  const [userType] = useState<ArtistCondition>("TOTAL_ACCESS");
+  const userType = userData?.data.condition as ArtistCondition;
 
   const onComplete = useCallback(() => {
     artistPoem.writeConversation = writeMessagesRef.current;
-    artistPoem.text = selectedWordIndexesRef.current;
+    artistPoem.text = selectedWordIndexesRef.current.sort((a, b) => a - b); // sorts indexes in ascending order
     artistPoem.writeNotes = writeNotesRef.current;
+
     addRoleSpecificData({ poem: artistPoem });
     navigate("/artist/post-survey");
   }, []);
@@ -38,7 +39,7 @@ const ArtistStep2 = () => {
     writeMessagesRef.current = writeMessages;
     selectedWordIndexesRef.current = selectedWordIndexes;
     writeNotesRef.current = writeNotes;
-  }, [writeMessages, setWriteNotes]);
+  }, [writeMessages, writeNotes, selectedWordIndexes]);
 
   return (
     <MultiPageTemplate

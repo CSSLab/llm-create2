@@ -4,25 +4,18 @@ import { useNavigate } from "react-router-dom";
 import PageTemplate from "../../components/shared/pages/page";
 import { useContext } from "react";
 import { DataContext } from "../../App";
-
-type QuestionType = "multiple" | "text";
-
-interface SurveyQuestion {
-  id: string;
-  question: string;
-  type: QuestionType;
-  options?: string[]; // For multiple choice
-  scale?: number; // For scale questions (e.g., 7-point scale)
-}
+import type { SurveyQuestion, Artist } from "../../types";
+import { db } from "../../firebase";
+import { doc, collection, writeBatch } from "firebase/firestore";
 
 const survey: SurveyQuestion[] = [
   {
-    id: "q2",
+    id: "q3",
     question: "How are you feeling?",
     type: "multiple",
     options: ["Option A", "Option B", "Option C"],
   },
-  { id: "q3", question: "Any additional feedback?", type: "text" },
+  { id: "q4", question: "Any additional feedback?", type: "text" },
 ];
 
 const ArtistPostSurvey = () => {
@@ -31,7 +24,6 @@ const ArtistPostSurvey = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
   const { userData } = context;
-  console.log(userData);
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const navigate = useNavigate();
@@ -47,14 +39,57 @@ const ArtistPostSurvey = () => {
     return survey.every((q) => (answers[q.id] || "").trim() !== "");
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!allQuestionsAnswered()) {
       alert("Please answer all the questions before submitting.");
       return;
     }
 
-    console.log("Survey answers:", answers);
-    navigate("/thank-you");
+    const artistRef = doc(collection(db, "artist"));
+    const surveyRef = doc(collection(db, "artistSurvey"));
+    const poemRef = doc(collection(db, "poem"));
+
+    const artist = {
+      condition: userData?.data.condition,
+      surveyResponse: surveyRef,
+      poem: poemRef,
+    };
+
+    const artistData = userData?.data as Artist;
+
+    const survey = artistData.surveyResponse;
+
+    const surveyData = {
+      artistId: artistRef.id,
+      q1: survey.q1,
+      q2: survey.q2,
+      q3: answers["q3"],
+      q4: answers["q4"],
+    };
+
+    const poem = artistData.poem;
+
+    const poemData = {
+      artistId: artistRef.id,
+      text: poem.text,
+      sparkConversation: poem.sparkConversation,
+      sparkNotes: poem.sparkNotes,
+      writeConversation: poem.writeConversation,
+      writeNotes: poem.writeNotes,
+    };
+
+    const batch = writeBatch(db);
+    batch.set(artistRef, artist);
+    batch.set(surveyRef, surveyData);
+    batch.set(poemRef, poemData);
+
+    try {
+      await batch.commit();
+      navigate("/thank-you");
+    } catch (error) {
+      console.error("Error saving data:", error);
+      alert("There was an error submitting your survey. Please try again.");
+    }
   };
 
   return (

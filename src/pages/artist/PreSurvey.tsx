@@ -4,25 +4,16 @@ import { useNavigate } from "react-router-dom";
 import HalfPageTemplate from "../../components/shared/pages/halfPage";
 import { useContext } from "react";
 import { DataContext } from "../../App";
-
-type QuestionType = "multiple" | "text";
-
-interface SurveyQuestion {
-  id: string;
-  question: string;
-  type: QuestionType;
-  options?: string[]; // For multiple choice
-  scale?: number; // For scale questions (e.g., 7-point scale)
-}
+import type { ArtistSurvey, SurveyQuestion } from "../../types";
 
 const survey: SurveyQuestion[] = [
   {
-    id: "q2",
+    id: "q1",
     question: "How are you feeling?",
     type: "multiple",
     options: ["Option A", "Option B", "Option C"],
   },
-  { id: "q3", question: "Any additional feedback?", type: "text" },
+  { id: "q2", question: "Any additional feedback?", type: "text" },
 ];
 
 const AristPreSurvey = () => {
@@ -32,6 +23,8 @@ const AristPreSurvey = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
+
+  const { addRoleSpecificData } = context;
 
   const handleAnswer = (id: string, answer: string) => {
     setAnswers((prev) => ({
@@ -50,7 +43,14 @@ const AristPreSurvey = () => {
       return;
     }
 
-    console.log("Survey answers:", answers);
+    const artistSurvey: ArtistSurvey = {
+      q1: answers["q1"] ?? "",
+      q2: answers["q2"] ?? "",
+      q3: answers["q3"] ?? "",
+      q4: answers["q4"] ?? "",
+    };
+
+    addRoleSpecificData({ surveyResponse: artistSurvey });
     navigate("/artist/instructions");
   };
 
