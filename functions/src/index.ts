@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions";
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/https";
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -10,7 +10,7 @@ export const aiResponse = onCall(async (data) => {
   try {
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
-      input: data.data, // this is the user's query
+      input: data.data,
     });
 
     return { text: response.output_text };
