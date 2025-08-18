@@ -3,6 +3,7 @@ export interface Artist {
   condition: ArtistCondition;
   surveyResponse: ArtistSurvey;
   poem: Poem;
+  timeStamps: Date[];
 }
 
 export interface ArtistSurvey {
@@ -69,6 +70,7 @@ export interface Audience {
   condition: AudienceCondition;
   surveyResponse: AudienceSurvey;
   poemFeedback: PoemFeedback;
+  timeStamps: Date[];
 }
 
 // TODO: Exact survey questions tbd

@@ -38,6 +38,9 @@ const ArtistStep1 = () => {
     artistPoem.sparkConversation = sparkMessagesRef.current;
     artistPoem.sparkNotes = sparkNotesRef.current;
     addRoleSpecificData({ poem: artistPoem });
+    addRoleSpecificData({
+      timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+    });
     navigate("/artist/step-2");
   }, []);
 

@@ -1,10 +1,23 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import HalfPageTemplate from "../components/shared/pages/halfPage";
 import { Button, Input } from "@chakra-ui/react";
+import { DataContext } from "../App";
+import { ArtistCondition } from "../types";
+
+const getRandomArtistCondition = (): ArtistCondition => {
+  const values = Object.values(ArtistCondition);
+  const randomIndex = Math.floor(Math.random() * values.length);
+  return values[randomIndex];
+};
 
 const Captcha = () => {
   const navigate = useNavigate();
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error("Component must be used within a DataContext.Provider");
+  }
+  const { userData, addUserData, addRoleSpecificData } = context;
   const [captchaMessage, setCaptchaMessage] = useState("");
   const [inputCaptcha, setInputCaptcha] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -61,6 +74,11 @@ const Captcha = () => {
 
   const handleSubmit = () => {
     if (inputCaptcha === captchaMessage) {
+      addUserData({ role: "artist" });
+      addRoleSpecificData({ condition: getRandomArtistCondition() });
+      addRoleSpecificData({
+        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+      });
       navigate("/consent");
     } else {
       alert("Captcha does not match! Try again.");
