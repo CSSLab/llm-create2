@@ -1,10 +1,20 @@
 import PageTemplate from "../../../components/shared/pages/page";
 import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { DataContext } from "../../../App";
 
 const ArtistTransitionStep2 = () => {
   const navigate = useNavigate();
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error("Component must be used within a DataContext.Provider");
+  }
+  const { userData, addRoleSpecificData } = context;
 
   const handleSubmit = () => {
+    addRoleSpecificData({
+      timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+    });
     navigate("/artist/blackout");
   };
 

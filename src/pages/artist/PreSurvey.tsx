@@ -24,7 +24,7 @@ const AristPreSurvey = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { addRoleSpecificData } = context;
+  const { userData, addRoleSpecificData } = context;
 
   const handleAnswer = (id: string, answer: string) => {
     setAnswers((prev) => ({
@@ -51,6 +51,9 @@ const AristPreSurvey = () => {
     };
 
     addRoleSpecificData({ surveyResponse: artistSurvey });
+    addRoleSpecificData({
+      timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+    });
     navigate("/artist/instructions");
   };
 
