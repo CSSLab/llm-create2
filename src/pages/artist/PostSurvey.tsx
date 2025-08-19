@@ -53,6 +53,7 @@ const ArtistPostSurvey = () => {
       condition: userData?.data.condition,
       surveyResponse: surveyRef,
       poem: poemRef,
+      timestamps: [...(userData?.data?.timeStamps ?? []), new Date()],
     };
 
     const artistData = userData?.data as Artist;

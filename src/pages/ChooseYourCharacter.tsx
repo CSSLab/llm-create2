@@ -3,13 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@chakra-ui/react";
 import { useContext } from "react";
 import { DataContext } from "../App";
-import { ArtistCondition } from "../types";
-
-const getRandomArtistCondition = (): ArtistCondition => {
-  const values = Object.values(ArtistCondition);
-  const randomIndex = Math.floor(Math.random() * values.length);
-  return values[randomIndex];
-};
 
 const ChooseYourCharacter = () => {
   const navigate = useNavigate();
@@ -17,11 +10,9 @@ const ChooseYourCharacter = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { addUserData, addRoleSpecificData } = context;
+  const { addUserData } = context;
 
   const handleArtistSubmit = () => {
-    addUserData({ role: "artist" });
-    addRoleSpecificData({ condition: getRandomArtistCondition() });
     navigate("/artist/pre-survey");
   };
 

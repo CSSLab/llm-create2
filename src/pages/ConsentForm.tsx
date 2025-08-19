@@ -11,9 +11,13 @@ const ConsentForm = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
+  const { userData, addRoleSpecificData } = context;
 
   const handleSubmit = () => {
     if (checked) {
+      addRoleSpecificData({
+        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+      });
       navigate("/choice");
     } else {
       alert("Please give your consent to proceed");
