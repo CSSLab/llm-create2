@@ -22,16 +22,16 @@ const ArtistStep2 = () => {
   const writeNotesRef = useRef<string>("");
 
   const [writeNotes, setWriteNotes] = useState(
-    artistData.poem.sparkNotes || ""
+    artistData?.poem?.sparkNotes || ""
   );
   const [writeMessages, setWriteMessages] = useState<Message[]>([]);
   const [selectedWordIndexes, setSelectedWordIndexes] = useState<number[]>([]);
   const userType = userData?.data.condition as ArtistCondition;
 
   const onComplete = useCallback(() => {
-    artistPoem.writeConversation = writeMessagesRef.current;
+    artistPoem.writeConversation = writeMessagesRef.current || [];
     artistPoem.text = selectedWordIndexesRef.current.sort((a, b) => a - b); // sorts indexes in ascending order
-    artistPoem.writeNotes = writeNotesRef.current;
+    artistPoem.writeNotes = writeNotesRef.current || "";
 
     addRoleSpecificData({ poem: artistPoem });
     navigate("/artist/post-survey");

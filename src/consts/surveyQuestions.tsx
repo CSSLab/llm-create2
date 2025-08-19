@@ -181,7 +181,7 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
           id: "q3",
           type: "topXRanking",
           question:
-            "Select and rank your up to 3 emotion that you would like to convey to the audienc",
+            "Select and rank your up to 3 emotion that you would like to convey to the audience.s",
           options: [
             "Pride",
             "Joy",
@@ -240,15 +240,15 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
     },
     {
       id: "section4",
-      title: "Sense of Ownership and Credit Attribution",
+      title: "Enjoyment",
       questions: [
         {
           id: "q7",
           type: "likertScale",
-          question: "How helpful was the support throughout the process?",
+          question: "Would you want to do this activity again?",
           scaleMin: 1,
           scaleMax: 5,
-          labels: { min: "Not at all helpful ", max: "Extremely helpful" },
+          labels: { min: "Definitely not", max: "Definitely" },
           required: true,
         },
       ],
