@@ -181,7 +181,7 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
           id: "q3",
           type: "topXRanking",
           question:
-            "Select and rank your up to 3 emotion that you would like to convey to the audience.s",
+            "Select and rank your up to 3 emotion that you would like to convey to the audience.",
           options: [
             "Pride",
             "Joy",
