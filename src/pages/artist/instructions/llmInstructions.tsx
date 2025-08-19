@@ -42,7 +42,7 @@ const LLMInstruction = () => {
           <p className="text-h1 w-full"> Introducing Blackout Assistant</p>
         </div>
 
-        <div className="text-sub pb-4">
+        <div className="text-main text-grey pb-4">
           <p>
             {condition === "SPARK"
               ? "While brainstorming, you’ll have access to the Blackout Assistant. Feel free to explore and use it in whatever way helps you best — it’s completely up to you!"

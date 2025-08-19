@@ -74,8 +74,8 @@ function HalfPageTemplate({
           {description && (
             <div
               className={
-                `w-full h-max flex text-left text-sm font-sans font text-grey` +
-                (background == "bg4" ? `text-h1-dark` : `text-h1`)
+                `w-full h-max flex text-left font-sans font text-grey ` +
+                (background == "bg4" ? `text-main-dark` : `text-main`)
               }
             >
               <p>{description}</p>
