@@ -4,8 +4,26 @@ import { useNavigate } from "react-router-dom";
 import PageTemplate from "../../components/shared/pages/page";
 import { useContext } from "react";
 import { DataContext } from "../../App";
-import type { SurveyDefinition } from "../../types";
-import { ArtistPostSurveyQuestions } from "../../consts/surveyQuestions";
+
+type QuestionType = "multiple" | "text";
+
+interface SurveyQuestion {
+  id: string;
+  question: string;
+  type: QuestionType;
+  options?: string[]; // For multiple choice
+  scale?: number; // For scale questions (e.g., 7-point scale)
+}
+
+const survey: SurveyQuestion[] = [
+  {
+    id: "q2",
+    question: "How are you feeling?",
+    type: "multiple",
+    options: ["Option A", "Option B", "Option C"],
+  },
+  { id: "q3", question: "Any additional feedback?", type: "text" },
+];
 
 const ArtistPostSurvey = () => {
   const context = useContext(DataContext);

@@ -1,12 +1,10 @@
 // ARTIST TYPES
 export interface Artist {
   condition: ArtistCondition;
-  notes: string;
   surveyResponse: ArtistSurvey;
   poem: Poem;
 }
 
-// TODO: Exact survey questions tbd
 export interface ArtistSurvey {
   id: string;
   preSurvey: SurveyDefinition;
@@ -23,7 +21,6 @@ export interface ArtistSurvey {
 // }
 
 export interface Poem {
-  id: string;
   passageId: string; // passageId in Passage.id
   text: number[]; // this array holds the indexes of each word chosen from the passage
   sparkConversation?: Message[]; // LLM conversation in spark phase
@@ -89,7 +86,7 @@ export const AudienceCondition = {
 export type AudienceCondition =
   (typeof AudienceCondition)[keyof typeof AudienceCondition];
 
-export type QuestionType = "multipleChoice" | "openEnded" | "radioWheel" | "likertScale" | "topXRanking";
+export type QuestionType = "multipleChoice" | "openEnded" | "likertScale" | "topXRanking";
 
 export interface BaseQuestion {
   id: string;
@@ -151,5 +148,13 @@ export interface TopXRankingQuestion extends BaseQuestion {
 }
 
 export type UserData =
-  | { id: string; role: "artist"; data: Artist }
-  | { id: string; role: "audience"; data: Audience };
+  | { role: "artist"; data: Artist }
+  | { role: "audience"; data: Audience };
+
+export interface SurveyQuestion {
+  id: string;
+  question: string;
+  type: QuestionType;
+  options?: string[]; // For multiple choice
+  scale?: number; // For scale questions (e.g., 7-point scale)
+}

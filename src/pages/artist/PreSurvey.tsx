@@ -4,6 +4,17 @@ import { useContext } from "react";
 import { DataContext } from "../../App";
 import { ArtistPreSurveyQuestions } from "../../consts/surveyQuestions";
 import Survey from "../../components/survey/survey";
+import type { ArtistSurvey, SurveyQuestion } from "../../types";
+
+// const survey: SurveyQuestion[] = [
+//   {
+//     id: "q1",
+//     question: "How are you feeling?",
+//     type: "multiple",
+//     options: ["Option A", "Option B", "Option C"],
+//   },
+//   { id: "q2", question: "Any additional feedback?", type: "text" },
+// ];
 
 const AristPreSurvey = () => {
   const navigate = useNavigate();
