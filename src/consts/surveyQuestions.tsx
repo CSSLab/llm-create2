@@ -305,7 +305,7 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
           id: "q11",
           type: "openEnded",
           question:
-            "We’re still improving our design and would love to hear from you. If you notice any bugs, confusing instructions, or anything else, please let us know!",
+            "We’re still improving our design and would love to hear from you. If you noticed any bugs, confusing instructions, or anything else, please let us know!",
           placeholder: "Type your answer here...",
           required: false,
         },
