@@ -1,6 +1,6 @@
-import PageTemplate from '../../../components/shared/pages/page';
-import { useNavigate } from 'react-router-dom';
-import React, { useState } from 'react';
+import PageTemplate from "../../../components/shared/pages/page";
+import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 
 const predefinedPoems = [
   {
@@ -20,14 +20,13 @@ const predefinedPoems = [
   },
 ];
 
-
 const renderBlackout = (
   poemid: number,
   passage: string,
   selectedIndexes: number[],
   onClick: () => void
 ) => {
-  const words = passage.split(' ');
+  const words = passage.split(" ");
   return (
     <div
       onClick={onClick}
@@ -35,29 +34,32 @@ const renderBlackout = (
     >
       <div className="text-h1 text-lg">Poem {poemid}</div>
       <div className="flex flex-wrap leading-relaxed">
-      {words.map((word, i) => {
-        const isVisible = selectedIndexes.includes(i);
-        return (
-         <span
+        {words.map((word, i) => {
+          const isVisible = selectedIndexes.includes(i);
+          return (
+            <span
               key={i}
-              className={`cursor-pointer transition px-1 duration-200 text-main ` + (isVisible ? '' : 'bg-dark-grey')}
+              className={
+                `cursor-pointer transition px-1 duration-200 text-main ` +
+                (isVisible ? "" : "bg-dark-grey")
+              }
             >
               {word + ` `}
             </span>
-        );
-      })}
-       </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
 
 const AudienceStep1: React.FC = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    const handleSubmit = () => {
-            navigate("/audience/step-2")
-    }
-  const [revealedPoems, setRevealedPoems] = useState<number[]>([1,2,3]);
+  const handleSubmit = () => {
+    navigate("/audience/step-2");
+  };
+  const [revealedPoems, setRevealedPoems] = useState<number[]>([1, 2, 3]);
 
   const togglePoemReveal = (id: number) => {
     setRevealedPoems((prev) =>
@@ -66,26 +68,38 @@ const AudienceStep1: React.FC = () => {
   };
 
   return (
-    <PageTemplate background='bg3' title="Step 1: Read" description="Take this time to familiarize yourself with the poems and form thoughts. Click on each poem to open and close it." duration={240} afterDuration={handleSubmit}>
+    <PageTemplate
+      background="bg3"
+      title="Step 1: Read"
+      description="Take this time to familiarize yourself with the poems and form thoughts. Click on each poem to open and close it."
+      duration={240}
+      afterDuration={handleSubmit}
+    >
       <div className="justify-self-center grid grid-cols-1 h-max md:h-full sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-6xl">
         {predefinedPoems.map((poem) => (
           <div key={poem.id} className="flex justify-center w-full">
-           
             {revealedPoems.includes(poem.id) ? (
               renderBlackout(poem.id, poem.passage, poem.selectedIndexes, () =>
                 togglePoemReveal(poem.id)
               )
             ) : (
-               
-                    <div onClick={() => togglePoemReveal(poem.id)} className="flex flex-col w-full h-max space-y-4 items-center hover:opacity-40">
-                        <div className="w-8 h-8 relative">
-                            <svg className="fill-dark-grey w-full h-full" viewBox="0 0 92 106" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M46 0L56.1221 35.468L91.8993 26.5L66.2442 53L91.8993 79.5L56.1221 70.532L46 106L35.8779 70.532L0.100655 79.5L25.7558 53L0.100655 26.5L35.8779 35.468L46 0Z"/>
-                            </svg>
-                        </div>
-                        <div className="text-h1 text-lg text-dark-grey">Poem {poem.id}</div>
-                    </div>
-              
+              <div
+                onClick={() => togglePoemReveal(poem.id)}
+                className="flex flex-col w-full h-max space-y-4 items-center hover:opacity-40"
+              >
+                <div className="w-8 h-8 relative">
+                  <svg
+                    className="fill-dark-grey w-full h-full"
+                    viewBox="0 0 92 106"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M46 0L56.1221 35.468L91.8993 26.5L66.2442 53L91.8993 79.5L56.1221 70.532L46 106L35.8779 70.532L0.100655 79.5L25.7558 53L0.100655 26.5L35.8779 35.468L46 0Z" />
+                  </svg>
+                </div>
+                <div className="text-h1 text-lg text-dark-grey">
+                  Poem {poem.id}
+                </div>
+              </div>
             )}
           </div>
         ))}
@@ -95,4 +109,3 @@ const AudienceStep1: React.FC = () => {
 };
 
 export default AudienceStep1;
-

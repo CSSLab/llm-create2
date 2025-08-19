@@ -15,7 +15,7 @@ import UserError from "./pages/Error";
 import usePreventRefresh from "./components/shared/preventRefresh";
 
 // import AudienceInstructions from "./pages/audience/instructions/Instructions";
-// ================= AUDIENCE PAGES ================= 
+// ================= AUDIENCE PAGES =================
 // import ChooseYourCharacter from "./pages/ChooseYourCharacter";
 // import AudiencePreSurvey from "./pages/audience/PreSurvey";
 // import AudienceTransitionStep1 from "./pages/audience/step1/TransitionStep1";
@@ -25,7 +25,13 @@ import usePreventRefresh from "./components/shared/preventRefresh";
 // import AudiencePostSurvey from "./pages/audience/PostSurvey";
 import LLMInstruction from "./pages/artist/instructions/llmInstructions";
 import { useState, createContext } from "react";
-import type { UserData, Artist, Audience, ArtistSurvey, AudienceSurvey } from "./types";
+import type {
+  UserData,
+  Artist,
+  Audience,
+  ArtistSurvey,
+  AudienceSurvey,
+} from "./types";
 import { Provider } from "./components/ui/provider";
 import { Toaster } from "./components/ui/toaster";
 
@@ -33,18 +39,21 @@ interface DataContextValue {
   userData: UserData | null;
   addUserData: (newData: Partial<UserData>) => void;
   addRoleSpecificData: (updates: Partial<Artist> | Partial<Audience>) => void;
-  addPreSurvey: (updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>) => void;
-  addPostSurvey: (updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>) => void;
+  addPreSurvey: (
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+  ) => void;
+  addPostSurvey: (
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+  ) => void;
 }
 
 export const DataContext = createContext<DataContextValue | null>(null);
 
 function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
-  usePreventRefresh("To make sure your session counts, please avoid refreshing the page. Do you still want to refresh?");
-
-  
-
+  usePreventRefresh(
+    "To make sure your session counts, please avoid refreshing the page. Do you still want to refresh?"
+  );
 
   const addUserData = (newData: Partial<UserData>) => {
     setUserData((prev) => {
@@ -81,7 +90,7 @@ function App() {
     });
   };
 
-    const addPreSurvey = (
+  const addPreSurvey = (
     updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
   ) => {
     setUserData((prev: any) => {
@@ -139,7 +148,13 @@ function App() {
 
   return (
     <DataContext.Provider
-      value={{ userData, addUserData, addRoleSpecificData, addPostSurvey, addPreSurvey }}
+      value={{
+        userData,
+        addUserData,
+        addRoleSpecificData,
+        addPostSurvey,
+        addPreSurvey,
+      }}
     >
       <Provider>
         <div className="w-screen h-screen">
@@ -150,7 +165,10 @@ function App() {
               <Route path="/consent" element={<ConsentForm />} />
               {userData && (
                 <>
-                  <Route path="/artist/pre-survey" element={<AristPreSurvey />} />
+                  <Route
+                    path="/artist/pre-survey"
+                    element={<AristPreSurvey />}
+                  />
                   <Route
                     path="/artist/instructions"
                     element={<ArtistInstructions />}
@@ -174,13 +192,10 @@ function App() {
                     element={<LLMInstruction />}
                   />
                   <Route path="/thank-you" element={<ThankYou />} />
-                
                 </>
-
               )}
 
-              
-               <Route path="/*" element={<UserError />} />
+              <Route path="/*" element={<UserError />} />
               {/* 
               AUDIENCE ROUTES
               <Route
@@ -213,8 +228,6 @@ function App() {
                 element={<AudiencePostSurvey />}
               /> */}
 
-
-              
               {/* <Route path="/choice" element={<ChooseYourCharacter />} /> */}
             </Routes>
           </Router>

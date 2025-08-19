@@ -26,12 +26,13 @@ export const ArtistPreSurveyQuestions: SurveyDefinition = {
           labels: { min: "Never", max: "Very Frequently" },
           required: true,
         },
-    ]
+      ],
     },
     {
       id: "section2",
       title: "PANAS-SF Pre-Survey Part.1 ",
-      description: "For the following emotions, indicate the extent you to which feel them",
+      description:
+        "For the following emotions, indicate the extent you to which feel them",
       questions: [
         {
           id: "q3",
@@ -42,7 +43,7 @@ export const ArtistPreSurveyQuestions: SurveyDefinition = {
           labels: { min: "Very slightly or not at all", max: "Extremely" },
           required: true,
         },
-                {
+        {
           id: "q4",
           type: "likertScale",
           question: "Determined",
@@ -60,7 +61,7 @@ export const ArtistPreSurveyQuestions: SurveyDefinition = {
           labels: { min: "Very slightly or not at all", max: "Extremely" },
           required: true,
         },
-                {
+        {
           id: "q7",
           type: "likertScale",
           question: "Inspired",
@@ -74,10 +75,10 @@ export const ArtistPreSurveyQuestions: SurveyDefinition = {
     {
       id: "section3",
       title: "PANAS-SF Pre-Survey Part.2 ",
-      description: "For the following emotions, indicate the extent you to which feel them",
+      description:
+        "For the following emotions, indicate the extent you to which feel them",
       questions: [
-
-                {
+        {
           id: "q8",
           type: "likertScale",
           question: "Alert",
@@ -95,7 +96,7 @@ export const ArtistPreSurveyQuestions: SurveyDefinition = {
           labels: { min: "Very slightly or not at all", max: "Extremely" },
           required: true,
         },
-                        {
+        {
           id: "q10",
           type: "likertScale",
           question: "Nervous",
@@ -114,15 +115,14 @@ export const ArtistPreSurveyQuestions: SurveyDefinition = {
           labels: { min: "Very slightly or not at all", max: "Extremely" },
           required: true,
         },
-
       ],
-     },
-        {
+    },
+    {
       id: "section3",
       title: "PANAS-SF Pre-Survey Part.1 ",
-      description: "For the following emotions, indicate the extent you to which feel them",
+      description:
+        "For the following emotions, indicate the extent you to which feel them",
       questions: [
-
         {
           id: "q12",
           type: "likertScale",
@@ -146,8 +146,6 @@ export const ArtistPreSurveyQuestions: SurveyDefinition = {
   ],
 };
 
-
-
 export const ArtistPostSurveyQuestions: SurveyDefinition = {
   id: "survey1",
   title: "Customer Feedback Survey",
@@ -165,7 +163,7 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
           labels: { min: "0%", max: "100%" },
           required: true,
         },
-    ]
+      ],
     },
     {
       id: "section2",
@@ -174,19 +172,36 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
         {
           id: "q2",
           type: "openEnded",
-          question: "Artist's statement: In a sentence or two, describe the meaning behind your poem.",
+          question:
+            "Artist's statement: In a sentence or two, describe the meaning behind your poem.",
           placeholder: "Type your answer here...",
           required: true,
         },
-         {
+        {
           id: "q3",
           type: "topXRanking",
-          question: "Select and rank your up to 3 emotion that you would like to convey to the audienc",
-          options: ["Pride", "Joy", "Amusement", "Pleasure", "Relief", "Interest", "Surprise", "Anger", "Irritation", "Disgust", "Saddness", "Despeair", "Fear", "Anxiety"],
+          question:
+            "Select and rank your up to 3 emotion that you would like to convey to the audienc",
+          options: [
+            "Pride",
+            "Joy",
+            "Amusement",
+            "Pleasure",
+            "Relief",
+            "Interest",
+            "Surprise",
+            "Anger",
+            "Irritation",
+            "Disgust",
+            "Saddness",
+            "Despeair",
+            "Fear",
+            "Anxiety",
+          ],
           maxSelectable: 3,
           required: true,
         },
-    ]
+      ],
     },
     {
       id: "section3",
@@ -195,7 +210,8 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
         {
           id: "q4",
           type: "likertScale",
-          question: "How much control did you have over the creative decisions that shaped the final product?",
+          question:
+            "How much control did you have over the creative decisions that shaped the final product?",
           scaleMin: 1,
           scaleMax: 5,
           labels: { min: "Very little to none", max: "A lot" },
@@ -204,7 +220,8 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
         {
           id: "q5",
           type: "likertScale",
-          question: "How intentional were you about the creative decisions that you made?",
+          question:
+            "How intentional were you about the creative decisions that you made?",
           scaleMin: 1,
           scaleMax: 5,
           labels: { min: "Very little to none", max: "A lot" },
@@ -218,8 +235,8 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
           scaleMax: 5,
           labels: { min: "Very little to none", max: "A lot" },
           required: true,
-        }, 
-    ]
+        },
+      ],
     },
     {
       id: "section4",
@@ -234,21 +251,25 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
           labels: { min: "Not at all helpful ", max: "Extremely helpful" },
           required: true,
         },
-    ]
+      ],
     },
     {
       id: "section5",
       title: "AI Assistnace",
-      conditions: ['SPARK', 'TOTAL_ACCESS', 'WRITING'],
+      conditions: ["SPARK", "TOTAL_ACCESS", "WRITING"],
       questions: [
         {
           id: "q8",
           type: "multipleChoice",
           question: "During the writing process I felt like",
-          options: ["I was writing the poem and the artificial intelligence was assisting me", "the artificial intelligence was writing the poem and I was assisting", "the artificial intelligence and I contributed to the poem equally"],
+          options: [
+            "I was writing the poem and the artificial intelligence was assisting me",
+            "the artificial intelligence was writing the poem and I was assisting",
+            "the artificial intelligence and I contributed to the poem equally",
+          ],
           required: true,
         },
-    ]
+      ],
     },
     {
       id: "section6",
@@ -257,8 +278,13 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
         {
           id: "q9",
           type: "multipleChoice",
-          question: "Increased use of AI computer programs in creative tasks makes you feel",
-          options: ["Equally concerned and excited", "More concerned than excited", "More excited than concerned"],
+          question:
+            "Increased use of AI computer programs in creative tasks makes you feel",
+          options: [
+            "Equally concerned and excited",
+            "More concerned than excited",
+            "More excited than concerned",
+          ],
           required: true,
         },
         {
@@ -268,7 +294,22 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
           placeholder: "Type your answer here...",
           required: false,
         },
-    ]
+      ],
+    },
+
+    {
+      id: "section7",
+      title: "Bugs and feedback",
+      questions: [
+        {
+          id: "q11",
+          type: "openEnded",
+          question:
+            "We’re still improving our design and would love to hear from you. If you notice any bugs, confusing instructions, or anything else, please let us know!",
+          placeholder: "Type your answer here...",
+          required: false,
+        },
+      ],
     },
   ],
 };

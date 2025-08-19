@@ -65,10 +65,10 @@ const Captcha = () => {
       navigate("/consent");
     } else {
       toaster.create({
-          description: "Captcha does not match! Try again.",
-          type: "error",
-          duration: 5000,
-      })
+        description: "Captcha does not match! Try again.",
+        type: "error",
+        duration: 5000,
+      });
       generateCaptchaCheck();
       setInputCaptcha("");
     }

@@ -26,16 +26,22 @@ const TopXRanking: React.FC<Props> = ({ question, value = [], onChange }) => {
   };
 
   const selectedOptions = value;
-  const unselectedOptions = question.options.filter((opt) => !value.includes(opt));
+  const unselectedOptions = question.options.filter(
+    (opt) => !value.includes(opt)
+  );
 
   return (
     <div className="mb-4 space-y-4">
-        <div>
-            <p className="text-main"> {question.question}<span className="text-red-700">{(question.required ? '*': '')}</span></p>
-            <p className="text-sub">
-                Select at least 1 and up to {question.maxSelectable} option
-                {question.maxSelectable > 1 ? "s" : ""}.
-            </p>
+      <div>
+        <p className="text-main">
+          {" "}
+          {question.question}
+          <span className="text-red-700">{question.required ? "*" : ""}</span>
+        </p>
+        <p className="text-sub">
+          Select at least 1 and up to {question.maxSelectable} option
+          {question.maxSelectable > 1 ? "s" : ""}.
+        </p>
       </div>
       {/* Selected options */}
       {selectedOptions.length > 0 && (
@@ -70,8 +76,6 @@ const TopXRanking: React.FC<Props> = ({ question, value = [], onChange }) => {
           </div>
         </div>
       )}
-
-     
     </div>
   );
 };

@@ -14,13 +14,25 @@ interface Props {
 const QuestionRenderer: React.FC<Props> = ({ question, value, onChange }) => {
   switch (question.type) {
     case "multipleChoice":
-      return <MultipleChoice question={question} value={value} onChange={onChange} />;
+      return (
+        <MultipleChoice question={question} value={value} onChange={onChange} />
+      );
     case "openEnded":
-      return <OpenEnded question={question} value={value} onChange={onChange} />;
+      return (
+        <OpenEnded question={question} value={value} onChange={onChange} />
+      );
     case "likertScale":
-      return <LikertScale question={question} value={value} onChange={onChange} />;
+      return (
+        <LikertScale question={question} value={value} onChange={onChange} />
+      );
     case "topXRanking":
-      return <TopXRanking question={question} value={value || []} onChange={onChange} />;
+      return (
+        <TopXRanking
+          question={question}
+          value={value || []}
+          onChange={onChange}
+        />
+      );
     default:
       return null;
   }

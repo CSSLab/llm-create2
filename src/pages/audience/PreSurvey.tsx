@@ -34,7 +34,7 @@ export const sampleSurvey: SurveyDefinition = {
       id: "section2",
       title: "Preferences",
       questions: [
-         {
+        {
           id: "q3",
           type: "topXRanking",
           question: "Select and rank your top 3 favorite colors",
@@ -57,16 +57,15 @@ export const sampleSurvey: SurveyDefinition = {
 };
 
 const AudiencePreSurvey = () => {
-//   const [answers, ...] = useState<Record<string, string>>({});
+  //   const [answers, ...] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const context = useContext(DataContext);
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-    const handleSubmit = (answers: any) => {
-        console.log(answers);
-        navigate("/artist/instructions");
-
+  const handleSubmit = (answers: any) => {
+    console.log(answers);
+    navigate("/artist/instructions");
   };
 
   return (
@@ -75,7 +74,7 @@ const AudiencePreSurvey = () => {
       description="Please fill out the following survey before we begin!"
       background="bg5"
     >
-        <Survey survey={sampleSurvey} onSubmit={handleSubmit} />
+      <Survey survey={sampleSurvey} onSubmit={handleSubmit} />
     </HalfPageTemplate>
   );
 };

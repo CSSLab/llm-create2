@@ -21,7 +21,9 @@ const ArtistStep2 = () => {
   const selectedWordIndexesRef = useRef<number[]>([]);
   const writeNotesRef = useRef<string>("");
 
-  const [writeNotes, setWriteNotes] = useState(artistData.poem.sparkNotes);
+  const [writeNotes, setWriteNotes] = useState(
+    artistData.poem.sparkNotes || ""
+  );
   const [writeMessages, setWriteMessages] = useState<Message[]>([]);
   const [selectedWordIndexes, setSelectedWordIndexes] = useState<number[]>([]);
   const userType = userData?.data.condition as ArtistCondition;

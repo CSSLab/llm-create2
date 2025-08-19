@@ -11,13 +11,12 @@ export interface ArtistSurvey {
   preAnswers: SurveyAnswers;
   postSurvey: SurveyDefinition;
   postAnswers: SurveyAnswers;
-  
 }
 
 // export interface SurveyQuestion {
 //   id: string;
 //   q: string;
-//   answerType: 
+//   answerType:
 // }
 
 export interface Poem {
@@ -86,14 +85,18 @@ export const AudienceCondition = {
 export type AudienceCondition =
   (typeof AudienceCondition)[keyof typeof AudienceCondition];
 
-export type QuestionType = "multipleChoice" | "openEnded" | "likertScale" | "topXRanking";
+export type QuestionType =
+  | "multipleChoice"
+  | "openEnded"
+  | "likertScale"
+  | "topXRanking";
 
 export interface BaseQuestion {
   id: string;
   type: QuestionType;
   question: string;
   required?: boolean;
-  answer?: any; 
+  answer?: any;
 }
 
 export interface MultipleChoiceQuestion extends BaseQuestion {

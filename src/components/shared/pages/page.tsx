@@ -11,7 +11,7 @@ interface PageTemplateProps {
   nextButton?: Button;
   title?: string;
   description?: string;
-  background?: "bg1" | "bg2" | "bg3" | "bg4" | "bg5" |  "none"; // limited options
+  background?: "bg1" | "bg2" | "bg3" | "bg4" | "bg5" | "none"; // limited options
   left?: boolean;
   duration?: number;
   afterDuration?: () => void;
@@ -29,7 +29,7 @@ const BACKGROUNDS: Record<string, string> = {
   bg2,
   bg3,
   bg4,
-  bg5
+  bg5,
 };
 
 function PageTemplate({
@@ -45,7 +45,9 @@ function PageTemplate({
     <div
       className={
         `relative w-full h-full min-w-96 overflow-hidden p-10 md:p-20 xl:p-36` +
-        ((background == "bg4" || background == "bg5"  ) ? ` bg-dark-grey` : ` bg-white `)
+        (background == "bg4" || background == "bg5"
+          ? ` bg-dark-grey`
+          : ` bg-white `)
       }
     >
       {/* Background SVG overlay */}
@@ -53,8 +55,10 @@ function PageTemplate({
         <img
           src={BACKGROUNDS[background || "bg1"]}
           alt="background"
-          className={`absolute bottom-0 right-0 w-screen h-screen object-none pointer-events-none select-none ` + 
-                ((background == "bg2") ? `opacity-0 md:opacity-100`: ``)}
+          className={
+            `absolute bottom-0 right-0 w-screen h-screen object-none pointer-events-none select-none ` +
+            (background == "bg2" ? `opacity-0 md:opacity-100` : ``)
+          }
           style={{
             zIndex: 0,
           }}
@@ -66,7 +70,9 @@ function PageTemplate({
             <div
               className={
                 `w-full h-max flex text-h1 justify-between items-center flex-row ` +
-                ((background == "bg4" || background == "bg5"  ) ? `text-h1-dark` : `text-h1`) 
+                (background == "bg4" || background == "bg5"
+                  ? `text-h1-dark`
+                  : `text-h1`)
               }
             >
               <p>{title}</p>
@@ -77,7 +83,9 @@ function PageTemplate({
             <div
               className={
                 `w-full h-max flex text-left text-sm font-sans text-grey` +
-                ((background == "bg4" || background == "bg5"  )  ? `text-main-dark` : `text-main`)
+                (background == "bg4" || background == "bg5"
+                  ? `text-main-dark`
+                  : `text-main`)
               }
             >
               <p>{description}</p>

@@ -27,17 +27,15 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
   };
 
   const toggleSelect = (index: number) => {
-    if (viewMode === "edit") {
-      setSelectedWordIndexes((prev) => {
-        if (prev.includes(index)) {
-          // Remove index
-          return prev.filter((i) => i !== index);
-        } else {
-          // Add index
-          return [...prev, index];
-        }
-      });
-    }
+    setSelectedWordIndexes((prev) => {
+      if (prev.includes(index)) {
+        // Remove index
+        return prev.filter((i) => i !== index);
+      } else {
+        // Add index
+        return [...prev, index];
+      }
+    });
   };
 
   const resetSelection = () => {

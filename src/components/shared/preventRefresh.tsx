@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 
-function usePreventRefresh(message: string = "Are you sure you want to refresh?") {
+function usePreventRefresh(
+  message: string = "Are you sure you want to refresh?"
+) {
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = message; 
+      e.returnValue = message;
       return message;
     };
 

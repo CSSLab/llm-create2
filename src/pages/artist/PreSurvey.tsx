@@ -7,23 +7,24 @@ import Survey from "../../components/survey/survey";
 
 const AristPreSurvey = () => {
   const navigate = useNavigate();
- 
-    const context = useContext(DataContext);
-      if (!context) {
-        throw new Error("Component must be used within a DataContext.Provider");
-      }
 
-      const { addPreSurvey } = context;
-    if (!context) {
-        throw new Error("Component must be used within a DataContext.Provider");
-    }
-    const handleSubmit = (answers: any) => {
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error("Component must be used within a DataContext.Provider");
+  }
 
+  const { addPreSurvey } = context;
+  if (!context) {
+    throw new Error("Component must be used within a DataContext.Provider");
+  }
+  const handleSubmit = (answers: any) => {
     navigate("/artist/instructions");
-    addPreSurvey({id: "artistSurvey", preSurvey: ArtistPreSurveyQuestions, preAnswers: answers});
-   
+    addPreSurvey({
+      id: "artistSurvey",
+      preSurvey: ArtistPreSurveyQuestions,
+      preAnswers: answers,
+    });
   };
-
 
   return (
     <HalfPageTemplate
@@ -31,8 +32,7 @@ const AristPreSurvey = () => {
       description="Please fill out the following survey before we begin!"
       background="bg5"
     >
-        <Survey survey={ArtistPreSurveyQuestions} onSubmit={handleSubmit} />
-    
+      <Survey survey={ArtistPreSurveyQuestions} onSubmit={handleSubmit} />
     </HalfPageTemplate>
   );
 };

@@ -28,10 +28,10 @@ const ConsentForm = () => {
       navigate("/artist/pre-survey");
     } else {
       toaster.create({
-            description: "Please give your consent to proceed",
-            type: "error",
-            duration: 5000,
-        })
+        description: "Please give your consent to proceed",
+        type: "error",
+        duration: 5000,
+      });
     }
   };
 
@@ -127,7 +127,8 @@ const ConsentForm = () => {
             <u>sarahxp.wang@mail.utoronto.ca</u>), and{" "}
             <strong>Helena Glowacki</strong> (
             <u>helena.glowacki@mail.utoronto.ca</u>). If you have any questions
-            or concerns, please contact either Harsh Kumar, Sarah Wang, or Helena Glowacki.
+            or concerns, please contact either Harsh Kumar, Sarah Wang, or
+            Helena Glowacki.
           </p>
           <p className="text-main mb-2">
             Please print or save a copy of this form for your records.

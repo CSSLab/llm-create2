@@ -41,9 +41,9 @@ const AudiencePostSurvey = () => {
   const handleSubmit = () => {
     if (!allQuestionsAnswered()) {
       toaster.create({
-          description: "Please answer all required (*) questions to continue.",
-          type: "error",
-          duration: 5000,
+        description: "Please answer all required (*) questions to continue.",
+        type: "error",
+        duration: 5000,
       });
       return;
     }

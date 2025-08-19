@@ -5,22 +5,22 @@ import { DataContext } from "../../../App";
 
 const ArtistTransitionStep2 = () => {
   const navigate = useNavigate();
-   const context = useContext(DataContext);
-        
-    if (!context) {
-        throw new Error("Component must be used within a DataContext.Provider");
-    }
+  const context = useContext(DataContext);
 
-    const { userData } = context;
-    const condition = userData?.data.condition;
+  if (!context) {
+    throw new Error("Component must be used within a DataContext.Provider");
+  }
 
-    const handleSubmit = () => {
-        if (condition == 'CONTROL' || condition == 'SPARK' || condition == 'FULL_TRANSPARENCY') {
-            navigate("/artist/blackout")
-        } else {
-            navigate("/artist/assistant-instructions")
-        }   
+  const { userData } = context;
+  const condition = userData?.data.condition;
+
+  const handleSubmit = () => {
+    if (condition == "WRITING") {
+      navigate("/artist/assistant-instructions");
+    } else {
+      navigate("/artist/blackout");
     }
+  };
 
   return (
     <PageTemplate
