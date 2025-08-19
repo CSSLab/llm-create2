@@ -5,23 +5,16 @@ import bg3 from '../../../assets/bg3.svg'
 import bg4 from '../../../assets/bg4.svg'
 import bg5 from '../../../assets/bg5.svg'
 
-import { Button } from "@chakra-ui/react";
-
 
 interface PageTemplateProps {
   children?: ReactNode;
-  nextButton?: Button;
+
   title?: string;
   description?: string;
   background?: "bg1" | "bg2" | "bg3" | "bg4" | "bg5" | "none"; // limited options
   left?: boolean;
-  buttonLeft?:boolean;
 }
 
-interface Button {
-  text: String;
-  action?: () => void;
-}
 
 // Map of available backgrounds
 const BACKGROUNDS: Record<string, string> = {
@@ -32,7 +25,7 @@ bg4,
 bg5
 };
 
-function HalfPageTemplate({children, background="none", title, description, left=false, buttonLeft=left, nextButton}: PageTemplateProps) {
+function HalfPageTemplate({children, background="none", title, description, left=false}: PageTemplateProps) {
   return (
     <div className={`relative w-full h-full min-w-96 bg-white overflow-hidden p-16 md:p-20 `+ (background == "bg4" ? `bg-dark-grey` : `bg-white `)}
        >
@@ -58,14 +51,10 @@ function HalfPageTemplate({children, background="none", title, description, left
                 <p>{description}</p>
               </div>
             )}
-            <div className={`w-full overflow-auto py-4 ` + (title ? `h-[60vh]`: `h-[70vh]`)}>
+            <div className={`w-full overflow-auto py-4 h-[70vh]`}>
               {children}
             </div>
           </div>
-          
-        {nextButton && (<div className={`h-max w-full flex items-center` + (buttonLeft==undefined ? ` justify-center`: left? ` justify-start`: ` justify-end`)}>
-                    <Button variant="solid" className="btn-primary" onClick={nextButton.action}>{nextButton.text}</Button>
-                  </div>)}
             
         </div>
     </div>

@@ -9,9 +9,18 @@ export interface Artist {
 // TODO: Exact survey questions tbd
 export interface ArtistSurvey {
   id: string;
-  q1: string;
-  q10: string;
+  preSurvey: SurveyDefinition;
+  preAnswers: SurveyAnswers;
+  postSurvey: SurveyDefinition;
+  postAnswers: SurveyAnswers;
+  
 }
+
+// export interface SurveyQuestion {
+//   id: string;
+//   q: string;
+//   answerType: 
+// }
 
 export interface Poem {
   id: string;
@@ -60,8 +69,10 @@ export interface Audience {
 // TODO: Exact survey questions tbd
 export interface AudienceSurvey {
   id: string;
-  q1: string;
-  q10: string;
+  preSurvey: SurveyDefinition;
+  preAnswers: SurveyAnswers;
+  postSurvey: SurveyDefinition;
+  postAnswers: SurveyAnswers;
 }
 
 // TODO: Exact poem feedback fields tbd
@@ -77,6 +88,67 @@ export const AudienceCondition = {
 } as const;
 export type AudienceCondition =
   (typeof AudienceCondition)[keyof typeof AudienceCondition];
+
+export type QuestionType = "multipleChoice" | "openEnded" | "radioWheel" | "likertScale" | "topXRanking";
+
+export interface BaseQuestion {
+  id: string;
+  type: QuestionType;
+  question: string;
+  required?: boolean;
+  answer?: any; 
+}
+
+export interface MultipleChoiceQuestion extends BaseQuestion {
+  type: "multipleChoice";
+  options: string[];
+}
+
+export interface OpenEndedQuestion extends BaseQuestion {
+  type: "openEnded";
+  placeholder?: string;
+}
+
+export interface LikertScaleQuestion extends BaseQuestion {
+  type: "likertScale";
+  scaleMin: number;
+  scaleMax: number;
+  labels?: { min: string; max: string };
+}
+
+export type Question =
+  | MultipleChoiceQuestion
+  | OpenEndedQuestion
+  | LikertScaleQuestion
+  | TopXRankingQuestion;
+
+export interface Section {
+  id: string;
+  title: string;
+  description?: string;
+  conditions?: Condition[];
+  questions: Question[];
+}
+
+export type Condition = ArtistCondition | AudienceCondition | undefined;
+
+export interface SurveyDefinition {
+  id: string;
+  title: string;
+  sections: Section[];
+}
+
+export type AnswerValue = string | string[] | number | null;
+
+export interface SurveyAnswers {
+  [questionId: string]: AnswerValue;
+}
+
+export interface TopXRankingQuestion extends BaseQuestion {
+  type: "topXRanking";
+  options: string[];
+  maxSelectable: number; // maximum number of selectable options
+}
 
 export type UserData =
   | { id: string; role: "artist"; data: Artist }

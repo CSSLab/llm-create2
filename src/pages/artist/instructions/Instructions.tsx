@@ -20,7 +20,7 @@ const ArtistInstructions = () => {
     return (
        <PageTemplate title='Your Task' background='bg2' nextButton={{text: 'Next', action: handleSubmit}}>
         <div className="w-full h-full flex-col space-y-6">
-         <p className="text-main mb-2">
+         <div className="text-main mb-2">
             The goal of this experiment is for you to <strong>write a blackout poem.</strong> <Collapsible.Root unmountOnExit>
                 <Collapsible.Trigger  className="text-main underline italic text-light-grey-1 pt-2">
                 <div className="flex flex-row items-center space-x-2">
@@ -45,7 +45,7 @@ const ArtistInstructions = () => {
                     </div>
                 </Collapsible.Content>
             </Collapsible.Root>
-          </p>
+          </div>
         <div>
          <p className="text-main mb-2">
             The task involves two steps:

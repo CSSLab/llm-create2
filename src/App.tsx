@@ -20,13 +20,15 @@ import AudienceStep2 from "./pages/audience/step2/Step2";
 import AudienceTransitionStep2 from "./pages/audience/step2/TransitionStep2";
 import AudiencePostSurvey from "./pages/audience/PostSurvey";
 import { useState, createContext } from "react";
-import type { UserData, Artist, Audience } from "./types";
+import type { UserData, Artist, Audience, ArtistSurvey, AudienceSurvey } from "./types";
 import { Provider } from "./components/ui/provider";
 
 interface DataContextValue {
   userData: UserData | null;
   addUserData: (newData: Partial<UserData>) => void;
   addRoleSpecificData: (updates: Partial<Artist> | Partial<Audience>) => void;
+  addPreSurvey: (updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>) => void;
+  addPostSurvey: (updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>) => void;
 }
 
 export const DataContext = createContext<DataContextValue | null>(null);
@@ -69,9 +71,57 @@ function App() {
     });
   };
 
+    const addPreSurvey = (
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+  ) => {
+    setUserData((prev: any) => {
+      if (!prev || !prev.data) {
+        throw new Error("Tried to update pre-survey when userData is null.");
+      }
+
+      return {
+        ...prev,
+        data: {
+          ...prev.data,
+          surveyResponse: {
+            ...prev.data.surveyResponse,
+            preSurvey: {
+              ...(prev.data.surveyResponse?.preSurvey || {}),
+              ...(updates.preSurvey || {}),
+            },
+          },
+        },
+      };
+    });
+  };
+
+  const addPostSurvey = (
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+  ) => {
+    setUserData((prev: any) => {
+      if (!prev || !prev.data) {
+        throw new Error("Tried to update post-survey when userData is null.");
+      }
+
+      return {
+        ...prev,
+        data: {
+          ...prev.data,
+          surveyResponse: {
+            ...prev.data.surveyResponse,
+            postSurvey: {
+              ...(prev.data.surveyResponse?.postSurvey || {}),
+              ...(updates.postSurvey || {}),
+            },
+          },
+        },
+      };
+    });
+  };
+
   return (
     <DataContext.Provider
-      value={{ userData, addUserData, addRoleSpecificData }}
+      value={{ userData, addUserData, addRoleSpecificData, addPostSurvey, addPreSurvey }}
     >
       <Provider>
         <div className="w-screen h-screen">
