@@ -3,6 +3,14 @@ import { Checkbox } from "@chakra-ui/react";
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { DataContext } from "../App";
+import { ArtistCondition } from "../types";
+import { toaster } from "../components/ui/toaster";
+
+const getRandomArtistCondition = (): ArtistCondition => {
+  const values = Object.values(ArtistCondition);
+  const randomIndex = Math.floor(Math.random() * values.length);
+  return values[randomIndex];
+};
 
 const ConsentForm = () => {
   const [checked, setChecked] = useState(false);
@@ -11,12 +19,19 @@ const ConsentForm = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
+  const { addUserData, addRoleSpecificData } = context;
 
   const handleSubmit = () => {
     if (checked) {
-      navigate("/choice");
+      addUserData({ role: "artist" });
+      addRoleSpecificData({ condition: getRandomArtistCondition() });
+      navigate("/artist/pre-survey");
     } else {
-      alert("Please give your consent to proceed");
+      toaster.create({
+            description: "Please give your consent to proceed",
+            type: "error",
+            duration: 5000,
+        })
     }
   };
 
@@ -54,14 +69,14 @@ const ConsentForm = () => {
               No personally identifiable information will be collected.
             </strong>
           </p>
-          <p className="text-main mb-2">
+          {/* <p className="text-main mb-2">
             We expect the survey to take around <strong>7 minutes</strong> to
             complete.If you are a Prolific worker, you will receive the monetary
             amount detailed on Prolific as compensation for your time. If you
             were recruited offline, you will be entered into a draw for 5 USD
             Amazon gift cards. Odds are detailed in the advertisement post, but
             you can expect a winning probability of at least 30%.
-          </p>
+          </p> */}
           <p className="text-main mb-2">
             As the results of this evaluation will be of interest to a wide
             number of communities, we are asking your permission to include your
@@ -75,15 +90,13 @@ const ConsentForm = () => {
             You may decline to participate or withdraw at any time without
             penalty. If you decide to withdraw from the study after
             participating, you may do so any time before the results are
-            published. If you wish to withdraw during your participation in
-            Prolific, you may simply close the browser window with the
-            experiment and return the task.
+            published.
           </p>
-          <p className="text-main mb-2">
+          {/* <p className="text-main mb-2">
             Note that you will be compensated only after you have completed the
             activity and have successfully verified your Prolific ID. Please
             allow 2-3 days for this process.
-          </p>
+          </p> */}
           <p className="text-main mb-2">
             For an independent opinion regarding the research and the rights of
             research participants, you may contact the{" "}
@@ -114,7 +127,7 @@ const ConsentForm = () => {
             <u>sarahxp.wang@mail.utoronto.ca</u>), and{" "}
             <strong>Helena Glowacki</strong> (
             <u>helena.glowacki@mail.utoronto.ca</u>). If you have any questions
-            or concerns, please contact either Harsh Kumar or Ewan Jordan.
+            or concerns, please contact either Harsh Kumar, Sarah Wang, or Helena Glowacki.
           </p>
           <p className="text-main mb-2">
             Please print or save a copy of this form for your records.

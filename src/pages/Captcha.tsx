@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import HalfPageTemplate from "../components/shared/pages/halfPage";
 import { Button, Input } from "@chakra-ui/react";
+import { toaster } from "../components/ui/toaster";
 
 const Captcha = () => {
   const navigate = useNavigate();
@@ -63,7 +64,11 @@ const Captcha = () => {
     if (inputCaptcha === captchaMessage) {
       navigate("/consent");
     } else {
-      alert("Captcha does not match! Try again.");
+      toaster.create({
+          description: "Captcha does not match! Try again.",
+          type: "error",
+          duration: 5000,
+      })
       generateCaptchaCheck();
       setInputCaptcha("");
     }
@@ -79,7 +84,7 @@ const Captcha = () => {
         </div>
 
         <Input
-          className="w-48 px-2 outline-1 outline-light-grey-2 outline focus:outline-grey focus:outline-2"
+          className="w-full md:w-48 px-2 outline-1 outline-light-grey-2 outline focus:outline-grey focus:outline-2"
           variant="outline"
           value={inputCaptcha}
           onChange={handleChange}

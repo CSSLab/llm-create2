@@ -6,6 +6,7 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import PageTemplate from '../../../components/shared/pages/page';
+import { toaster } from '../../../components/ui/toaster';
 
 type QuestionType = 'multiple' | 'text';
 
@@ -107,7 +108,12 @@ const AudienceStep2 = () => {
 
   const handleNext = () => {
     if (!allQuestionsAnswered()) {
-      alert('Please answer all the questions.');
+      
+      toaster.create({
+          description: "Please answer all required (*) questions to continue.",
+          type: "error",
+          duration: 5000,
+      })
       return;
     }
     if (poemIndex < blackoutPoems.length - 1) {

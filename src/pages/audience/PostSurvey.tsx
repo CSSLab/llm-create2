@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Box, VStack, RadioGroup, Text, Textarea } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import PageTemplate from "../../components/shared/pages/page";
+import { toaster } from "../../components/ui/toaster";
 type QuestionType = "multiple" | "text";
 
 interface SurveyQuestion {
@@ -39,7 +40,11 @@ const AudiencePostSurvey = () => {
 
   const handleSubmit = () => {
     if (!allQuestionsAnswered()) {
-      alert("Please answer all the questions before submitting.");
+      toaster.create({
+          description: "Please answer all required (*) questions to continue.",
+          type: "error",
+          duration: 5000,
+      });
       return;
     }
 

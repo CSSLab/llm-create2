@@ -64,10 +64,9 @@ const AudiencePreSurvey = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
     const handleSubmit = (answers: any) => {
-    console.log("Survey Answers:", answers);
-    navigate("/artist/instructions");
+        console.log(answers);
+        navigate("/artist/instructions");
 
-    alert("Survey submitted! Check console for answers.");
   };
 
   return (

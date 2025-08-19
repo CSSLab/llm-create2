@@ -266,7 +266,7 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
           type: "openEnded",
           question: "Is there anything else you would like to share with us?",
           placeholder: "Type your answer here...",
-          required: true,
+          required: false,
         },
     ]
     },

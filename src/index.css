@@ -36,7 +36,7 @@
   }
 
   .text-main-dark{
-    @apply text-main text-light-grey-2
+    @apply text-main text-light-grey-3
   }
 
   .text-sub {

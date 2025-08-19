@@ -14,7 +14,7 @@ const MultipleChoice: React.FC<Props> = ({ question, value, onChange }) => {
       <p className="text-main"> {question.question}<span className="text-red-700">{(question.required ? '*': '')}</span></p>
       <RadioGroup.Root
         value={value}
-       onValueChange={(e) => onChange(question.id,e.value!)}
+        onValueChange={(e) => onChange(question.id,e.value!)}
         className="flex flex-col gap-4 font-light"
         >
         {question.options.map((opt) => (

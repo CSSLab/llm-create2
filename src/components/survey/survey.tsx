@@ -25,6 +25,7 @@ const Survey: React.FC<Props> = ({ survey, onSubmit }) => {
 
   const updateAnswer = (questionId: string, value: any) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
+    console.log(answers);
   };
 
 const isSectionComplete = () => {
@@ -41,6 +42,7 @@ const isSectionComplete = () => {
         return typeof answer === "string" && answer.trim() !== "";
 
       case "multipleChoice":
+        return answer;
 
       case "likertScale":
         return typeof answer === "number";
@@ -70,7 +72,7 @@ const isSectionComplete = () => {
   const progress = Math.round((currentSection / survey.sections.length) * 100);
 
   return (
-    <div className="h-full w-full flex flex-col overflow-y-scroll">
+    <div className="h-full w-full flex flex-col overflow-y-auto">
         <div className="w-full" >
           <Progress.Root value={progress} className="flex flex-row mb-6 items-center space-x-2">
               <Progress.Track className="w-full bg-white border border-light-grey-3">
@@ -83,7 +85,7 @@ const isSectionComplete = () => {
       {section.description && (
         <p className="text-sub pb-4 text-dark-grey">{section.description}</p>
       )}
-      <div ref={containerRef} className="flex h-full w-full flex flex-col justify-between overflow-y-scroll">
+      <div ref={containerRef} className="flex h-full w-full flex flex-col justify-between overflow-y-auto">
                  <div className="w-full space-y-8">
               {section.questions.map((q) => (
 

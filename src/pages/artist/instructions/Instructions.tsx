@@ -1,13 +1,10 @@
-// import { useState, useEffect, useRef } from 'react';
-// import { useNavigate } from 'react-router-dom';
-// import HalfPageTemplate from '../components/shared/pages/halfPage';
-// import { Button, Input } from '@chakra-ui/react';
 import { Collapsible, Icon, Image } from '@chakra-ui/react';
 import PageTemplate from '../../../components/shared/pages/page';
 import { useNavigate } from 'react-router-dom';
 import { MdInfoOutline } from "react-icons/md";
-import { MdOutlineAccessTime } from "react-icons/md";
-
+// import { MdOutlineAccessTime } from "react-icons/md";
+import BlackoutExample1 from "../../../assets/blackout1.png";
+import BlackoutExample2 from "../../../assets/blackout2.png"
 
 
 const ArtistInstructions = () => {
@@ -39,8 +36,8 @@ const ArtistInstructions = () => {
                         </p>
                         <p className="text-main pt-1">Here are two examples of blackout poetry made using the same piece of text: </p>
                         <div className="w-full h-max flex flex-col md:flex-row">
-                            <Image alt="Blackout Example 1" src="/src/assets/blackout1.png" className="w-72"/>
-                            <Image alt="Blackout Example 2" src="/src/assets/blackout2.png" className="w-72"/>
+                            <Image alt="Blackout Example 1" src={BlackoutExample1} className="w-72"/>
+                            <Image alt="Blackout Example 2" src={BlackoutExample2} className="w-72"/>
                         </div>
                     </div>
                 </Collapsible.Content>
@@ -52,25 +49,19 @@ const ArtistInstructions = () => {
          </p>
              <ul className="list-disc mb-4 pl-6 space-y-4">
                 <li className="text-main">
-                    <strong>Step 1: Brainstorm</strong> 
-                    <div className="flex flex-row items-center space-x-2">
+                    <strong>Step 1: Brainstorm (5 minutes)</strong> 
+                    {/* <div className="flex flex-row items-center space-x-2">
                         <Icon className="w-4 h-4 fill-grey">
                             <MdOutlineAccessTime />
                         </Icon>
                         <p className="text-main text-grey">5 minutes</p>
-                    </div> 
-                    <p className="text-main">You will be given a piece of text but you cannot start writing. This is your time to familiarize yourself with the text and brainstorm for your poem.</p>
+                    </div>  */}
+                    <p className="text-main">You’ll be given a piece of text to read. For now, don’t start writing your poem yet. This is just your time to get to know the text, think about it, and let ideas start forming.</p>
 
                 </li>
                 <li className="text-main">
-                    <strong>Step 2: Blackout</strong> 
-                    <div className="flex flex-row items-center space-x-2">
-                        <Icon className="w-4 h-4 fill-grey">
-                            <MdOutlineAccessTime />
-                        </Icon>
-                        <p className="text-main text-grey"> No time limit! </p>
-                    </div> 
-                    <p className='text-main'>You will write the blackout poem. Let your imagination run wild!</p>
+                    <strong>Step 2: Blackout (No time limit)</strong> 
+                    <p className='text-main'>You will make your blackout poem by selecting words from the text.</p>
                 </li>
 
              </ul>
