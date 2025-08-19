@@ -3,14 +3,7 @@ import { Checkbox } from "@chakra-ui/react";
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { DataContext } from "../App";
-import { ArtistCondition } from "../types";
 import { toaster } from "../components/ui/toaster";
-
-const getRandomArtistCondition = (): ArtistCondition => {
-  const values = Object.values(ArtistCondition);
-  const randomIndex = Math.floor(Math.random() * values.length);
-  return values[randomIndex];
-};
 
 const ConsentForm = () => {
   const [checked, setChecked] = useState(false);
@@ -19,12 +12,13 @@ const ConsentForm = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { addUserData, addRoleSpecificData } = context;
+  const { userData, addRoleSpecificData } = context;
 
   const handleSubmit = () => {
     if (checked) {
-      addUserData({ role: "artist" });
-      addRoleSpecificData({ condition: getRandomArtistCondition() });
+      addRoleSpecificData({
+        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+      });
       navigate("/artist/pre-survey");
     } else {
       toaster.create({

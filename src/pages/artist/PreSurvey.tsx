@@ -13,11 +13,15 @@ const AristPreSurvey = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { addPreSurvey } = context;
+  const { userData, addPreSurvey, addRoleSpecificData } = context;
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
+
   const handleSubmit = (answers: any) => {
+    addRoleSpecificData({
+      timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+    });
     navigate("/artist/instructions");
     addPreSurvey({
       id: "artistSurvey",

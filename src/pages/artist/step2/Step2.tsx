@@ -34,6 +34,9 @@ const ArtistStep2 = () => {
     artistPoem.writeNotes = writeNotesRef.current || "";
 
     addRoleSpecificData({ poem: artistPoem });
+    addRoleSpecificData({
+      timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+    });
     navigate("/artist/post-survey");
   }, []);
 
