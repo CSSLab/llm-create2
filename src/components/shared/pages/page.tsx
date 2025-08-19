@@ -82,7 +82,7 @@ function PageTemplate({
           {description && (
             <div
               className={
-                `w-full h-max flex text-left text-sm font-sans text-grey` +
+                `w-full h-max flex text-left text-grey ` +
                 (background == "bg4" || background == "bg5"
                   ? `text-main-dark`
                   : `text-main`)

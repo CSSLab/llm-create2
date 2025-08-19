@@ -9,9 +9,9 @@ const UserError = () => {
             There seems to be an error
           </p>
           <p className="text-main-dark w-fulltext-sm">
-            It looks like there was an error during the experiment.
-            Unfortunately, this means we can’t use the data from your session —
-            but thank you very much for your time and participation!
+            Unfortunately, this means we can’t use the data from your session
+            (unless you were on the thank you page)— but thank you very much for
+            your time and participation!
           </p>
         </div>
       </div>
