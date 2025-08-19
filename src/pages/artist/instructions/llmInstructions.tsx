@@ -17,7 +17,7 @@ const LLMInstruction = () => {
   const condition = userData?.data.condition;
 
   const handleSubmit = () => {
-    if (condition == "SPARK" || condition == "FULL_TRANSPARENCY") {
+    if (condition == "SPARK" || condition == "TOTAL_ACCESS") {
       navigate("/artist/brainstorm");
     } else {
       navigate("/artist/blackout");
