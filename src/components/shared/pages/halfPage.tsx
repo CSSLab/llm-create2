@@ -43,7 +43,9 @@ function HalfPageTemplate({
           alt="background"
           className={
             `absolute top-0 left-0 w-full h-full object-none pointer-events-none select-none ` +
-            (background == "bg5" ? `opacity-0 lg:opacity-100` : ``)
+            (background == "bg5" || background == "bg1"
+              ? `opacity-0 lg:opacity-100`
+              : ``)
           }
           style={{
             zIndex: 0,

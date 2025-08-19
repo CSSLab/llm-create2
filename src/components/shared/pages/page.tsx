@@ -57,7 +57,9 @@ function PageTemplate({
           alt="background"
           className={
             `absolute bottom-0 right-0 w-screen h-screen object-none pointer-events-none select-none ` +
-            (background == "bg2" ? `opacity-0 md:opacity-100` : ``)
+            (background == "bg2" || background == "bg1"
+              ? `opacity-0 md:opacity-100`
+              : ``)
           }
           style={{
             zIndex: 0,
