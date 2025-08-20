@@ -92,7 +92,7 @@ const Survey: React.FC<Props> = ({ survey, onSubmit }) => {
       )}
       <div
         ref={containerRef}
-        className="flex h-full w-full flex flex-col justify-between overflow-y-auto"
+        className="flex h-full w-full flex flex-col justify-between overflow-y-auto space-y-6"
       >
         <div className="w-full space-y-8">
           {section.questions.map((q) => (
