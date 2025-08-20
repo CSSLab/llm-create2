@@ -194,7 +194,7 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
             "Irritation",
             "Disgust",
             "Sadness",
-            "Despeair",
+            "Despair",
             "Fear",
             "Anxiety",
           ],
