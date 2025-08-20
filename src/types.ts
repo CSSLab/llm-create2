@@ -7,27 +7,18 @@ export interface Artist {
 }
 
 export interface ArtistSurvey {
-  q1: string;
-  q2: string;
-  q3: string;
-  q4: string;
-
-  // // Pre-survey
-  // preDemographic1: number;
-  // preDemographic2: number;
-  // prePANAS: number[];
-  // // Post-survey
-  // postDemographic1: number;
-  // postPANAS: number[];
-  // intentions1: string;
-  // intentions2: number[];
-  // ownership1: number;
-  // ownership2: number;
-  // ownership3: number;
-  // aiHelpfulness: number;
-  // creditAttribution: number;
-  // aiOpinion: number;
+  id: string;
+  preSurvey: SurveyDefinition;
+  preAnswers: SurveyAnswers;
+  postSurvey: SurveyDefinition;
+  postAnswers: SurveyAnswers;
 }
+
+// export interface SurveyQuestion {
+//   id: string;
+//   q: string;
+//   answerType:
+// }
 
 export interface Poem {
   passageId: string; // passageId in Passage.id
@@ -76,8 +67,10 @@ export interface Audience {
 // TODO: Exact survey questions tbd
 export interface AudienceSurvey {
   id: string;
-  q1: string;
-  q10: string;
+  preSurvey: SurveyDefinition;
+  preAnswers: SurveyAnswers;
+  postSurvey: SurveyDefinition;
+  postAnswers: SurveyAnswers;
 }
 
 // TODO: Exact poem feedback fields tbd
@@ -94,11 +87,74 @@ export const AudienceCondition = {
 export type AudienceCondition =
   (typeof AudienceCondition)[keyof typeof AudienceCondition];
 
+export type QuestionType =
+  | "multipleChoice"
+  | "openEnded"
+  | "likertScale"
+  | "topXRanking";
+
+export interface BaseQuestion {
+  id: string;
+  type: QuestionType;
+  question: string;
+  required?: boolean;
+  answer?: any;
+}
+
+export interface MultipleChoiceQuestion extends BaseQuestion {
+  type: "multipleChoice";
+  options: string[];
+}
+
+export interface OpenEndedQuestion extends BaseQuestion {
+  type: "openEnded";
+  placeholder?: string;
+}
+
+export interface LikertScaleQuestion extends BaseQuestion {
+  type: "likertScale";
+  scaleMin: number;
+  scaleMax: number;
+  labels?: { min: string; max: string };
+}
+
+export type Question =
+  | MultipleChoiceQuestion
+  | OpenEndedQuestion
+  | LikertScaleQuestion
+  | TopXRankingQuestion;
+
+export interface Section {
+  id: string;
+  title: string;
+  description?: string;
+  conditions?: Condition[];
+  questions: Question[];
+}
+
+export type Condition = ArtistCondition | AudienceCondition | undefined;
+
+export interface SurveyDefinition {
+  id: string;
+  title: string;
+  sections: Section[];
+}
+
+export type AnswerValue = string | string[] | number | null;
+
+export interface SurveyAnswers {
+  [questionId: string]: AnswerValue;
+}
+
+export interface TopXRankingQuestion extends BaseQuestion {
+  type: "topXRanking";
+  options: string[];
+  maxSelectable: number; // maximum number of selectable options
+}
+
 export type UserData =
   | { role: "artist"; data: Artist }
   | { role: "audience"; data: Audience };
-
-export type QuestionType = "multiple" | "text";
 
 export interface SurveyQuestion {
   id: string;

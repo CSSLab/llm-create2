@@ -6,16 +6,23 @@ import { DataContext } from "../../../App";
 const ArtistTransitionStep2 = () => {
   const navigate = useNavigate();
   const context = useContext(DataContext);
+
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
+
   const { userData, addRoleSpecificData } = context;
+  const condition = userData?.data.condition;
 
   const handleSubmit = () => {
     addRoleSpecificData({
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
     });
-    navigate("/artist/blackout");
+    if (condition == "WRITING") {
+      navigate("/artist/assistant-instructions");
+    } else {
+      navigate("/artist/blackout");
+    }
   };
 
   return (
@@ -27,10 +34,10 @@ const ArtistTransitionStep2 = () => {
         <p className="text-h1-dark w-80">
           Are you ready to begin Step 2: Blackout?
         </p>
-        <p className="text-main-dark w-80 text-light-grey-1 text-sm">
-          You will write the blackout poem. Let your imagination run wild!
+        <p className="text-main-dark w-80 text-sm">
+          You will make your blackout poem by selecting words from the text.
         </p>
-        <p className="text-main-dark w-80 text-light-grey-1 text-sm">
+        <p className="text-main-dark w-80 text-sm">
           You will have no time limit for this task.
         </p>
       </div>

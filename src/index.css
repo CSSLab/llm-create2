@@ -4,8 +4,13 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-grey text-white w-48 py-6 uppercase hover:opacity-70
+    @apply bg-grey text-white w-full md:w-48 py-6 uppercase hover:opacity-70
   }
+
+  .btn-inverted {
+    @apply border border-grey text-grey w-48 py-6 text-xs uppercase hover:opacity-70
+  }
+
 
   .btn-small {
     @apply bg-dark-grey text-white px-2 py-1 w-max text-xs uppercase hover:opacity-70
@@ -31,7 +36,7 @@
   }
 
   .text-main-dark{
-    @apply text-main text-light-grey-2
+    @apply text-main text-light-grey-3
   }
 
   .text-sub {
