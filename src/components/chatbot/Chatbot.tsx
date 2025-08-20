@@ -12,17 +12,14 @@ interface ChatTabProps {
 }
 
 export default function ChatTab({ messages, setMessages }: ChatTabProps) {
-  // Set up open AI client
   const apiKey = import.meta.env.VITE_LLM_KEY;
-  const client = new OpenAI({
-    apiKey: apiKey,
-    dangerouslyAllowBrowser: true,
-  });
+  const client = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const [isLLMLoading, setIsLLMLoading] = useState(false);
   const [input, setInput] = useState("");
+  const [lastResponseId, setLastResponseId] = useState<string | null>(null);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -49,9 +46,13 @@ export default function ChatTab({ messages, setMessages }: ChatTabProps) {
 
     try {
       const response = await client.responses.create({
-        model: "gpt-5",
-        input: input,
+        model: "gpt-5-nano",
+        store: true,
+        input: [{ role: "user", content: input }],
+        ...(lastResponseId ? { previous_response_id: lastResponseId } : {}),
       });
+
+      setLastResponseId(response.id);
 
       const llmMessage: Message = {
         id: nanoid(),
@@ -69,13 +70,9 @@ export default function ChatTab({ messages, setMessages }: ChatTabProps) {
   };
 
   const handleKeyDown = (e: any) => {
-    if (e.key === "Enter") {
-      if (e.shiftKey) {
-        return;
-      } else {
-        e.preventDefault();
-        sendMessage();
-      }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
     }
   };
 
