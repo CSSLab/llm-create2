@@ -9,7 +9,9 @@ const PoemViewer: React.FC = () => {
   const words = passageText.split(" ");
 
   const [inputValue, setInputValue] = useState("");
-  const [visibleIndexes, setVisibleIndexes] = useState<number[]>([]);
+  const [visibleIndexes, setVisibleIndexes] = useState<number[]>(
+    Array.from({ length: words.length }, (_, i) => i)
+  );
 
   const handleApply = () => {
     try {
@@ -51,7 +53,6 @@ const PoemViewer: React.FC = () => {
           placeholder="Enter indexes like [1,2,3]"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          variant="outline"
         />
         <Button onClick={handleApply} className="btn-small-inverted">
           Apply
