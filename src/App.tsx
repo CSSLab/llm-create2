@@ -11,19 +11,18 @@ import ArtistTransitionStep2 from "./pages/artist/step2/TransitionStep2";
 import ArtistStep2 from "./pages/artist/step2/Step2";
 import ArtistPostSurvey from "./pages/artist/PostSurvey";
 import ThankYou from "./pages/ThankYou";
-import UserError from "./pages/Error";
 import PoemViewer from "./pages/PoemViewer";
 import usePreventRefresh from "./components/shared/preventRefresh";
 
-// import AudienceInstructions from "./pages/audience/instructions/Instructions";
+import AudienceInstructions from "./pages/audience/instructions/Instructions";
 // ================= AUDIENCE PAGES =================
-// import ChooseYourCharacter from "./pages/ChooseYourCharacter";
-// import AudiencePreSurvey from "./pages/audience/PreSurvey";
-// import AudienceTransitionStep1 from "./pages/audience/step1/TransitionStep1";
-// import AudienceStep1 from "./pages/audience/step1/Step1";
-// import AudienceStep2 from "./pages/audience/step2/Step2";
-// import AudienceTransitionStep2 from "./pages/audience/step2/TransitionStep2";
-// import AudiencePostSurvey from "./pages/audience/PostSurvey";
+import ChooseYourCharacter from "./pages/ChooseYourCharacter";
+import AudiencePreSurvey from "./pages/audience/PreSurvey";
+import AudienceTransitionStep1 from "./pages/audience/step1/TransitionStep1";
+import AudienceStep1 from "./pages/audience/step1/Step1";
+import AudienceStep2 from "./pages/audience/step2/Step2";
+import AudienceTransitionStep2 from "./pages/audience/step2/TransitionStep2";
+import AudiencePostSurvey from "./pages/audience/PostSurvey";
 import LLMInstruction from "./pages/artist/instructions/llmInstructions";
 import { useState, createContext } from "react";
 import type {
@@ -197,9 +196,9 @@ function App() {
                 </>
               )}
 
-              <Route path="/*" element={<UserError />} />
-              {/* 
-              AUDIENCE ROUTES
+              {/* <Route path="/*" element={<UserError />} /> */}
+
+              {/* AUDIENCE ROUTES */}
               <Route
                 path="/audience/step-1"
                 element={<AudienceTransitionStep1 />}
@@ -209,13 +208,12 @@ function App() {
                 path="/audience/step-2"
                 element={<AudienceTransitionStep2 />}
               />
-               <Route
+              <Route
                 path="/audience/poem-surveys"
                 element={<AudienceStep2 />}
               />
 
-
-               <Route
+              <Route
                 path="/audience/pre-survey"
                 element={<AudiencePreSurvey />}
               />
@@ -228,9 +226,9 @@ function App() {
               <Route
                 path="/audience/post-survey"
                 element={<AudiencePostSurvey />}
-              /> */}
+              />
 
-              {/* <Route path="/choice" element={<ChooseYourCharacter />} /> */}
+              <Route path="/choice" element={<ChooseYourCharacter />} />
             </Routes>
           </Router>
         </div>
