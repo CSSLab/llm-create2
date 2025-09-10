@@ -21,7 +21,7 @@ const ArtistStep1 = () => {
   const [passage] = useState(
     "Twilight settled over Zuckerman’s barn, and a feeling of peace. Fern knew it was almost suppertime but she couldn’t bear to leave. Swallows passed on silent wings, in and out of the doorways, bringing food to their young ones. From across the road a bird sang “Whippoorwill, whippoorwill!” Lurvy sat down under an apple tree and lit his pipe; the animals sniffed the familiar smell of strong tobacco. Wilbur heard the trill of the tree toad and the occasional slamming of the kitchen door. All these sounds made him feel comfortable and happy, for he loved life and loved to be a part of the world on a summer evening. But as he lay there he remembered what the old sheep had told him. The thought of death came to him and he began to tremble with fear."
   );
-  const userType = ArtistCondition.SPARK;
+  const userType = userData?.data.condition as ArtistCondition;
   const [sparkMessages, setSparkMessages] = useState<Message[]>([]);
   const [sparkNotes, setSparkNotes] = useState<string>("");
 
@@ -53,9 +53,9 @@ const ArtistStep1 = () => {
     <MultiPageTemplate
       title="Step 1: Brainstorm"
       description="This is your time to familiarize yourself with the text and brainstorm for your poem. Feel free to take notes of your ideas. Your notes will be accessible during the writing portion."
-      duration={30}
+      duration={300}
       afterDuration={onComplete}
-      llmAccess={false}
+      llmAccess={userType == "TOTAL_ACCESS" || userType == "SPARK"}
       messages={sparkMessages}
       setMessages={setSparkMessages}
       notes={sparkNotes}

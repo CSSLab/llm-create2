@@ -2,8 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useRef, useCallback, useEffect } from "react";
 import MultiPageTemplate from "../../../components/shared/pages/multiPage";
 import BlackoutPoetry from "../../../components/blackout/Blackout";
-import type { Artist, Message } from "../../../types";
-import { ArtistCondition } from "../../../types";
+import type { Artist, ArtistCondition, Message } from "../../../types";
 import { useContext } from "react";
 import { DataContext } from "../../../App";
 
@@ -27,7 +26,7 @@ const ArtistStep2 = () => {
   );
   const [writeMessages, setWriteMessages] = useState<Message[]>([]);
   const [selectedWordIndexes, setSelectedWordIndexes] = useState<number[]>([]);
-  const userType = ArtistCondition.TOTAL_ACCESS;
+  const userType = userData?.data.condition as ArtistCondition;
 
   const onComplete = useCallback(() => {
     artistPoem.writeConversation = writeMessagesRef.current || [];
@@ -51,7 +50,7 @@ const ArtistStep2 = () => {
     <MultiPageTemplate
       title="Step 2: Blackout"
       description="Create a poem by clicking on words in the passage."
-      llmAccess={false}
+      llmAccess={userType == "TOTAL_ACCESS" || userType == "WRITING"}
       messages={writeMessages}
       setMessages={setWriteMessages}
       notes={writeNotes}
