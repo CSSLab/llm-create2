@@ -27,36 +27,36 @@ const PoemViewer: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-screen flex flex-col justify-center items-center p-6 space-y-6">
-      {/* Poem */}
-      <div className="max-w-3xl text-center leading-relaxed flex flex-wrap justify-center">
-        {words.map((word, i) => {
-          const isVisible = visibleIndexes.includes(i);
-          return (
-            <span
-              key={i}
-              className={`px-1 transition duration-200 ${
-                isVisible
-                  ? "text-black"
-                  : "text-transparent bg-black rounded-sm"
-              }`}
-            >
-              {word + " "}
-            </span>
-          );
-        })}
-      </div>
+    <div className="flex justify-center items-center h-screen">
+      <div className="w-1/2 flex flex-col justify-center items-center p-6 space-y-6">
+        {/* Poem */}
+        <div className="max-w-3xl text-center leading-relaxed flex flex-wrap">
+          {words.map((word, i) => {
+            const isVisible = visibleIndexes.includes(i);
+            return (
+              <span
+                key={i}
+                className={`px-1 transition duration-200 ${
+                  isVisible ? "text-black" : "text-transparent bg-black"
+                }`}
+              >
+                {word + " "}
+              </span>
+            );
+          })}
+        </div>
 
-      {/* Input + Button */}
-      <div className="flex space-x-4 w-full max-w-lg">
-        <Input
-          placeholder="Enter indexes like [1,2,3]"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-        />
-        <Button onClick={handleApply} className="btn-small-inverted">
-          Apply
-        </Button>
+        {/* Input + Button */}
+        <div className="flex space-x-4 w-full max-w-lg">
+          <Input
+            placeholder="Enter indexes like [1,2,3]"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+          />
+          <Button onClick={handleApply} className="btn-small-inverted">
+            Apply
+          </Button>
+        </div>
       </div>
     </div>
   );
