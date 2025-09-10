@@ -14,6 +14,7 @@ const ArtistStep2 = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
   const { userData, addRoleSpecificData } = context;
+
   const artistData = userData?.data as Artist;
   const artistPoem = artistData?.poem;
 
@@ -24,7 +25,9 @@ const ArtistStep2 = () => {
   const [writeNotes, setWriteNotes] = useState(
     artistData?.poem?.sparkNotes || ""
   );
-  const [writeMessages, setWriteMessages] = useState<Message[]>([]);
+  const [writeMessages, setWriteMessages] = useState<Message[]>(
+    artistPoem.sparkConversation || []
+  );
   const [selectedWordIndexes, setSelectedWordIndexes] = useState<number[]>([]);
   const userType = userData?.data.condition as ArtistCondition;
 
@@ -33,8 +36,8 @@ const ArtistStep2 = () => {
     artistPoem.text = selectedWordIndexesRef.current.sort((a, b) => a - b); // sorts indexes in ascending order
     artistPoem.writeNotes = writeNotesRef.current || "";
 
-    addRoleSpecificData({ poem: artistPoem });
     addRoleSpecificData({
+      poem: artistPoem,
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
     });
     navigate("/artist/post-survey");
