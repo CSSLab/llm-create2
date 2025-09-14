@@ -12,6 +12,7 @@ import ArtistStep2 from "./pages/artist/step2/Step2";
 import ArtistPostSurvey from "./pages/artist/PostSurvey";
 import ThankYou from "./pages/ThankYou";
 import UserError from "./pages/Error";
+import PoemViewer from "./pages/PoemViewer";
 import usePreventRefresh from "./components/shared/preventRefresh";
 
 // import AudienceInstructions from "./pages/audience/instructions/Instructions";
@@ -163,6 +164,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Captcha />} />
               <Route path="/consent" element={<ConsentForm />} />
+              <Route path="/poem-viewer" element={<PoemViewer />} />
               {userData && (
                 <>
                   <Route
