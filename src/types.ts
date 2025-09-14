@@ -32,7 +32,7 @@ export interface Poem {
 export interface Message {
   id: string;
   role: Role;
-  text: string;
+  content: string;
   timestamp: Date;
 }
 
@@ -51,8 +51,8 @@ export type ArtistCondition =
   (typeof ArtistCondition)[keyof typeof ArtistCondition];
 
 export const Role = {
-  ARTIST: "ARTIST",
-  LLM: "LLM",
+  ARTIST: "user",
+  LLM: "assistant",
 } as const;
 export type Role = (typeof Role)[keyof typeof Role];
 

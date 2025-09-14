@@ -25,7 +25,7 @@ const ArtistStep1 = () => {
   const [sparkMessages, setSparkMessages] = useState<Message[]>([]);
   const [sparkNotes, setSparkNotes] = useState<string>("");
 
-  const artistPoem: Poem = {
+  let artistPoem: Poem = {
     passageId: "",
     text: [],
     sparkConversation: [],
@@ -37,8 +37,8 @@ const ArtistStep1 = () => {
   const onComplete = useCallback(() => {
     artistPoem.sparkConversation = sparkMessagesRef.current;
     artistPoem.sparkNotes = sparkNotesRef.current;
-    addRoleSpecificData({ poem: artistPoem });
     addRoleSpecificData({
+      poem: artistPoem,
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
     });
     navigate("/artist/step-2");
