@@ -45,7 +45,9 @@ export default function ChatTab({
       role: "system",
       content: `You are a helpful blackout poetry assistant. 
         Blackout poetry is a form poetry where given a passage, you select words from that passage to create a poem. 
-        Words must be selected in order as they appear in the passage. 
+        Words must be selected in order as they appear in the passage. Additional words or punctuation that is not
+        included in the original passage may not be included in the poem.
+
         The passage is: ${passage}
         The currently selected words are: ${selectedWords || "none yet"}`,
     };
