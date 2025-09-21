@@ -22,6 +22,8 @@ interface PageTemplateProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   notes: string;
   setNotes: React.Dispatch<React.SetStateAction<string>>;
+
+  selectedWordIndexes?: number[];
 }
 
 interface Button {
@@ -40,6 +42,7 @@ function MultiPageTemplate({
   setMessages,
   notes,
   setNotes,
+  selectedWordIndexes,
 }: PageTemplateProps) {
   const [leftWidth, setLeftWidth] = useState(70); // %
   const [topHeight, setTopHeight] = useState(70); // %
@@ -167,7 +170,11 @@ function MultiPageTemplate({
 
             {/* Chatbot Panel */}
             <div className="flex-1 p-4 overflow-auto bg-light-grey-4">
-              <ChatTab messages={messages} setMessages={setMessages} />
+              <ChatTab
+                messages={messages}
+                setMessages={setMessages}
+                selectedWordIndexes={selectedWordIndexes}
+              />
             </div>
           </>
         )}

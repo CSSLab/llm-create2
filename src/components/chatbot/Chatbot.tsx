@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { FiSend } from "react-icons/fi";
 import { Button, Textarea } from "@chakra-ui/react";
 import { nanoid } from "nanoid";
@@ -12,15 +12,17 @@ import remarkGfm from "remark-gfm";
 interface ChatTabProps {
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  selectedWordIndexes?: number[];
 }
 
-const systemMessage = {
-  role: "system",
-  content:
-    'You are a helpful blackout poetry assistant. Blackout poetry is a form poetry where given a passage, you select words from that passage to create a poem. Words must be selected in order as they appear in the passage, and selected words must appear in the passage. The passage is: Start Passage. Twilight settled over Zuckerman’s barn, and a feeling of peace. Fern knew it was almost suppertime but she couldn’t bear to leave. Swallows passed on silent wings, in and out of the doorways, bringing food to their young ones. From across the road a bird sang “Whippoorwill, whippoorwill!” Lurvy sat down under an apple tree and lit his pipe; the animals sniffed the familiar smell of strong tobacco. Wilbur heard the trill of the tree toad and the occasional slamming of the kitchen door. All these sounds made him feel comfortable and happy, for he loved life and loved to be a part of the world on a summer evening. But as he lay there he remembered what the old sheep had told him. The thought of death came to him and he began to tremble with fear. End Passage. The passage begins after "Start Passage." and ends before "End Passage.".',
-};
+const passage =
+  "Twilight settled over Zuckerman’s barn, and a feeling of peace. Fern knew it was almost suppertime but she couldn’t bear to leave. Swallows passed on silent wings, in and out of the doorways, bringing food to their young ones. From across the road a bird sang “Whippoorwill, whippoorwill!” Lurvy sat down under an apple tree and lit his pipe; the animals sniffed the familiar smell of strong tobacco. Wilbur heard the trill of the tree toad and the occasional slamming of the kitchen door. All these sounds made him feel comfortable and happy, for he loved life and loved to be a part of the world on a summer evening. But as he lay there he remembered what the old sheep had told him. The thought of death came to him and he began to tremble with fear.";
 
-export default function ChatTab({ messages, setMessages }: ChatTabProps) {
+export default function ChatTab({
+  messages,
+  setMessages,
+  selectedWordIndexes,
+}: ChatTabProps) {
   const apiKey = import.meta.env.VITE_LLM_KEY;
   // const client = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
 
@@ -30,6 +32,26 @@ export default function ChatTab({ messages, setMessages }: ChatTabProps) {
   const [input, setInput] = useState("");
   // const [lastResponseId] = useState<string | null>(null);
   const [markdownOutput, setMarkdownOutput] = useState("");
+
+  const systemMessage = useMemo(() => {
+    const words = passage.split(/\s+/);
+    const selectedWords =
+      selectedWordIndexes
+        ?.sort()
+        .map((i) => words[i])
+        .join(" ") || "";
+
+    return {
+      role: "system",
+      content: `You are a helpful blackout poetry assistant. 
+        Blackout poetry is a form poetry where given a passage, you select words from that passage to create a poem. 
+        Words must be selected in order as they appear in the passage. Additional words or punctuation that is not
+        included in the original passage may not be included in the poem.
+
+        The passage is: ${passage}
+        The currently selected words are: ${selectedWords || "none yet"}`,
+    };
+  }, [selectedWordIndexes]);
 
   useEffect(() => {
     if (chatContainerRef.current) {

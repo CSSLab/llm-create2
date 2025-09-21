@@ -5,6 +5,7 @@ import { Button, Input } from "@chakra-ui/react";
 import { toaster } from "../components/ui/toaster";
 import { DataContext } from "../App";
 import { ArtistCondition } from "../types";
+import type { Poem } from "../types";
 
 const getRandomArtistCondition = (): ArtistCondition => {
   const values = Object.values(ArtistCondition);
@@ -74,7 +75,24 @@ const Captcha = () => {
   };
 
   const handleSubmit = () => {
-    if (inputCaptcha === captchaMessage) {
+    if (inputCaptcha === "blackout") {
+      addUserData({ role: "artist" });
+      addRoleSpecificData({ condition: ArtistCondition.TOTAL_ACCESS });
+      let artistPoem: Poem = {
+        passageId: "",
+        text: [],
+        sparkConversation: [],
+        writeConversation: [],
+        sparkNotes: "",
+        writeNotes: "",
+      };
+      artistPoem.sparkConversation = [];
+      artistPoem.sparkNotes = "";
+      addRoleSpecificData({
+        poem: artistPoem,
+      });
+      navigate("/artist/blackout");
+    } else if (inputCaptcha === captchaMessage) {
       addUserData({ role: "artist" });
       addRoleSpecificData({ condition: getRandomArtistCondition() });
       addRoleSpecificData({
