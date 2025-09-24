@@ -8,7 +8,8 @@
     "build": "tsc -b && cd client && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start:backend": "node --trace-warnings server.js"
+    "start:backend": "node --trace-warnings server.js",
+    "start": "node --trace-warnings server.js"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.23.0",
