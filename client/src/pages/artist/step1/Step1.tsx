@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
 import MultiPageTemplate from "../../../components/shared/pages/multiPage";
 import { ArtistCondition } from "../../../types";
+import { Stage } from "../../../types";
 import type { Message, Poem } from "../../../types";
 import { useContext } from "react";
 import { DataContext } from "../../../App";
@@ -56,6 +57,7 @@ const ArtistStep1 = () => {
       duration={300}
       afterDuration={onComplete}
       llmAccess={userType == "TOTAL_ACCESS" || userType == "SPARK"}
+      stage={Stage.SPARK}
       messages={sparkMessages}
       setMessages={setSparkMessages}
       notes={sparkNotes}
