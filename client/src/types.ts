@@ -41,6 +41,12 @@ export interface Passage {
   text: string;
 }
 
+export const Stage = {
+  SPARK: "SPARK",
+  WRITE: "WRITE",
+};
+export type Stage = (typeof Stage)[keyof typeof Stage];
+
 export const ArtistCondition = {
   CONTROL: "CONTROL",
   SPARK: "SPARK",

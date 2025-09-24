@@ -6,6 +6,8 @@ import { toaster } from "../components/ui/toaster";
 import { DataContext } from "../App";
 import { ArtistCondition } from "../types";
 
+const TEST_CAPTCHA = "*TEST";
+
 const getRandomArtistCondition = (): ArtistCondition => {
   const values = Object.values(ArtistCondition);
   const randomIndex = Math.floor(Math.random() * values.length);
@@ -77,6 +79,13 @@ const Captcha = () => {
     if (inputCaptcha === captchaMessage) {
       addUserData({ role: "artist" });
       addRoleSpecificData({ condition: getRandomArtistCondition() });
+      addRoleSpecificData({
+        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+      });
+      navigate("/consent");
+    } else if (inputCaptcha == TEST_CAPTCHA) {
+      addUserData({ role: "artist" });
+      addRoleSpecificData({ condition: ArtistCondition.TOTAL_ACCESS });
       addRoleSpecificData({
         timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
       });
