@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { FiSend } from "react-icons/fi";
 import { Button, Textarea } from "@chakra-ui/react";
 import { nanoid } from "nanoid";
@@ -11,6 +11,7 @@ interface ChatTabProps {
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   stage: Stage;
+  selectedWordIndexes?: number[];
 }
 
 const systemMessageDefault = `
@@ -23,21 +24,23 @@ Your default style should be natural, chatty, and playful, rather than formal, r
 
 NEVER use the dalle tool even if the user specifically requests for an image to be generated.
 
-Blackout poetry is a form of poetry where given a passage, you select words from that passage to create a poem. Words must be selected in order as they appear in the passage, and selected words must appear in the passage. The passage is: Start Passage. Twilight settled over Zuckerman’s barn, and a feeling of peace. Fern knew it was almost suppertime but she couldn’t bear to leave. Swallows passed on silent wings, in and out of the doorways, bringing food to their young ones. From across the road a bird sang “Whippoorwill, whippoorwill!” Lurvy sat down under an apple tree and lit his pipe; the animals sniffed the familiar smell of strong tobacco. Wilbur heard the trill of the tree toad and the occasional slamming of the kitchen door. All these sounds made him feel comfortable and happy, for he loved life and loved to be a part of the world on a summer evening. But as he lay there he remembered what the old sheep had told him. The thought of death came to him and he began to tremble with fear. End Passage. The passage begins after "Start Passage." and ends before "End Passage.".',
+Blackout poetry is a form of poetry where given a passage, you select words from that passage to create a poem. Words must be selected in order as they appear in the passage, and selected words must appear in the passage. 
 
 The user is tasked with creating a blackout poem from this passage. Your goal is to assist the reader with this task by deeply understanding the user's intent with the poem, guiding the user through the poetry process, asking clarifying and thought provoking questions when needed, thinking step-by-step through complex problems, providing clear and accurate answers, and proactively anticipating helpful follow-up information. There are two stages in this process, SPARK and WRITE. If the user is in the SPARK, your aim is to focus on brainstorming ideas, not actually writing the poem. If the user is in WRITE, your job is to work as a co-author, actively acknowledge that they’ve done the work and its value, and if they seem to be struggling, guide them. DO NOT mention these stages in conversation, they are a guideline for you not the user.
 
 You MUST use this passage. Do not mention any other text, and always refer to the one given.
 
 Do not write a blackout poem unless the user specifically requests for a poem to be generated.
-
-
 `;
+
+const passage =
+  "Twilight settled over Zuckerman’s barn, and a feeling of peace. Fern knew it was almost suppertime but she couldn’t bear to leave. Swallows passed on silent wings, in and out of the doorways, bringing food to their young ones. From across the road a bird sang “Whippoorwill, whippoorwill!” Lurvy sat down under an apple tree and lit his pipe; the animals sniffed the familiar smell of strong tobacco. Wilbur heard the trill of the tree toad and the occasional slamming of the kitchen door. All these sounds made him feel comfortable and happy, for he loved life and loved to be a part of the world on a summer evening. But as he lay there he remembered what the old sheep had told him. The thought of death came to him and he began to tremble with fear.";
 
 export default function ChatTab({
   messages,
   setMessages,
   stage,
+  selectedWordIndexes,
 }: ChatTabProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -47,10 +50,23 @@ export default function ChatTab({
       ? `The user is in the SPARK stage.`
       : `The user is in the WRITE stage.`);
 
-  const systemMessage = {
-    role: "system",
-    content: systemMessageStage,
-  };
+  const systemMessage = useMemo(() => {
+    const words = passage.split(/\s+/);
+    const selectedWords =
+      selectedWordIndexes
+        ?.sort()
+        .map((i) => words[i])
+        .join(" ") || "";
+
+    return {
+      role: "system",
+      content:
+        systemMessageStage +
+        `The passage is: ${passage}, and the currently selected words are: ${
+          selectedWords || "none yet"
+        }`,
+    };
+  }, [selectedWordIndexes]);
 
   const [isLLMLoading, setIsLLMLoading] = useState(false);
   const [input, setInput] = useState("");

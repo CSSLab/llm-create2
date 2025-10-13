@@ -1,9 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useContext } from "react";
 import MultiPageTemplate from "../../../components/shared/pages/multiPage";
 import BlackoutPoetry from "../../../components/blackout/Blackout";
-import type { Artist, ArtistCondition, Message } from "../../../types";
-import { useContext } from "react";
+import type {
+  Artist,
+  ArtistCondition,
+  Message,
+  PoemSnapshot,
+} from "../../../types";
 import { DataContext } from "../../../App";
 import { Stage } from "../../../types";
 
@@ -21,6 +25,7 @@ const ArtistStep2 = () => {
 
   const writeMessagesRef = useRef<Message[]>([]);
   const selectedWordIndexesRef = useRef<number[]>([]);
+  const poemSnapshotsRef = useRef<PoemSnapshot[]>([]);
   const writeNotesRef = useRef<string>("");
 
   const [writeNotes, setWriteNotes] = useState(
@@ -30,11 +35,12 @@ const ArtistStep2 = () => {
     artistPoem.sparkConversation || []
   );
   const [selectedWordIndexes, setSelectedWordIndexes] = useState<number[]>([]);
+  const [poemSnapshots, setPoemSnapshots] = useState<PoemSnapshot[]>([]);
   const userType = userData?.data.condition as ArtistCondition;
 
   const onComplete = useCallback(() => {
     artistPoem.writeConversation = writeMessagesRef.current || [];
-    artistPoem.text = selectedWordIndexesRef.current.sort((a, b) => a - b); // sorts indexes in ascending order
+    artistPoem.text = selectedWordIndexesRef.current;
     artistPoem.writeNotes = writeNotesRef.current || "";
 
     addRoleSpecificData({
@@ -48,7 +54,8 @@ const ArtistStep2 = () => {
     writeMessagesRef.current = writeMessages;
     selectedWordIndexesRef.current = selectedWordIndexes;
     writeNotesRef.current = writeNotes;
-  }, [writeMessages, writeNotes, selectedWordIndexes]);
+    poemSnapshotsRef.current = poemSnapshots;
+  }, [writeMessages, writeNotes, selectedWordIndexes, poemSnapshots]);
 
   return (
     <MultiPageTemplate
@@ -60,12 +67,14 @@ const ArtistStep2 = () => {
       setMessages={setWriteMessages}
       notes={writeNotes}
       setNotes={setWriteNotes}
+      selectedWordIndexes={selectedWordIndexes}
     >
       <div className="h-max w-full flex flex-col justify-between">
         <BlackoutPoetry
           onSubmit={onComplete}
           selectedWordIndexes={selectedWordIndexes}
           setSelectedWordIndexes={setSelectedWordIndexes}
+          setPoemSnapshots={setPoemSnapshots}
         />
       </div>
     </MultiPageTemplate>

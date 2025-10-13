@@ -5,6 +5,7 @@ import { Button, Input } from "@chakra-ui/react";
 import { toaster } from "../components/ui/toaster";
 import { DataContext } from "../App";
 import { ArtistCondition } from "../types";
+import type { Poem } from "../types";
 
 const TEST_CAPTCHA = "*TEST";
 
@@ -90,6 +91,23 @@ const Captcha = () => {
         timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
       });
       navigate("/consent");
+    } else if (inputCaptcha === "blackout") {
+      addUserData({ role: "artist" });
+      addRoleSpecificData({ condition: ArtistCondition.TOTAL_ACCESS });
+      let artistPoem: Poem = {
+        passageId: "",
+        text: [],
+        sparkConversation: [],
+        writeConversation: [],
+        sparkNotes: "",
+        writeNotes: "",
+      };
+      artistPoem.sparkConversation = [];
+      artistPoem.sparkNotes = "";
+      addRoleSpecificData({
+        poem: artistPoem,
+      });
+      navigate("/artist/blackout");
     } else {
       toaster.create({
         description: "Captcha does not match! Try again.",

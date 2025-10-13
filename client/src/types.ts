@@ -169,3 +169,5 @@ export interface SurveyQuestion {
   options?: string[]; // For multiple choice
   scale?: number; // For scale questions (e.g., 7-point scale)
 }
+
+export type PoemSnapshot = { indexes: number[]; timestamp: Date };
