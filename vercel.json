@@ -1,3 +1,18 @@
 {
-  "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }]
+  "version": 2,
+  "builds": [
+    {
+      "src": "server/api/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    }
+  ],
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/server/api/index.ts" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

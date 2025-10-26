@@ -4,17 +4,20 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && cd client && vite build",
+    "dev:client": "vite",
+    "dev:server": "cd server && npm run dev",
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "build:client": "tsc -b && vite build",
+    "build:server": "cd server && npm install && npm run build && cd ..",
+    "build": "npm run build:server && npm run build:client",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "start:backend": "node --trace-warnings server.js",
-    "start": "node --trace-warnings server.js"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.23.0",
     "@emotion/react": "^11.14.0",
     "axios": "^1.12.2",
+    "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",

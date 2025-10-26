@@ -1,69 +1,15 @@
-# React + TypeScript + Vite
+# LLM Create Part 2
+## Lost in Translation: Exploring the Impact of LLMs on the Human Creative Process
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+<img width="2438" height="619" alt="Artist and Audience" src="https://github.com/user-attachments/assets/3d50953e-5e37-4efc-9183-20527226399b" />
 
-Currently, two official plugins are available:
+There is an inherently social aspect to creativity. It is the driving force that builds culture and society, and whether through direct or indirect, all creative processes involve some interaction with others [1,2]. This makes the relationship between the artist and the audience one of the most fundamental aspects of the creative process.  Now, with the progressive growth and integration of generative AI into daily activities, including the creative process, what does that mean for the future of human creativity?
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+In this first part of the project, we explore the two questions: “How does the use of Large Language Models during the creative process impact an individual?” and “How does the use of Large Language Models at different points in the creative process impact the creative output?”
 
-## Expanding the ESLint configuration
+Our experimental design involves two phases: one for artists and another for the audience. In the artist phase, participants are tasked with writing a blackout poem. Each participant is assigned to one of three conditions (control, spark, writing), which determines when and how they can use AI to complete their poem. These poems are then evaluated by participants in the audience experiment.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+We plan to continue this research in a second part through a longitudinal field study.
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Kwan, L. Y. -Y., Leung, A. K. -y., & Liou, S. (2018). Culture, creativity, and innovation. Journal of Cross-Cultural Psychology, 49(2), 165–170. https://doi.org/10.1177/0022022117753306s
+2. Elisondo, R. (2016). Creativity is Always a Social Process. Creativity. Theories – Research - Applications, 3(2), 2016. 194-210. https://doi.org/10.1515/ctra-2016-0013
