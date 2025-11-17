@@ -1,17 +1,16 @@
 import React, { useState } from "react";
 import { Input, Button } from "@chakra-ui/react";
+import { Passages } from "../consts/passages";
 
 const PoemViewer: React.FC = () => {
-  const [passageText] = useState(
-    "Twilight settled over Zuckerman’s barn, and a feeling of peace. Fern knew it was almost suppertime but she couldn’t bear to leave. Swallows passed on silent wings, in and out of the doorways, bringing food to their young ones. From across the road a bird sang “Whippoorwill, whippoorwill!” Lurvy sat down under an apple tree and lit his pipe; the animals sniffed the familiar smell of strong tobacco. Wilbur heard the trill of the tree toad and the occasional slamming of the kitchen door. All these sounds made him feel comfortable and happy, for he loved life and loved to be a part of the world on a summer evening. But as he lay there he remembered what the old sheep had told him. The thought of death came to him and he began to tremble with fear."
-  );
+  const [passageNumber, setPassageNumber] = useState("");
 
-  const words = passageText.split(" ");
+  const [passageText, setPassageText] = useState("");
 
   const [inputValue, setInputValue] = useState("");
-  const [visibleIndexes, setVisibleIndexes] = useState<number[]>(
-    Array.from({ length: words.length }, (_, i) => i)
-  );
+  const words = passageText ? passageText.split(" ") : [];
+
+  const [visibleIndexes, setVisibleIndexes] = useState<number[]>([]);
 
   const handleApply = () => {
     try {
@@ -26,9 +25,35 @@ const PoemViewer: React.FC = () => {
     }
   };
 
+  const handlePassageLoad = () => {
+    const found = Passages.find((p) => p.id === passageNumber.trim());
+    if (!found) {
+      alert("Passage not found.");
+      return;
+    }
+
+    setPassageText(found.text);
+
+    // Reset visible indexes to show all words initially
+    const newWords = found.text.split(" ");
+    setVisibleIndexes(Array.from({ length: newWords.length }, (_, i) => i));
+  };
+
   return (
     <div className="flex justify-center items-center h-screen">
       <div className="w-1/2 flex flex-col justify-center items-center p-6 space-y-6">
+        {/* Passage Input */}
+        <div className="flex space-x-4 w-full max-w-lg">
+          <Input
+            placeholder="Enter passage number (e.g., 1, 2, 3)"
+            value={passageNumber}
+            onChange={(e) => setPassageNumber(e.target.value)}
+          />
+          <Button onClick={handlePassageLoad} className="btn-small-inverted">
+            Load
+          </Button>
+        </div>
+
         {/* Poem */}
         <div className="max-w-3xl text-center leading-relaxed flex flex-wrap">
           {words.map((word, i) => {
@@ -46,7 +71,7 @@ const PoemViewer: React.FC = () => {
           })}
         </div>
 
-        {/* Input + Button */}
+        {/* Index Input */}
         <div className="flex space-x-4 w-full max-w-lg">
           <Input
             placeholder="Enter indexes like [1,2,3]"
