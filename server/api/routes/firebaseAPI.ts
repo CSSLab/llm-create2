@@ -83,6 +83,7 @@ router.post("/commit-session", async (req, res) => {
       surveyResponse: surveyRef,
       poem: poemRef,
       timestamps: [...(artistData.timeStamps ?? []), new Date()],
+      captcha: artistData?.captcha ? artistData?.captcha : null,
     };
 
     batch.set(artistRef, artist);

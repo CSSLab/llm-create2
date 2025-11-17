@@ -144,6 +144,16 @@ const Captcha = () => {
         timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
       });
       navigate("/consent");
+    } else if (inputCaptcha == "aria") {
+      addUserData({ role: "artist" });
+      addRoleSpecificData({ condition: getRandomArtistCondition() });
+      addRoleSpecificData({
+        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+      });
+      addRoleSpecificData({
+        captcha: "aria",
+      });
+      navigate("/consent");
     } else {
       toaster.create({
         description: "Captcha does not match! Try again.",

@@ -4,6 +4,7 @@ export interface Artist {
   surveyResponse: ArtistSurvey;
   poem: Poem;
   timeStamps: Date[];
+  captcha?: string;
 }
 
 export interface ArtistSurvey {
