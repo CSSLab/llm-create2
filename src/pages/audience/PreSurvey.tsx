@@ -65,7 +65,7 @@ const AudiencePreSurvey = () => {
   }
   const handleSubmit = (answers: any) => {
     console.log(answers);
-    navigate("/artist/instructions");
+    navigate("/audience/instructions");
   };
 
   return (

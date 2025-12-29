@@ -19,7 +19,7 @@ const ConsentForm = () => {
       addRoleSpecificData({
         timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
       });
-      navigate("/artist/pre-survey");
+      navigate("/choice");
     } else {
       toaster.create({
         description: "Please give your consent to proceed",
