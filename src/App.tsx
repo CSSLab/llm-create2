@@ -82,7 +82,7 @@ function App() {
 
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(async () => {
-      await fetch("/api/firebase/autosave", {
+      await fetch("/api/firebase/artist/autosave", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, data }),
