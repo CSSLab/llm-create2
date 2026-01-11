@@ -4,6 +4,7 @@ import HalfPageTemplate from "../../components/shared/pages/halfPage";
 import { Button, Input } from "@chakra-ui/react";
 import { toaster } from "../../components/ui/toaster";
 import { DataContext } from "../../App";
+import { Passages } from "../../consts/passages";
 const TEST_CAPTCHA = "*TEST";
 
 const Captcha = () => {
@@ -33,6 +34,12 @@ const Captcha = () => {
       );
     }
     setCaptchaMessage(captcha_text);
+  };
+
+  const getRandomPassage = () => {
+    const numPassages = Passages.length;
+    const randomIndex = Math.floor(Math.random() * numPassages);
+    return randomIndex.toString();
   };
 
   useEffect(() => {
@@ -71,12 +78,14 @@ const Captcha = () => {
     if (inputCaptcha === captchaMessage) {
       addUserData({ role: "audience" });
       addRoleSpecificData({
+        passageId: getRandomPassage(),
         timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
       });
       navigate("/consent");
     } else if (inputCaptcha == TEST_CAPTCHA) {
       addUserData({ role: "audience" });
       addRoleSpecificData({
+        passageId: getRandomPassage(),
         timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
       });
       navigate("/consent");
