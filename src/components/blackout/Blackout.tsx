@@ -211,15 +211,14 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
             const blackoutStyle = isSelected
               ? "text-main text-dark-grey"
               : "text-main text-dark-grey bg-dark-grey";
-            const spaceStyle = isSelected ? "" : "bg-dark-grey";
+            const spacingStyle = token.spaceAfter ? "pr-2" : "";
 
             return (
               <span
                 key={i}
-                className={`transition duration-200 ${blackoutStyle}`}
+                className={`transition duration-200 ${blackoutStyle} ${spacingStyle}`}
               >
                 {token.text}
-                {token.spaceAfter && <span className={`px-1 ${spaceStyle}`}>{" "}</span>}
               </span>
             );
           })}
