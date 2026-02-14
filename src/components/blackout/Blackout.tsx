@@ -1,8 +1,51 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@chakra-ui/react";
 import type { PoemSnapshot } from "../../types";
 import { MdOutlineUndo } from "react-icons/md";
 import { MdOutlineRedo } from "react-icons/md";
+
+interface Token {
+  text: string;
+  spaceAfter: boolean;
+}
+
+const tokenizeText = (text: string): Token[] => {
+  const tokens: Token[] = [];
+  // Regex to match words (\w+) or single punctuation characters ([^\s\w])
+  const regex = /(\w+)|([^\s\w])/g;
+  let match;
+  const rawTokens: { text: string; index: number }[] = [];
+
+  while ((match = regex.exec(text)) !== null) {
+    rawTokens.push({ text: match[0], index: match.index });
+  }
+
+  for (let i = 0; i < rawTokens.length; i++) {
+    const current = rawTokens[i];
+    const next = rawTokens[i + 1];
+
+    let spaceAfter = false;
+
+    if (next) {
+      const endOfCurrent = current.index + current.text.length;
+      const startOfNext = next.index;
+
+      // Check if there's a space in the original text between tokens
+      const hasSpaceBetween = text.slice(endOfCurrent, startOfNext).includes(" ");
+
+      // Hyphens: no space before or after
+      if (current.text === "-" || next.text === "-") {
+        spaceAfter = false;
+      } else if (hasSpaceBetween) {
+        spaceAfter = true;
+      }
+    }
+
+    tokens.push({ text: current.text, spaceAfter });
+  }
+
+  return tokens;
+};
 
 interface BlackoutProps {
   passageText: string;
@@ -17,7 +60,7 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
   setSelectedWordIndexes,
   setPoemSnapshots,
 }) => {
-  const words = passageText.split(" ");
+  const tokens = useMemo(() => tokenizeText(passageText), [passageText]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1); // Track undo/redo position
   const [history, setHistory] = useState<PoemSnapshot[]>([]);
 
@@ -139,7 +182,7 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
           className="leading-relaxed flex flex-wrap select-none h-max"
           onCopy={(e) => e.preventDefault()}
         >
-          {words.map((word, i) => {
+          {tokens.map((token, i) => {
             const isSelected = selectedWordIndexes.includes(i);
             const textColor = isSelected
               ? "text-main text-light-grey-1"
@@ -149,9 +192,10 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
               <span
                 key={i}
                 onClick={() => toggleSelect(i)}
-                className={`cursor-pointer transition px-1 duration-200 ${textColor}`}
+                className={`cursor-pointer transition duration-200 ${textColor}`}
               >
-                {word + " "}
+                {token.text}
+                {token.spaceAfter && <span className="px-1">{" "}</span>}
               </span>
             );
           })}
@@ -162,18 +206,19 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
           className="leading-relaxed flex flex-wrap select-none h-max"
           onCopy={(e) => e.preventDefault()}
         >
-          {words.map((word, i) => {
+          {tokens.map((token, i) => {
             const isSelected = selectedWordIndexes.includes(i);
             const blackoutStyle = isSelected
               ? "text-main text-dark-grey"
               : "text-main text-dark-grey bg-dark-grey";
+            const spacingStyle = token.spaceAfter ? "pr-2" : "";
 
             return (
               <span
                 key={i}
-                className={`px-1 transition duration-200 ${blackoutStyle}`}
+                className={`transition duration-200 ${blackoutStyle} ${spacingStyle}`}
               >
-                {word + " "}
+                {token.text}
               </span>
             );
           })}
