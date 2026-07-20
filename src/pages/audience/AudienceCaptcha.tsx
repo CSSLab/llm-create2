@@ -4,7 +4,10 @@ import HalfPageTemplate from "../../components/shared/pages/halfPage";
 import { Button, Input } from "@chakra-ui/react";
 import { toaster } from "../../components/ui/toaster";
 import { DataContext } from "../../App";
+import { AudienceCondition } from "../../types";
 const TEST_CAPTCHA = "*TEST";
+const WITH_AI_TEST = "WITH_AI_TEST";
+const WITHOUT_AI_TEST = "WITHOUT_AI_TEST";
 
 const Captcha = () => {
   const navigate = useNavigate();
@@ -67,16 +70,37 @@ const Captcha = () => {
     }
   };
 
+  const randomCondition = (): AudienceCondition =>
+    Math.random() < 0.5
+      ? AudienceCondition.WITH_AI_OVERVIEW
+      : AudienceCondition.WITHOUT_AI_OVERVIEW;
+
   const handleSubmit = () => {
     if (inputCaptcha === captchaMessage) {
       addUserData({ role: "audience" });
       addRoleSpecificData({
+        condition: randomCondition(),
         timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
       });
       navigate("/consent");
-    } else if (inputCaptcha == TEST_CAPTCHA) {
+    } else if (inputCaptcha === TEST_CAPTCHA) {
       addUserData({ role: "audience" });
       addRoleSpecificData({
+        condition: randomCondition(),
+        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+      });
+      navigate("/consent");
+    } else if (inputCaptcha === WITH_AI_TEST) {
+      addUserData({ role: "audience" });
+      addRoleSpecificData({
+        condition: AudienceCondition.WITH_AI_OVERVIEW,
+        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+      });
+      navigate("/consent");
+    } else if (inputCaptcha === WITHOUT_AI_TEST) {
+      addUserData({ role: "audience" });
+      addRoleSpecificData({
+        condition: AudienceCondition.WITHOUT_AI_OVERVIEW,
         timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
       });
       navigate("/consent");

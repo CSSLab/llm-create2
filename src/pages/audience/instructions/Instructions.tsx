@@ -1,12 +1,11 @@
-import { Collapsible, Icon, Image } from "@chakra-ui/react";
-import PageTemplate from "../../../components/shared/pages/audiencePages/scrollFullPage";
+import { Image } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
-import { MdInfoOutline } from "react-icons/md";
-import BlackoutExample1 from "../../../assets/blackout1.png";
-import BlackoutExample2 from "../../../assets/blackout2.png";
 import CheatIcon from "../../../assets/cheat-icon.png";
+import BlackoutExample from "../../../assets/blackout3.png";
+import StarIcon from "../../../assets/star.svg";
 import { useContext } from "react";
 import { DataContext } from "../../../App";
+import PageTemplate from "../../../components/shared/pages/audiencePages/scrollFullPage";
 
 const AudienceInstructions = () => {
   const navigate = useNavigate();
@@ -28,89 +27,81 @@ const AudienceInstructions = () => {
   return (
     <PageTemplate
       title="Your Task"
-      nextButton={{ text: "Begin step 1", action: handleSubmit }}
+      nextButton={{ text: "Begin", action: handleSubmit }}
     >
-      <div className="w-full h-max flex-col space-y-6">
-        <div className="text-main mb-2 text-justify">
-          In this study, you will be introduced to blackout poetry and read a
-          couple blackout poems! In a previous study, we asked participants to
-          write their own blackout poems, and now you will read some of the
-          poems they created. We will first share with you the passage that the
-          participants used for their blackout poems, then ask you a couple
-          questions about each poem.
-          <Collapsible.Root unmountOnExit>
-            <Collapsible.Trigger className="text-main underline italic text-light-grey-1 pt-2">
-              <div className="flex flex-row items-center space-x-2">
-                <Icon className="w-4 h-4 fill-light-grey-1">
-                  <MdInfoOutline />
-                </Icon>
-                <p>Click here for more information on blackout poetry</p>
-              </div>
-            </Collapsible.Trigger>
-            <Collapsible.Content>
-              <div className="w-full h-max p-4 mt-3 border rounded-lg border-light-grey-2">
-                <p className="text-main">
-                  <strong className="italic">Blackout poetry</strong> involves{" "}
-                  <strong>blacking out words</strong> from an existing piece of
-                  text <strong>to create a new poem</strong>.
-                </p>
-                <p className="text-main pt-1">
-                  Here are two examples of blackout poetry made using the same
-                  piece of text:{" "}
-                </p>
-                <div className="w-full h-max flex flex-col md:flex-row">
-                  <Image
-                    alt="Blackout Example 1"
-                    src={BlackoutExample1}
-                    className="w-64"
+      <div className="w-full flex flex-col space-y-6">
+        {/* Intro */}
+        <p className="text-main">
+          In this study you will read <strong>blackout poems</strong> written by
+          participants in a previous study. A blackout poem is made by selecting
+          words from an existing passage of text to create a new poem.
+        </p>
+
+        <Image
+          alt="Blackout Example"
+          src={BlackoutExample}
+          className="w-full lg:w-4/5 self-center"
+        />
+
+        <p className="text-main">
+          Your job is to read each poem carefully and share your thoughts. Don't
+          worry about having a background in poetry — we're just interested in
+          your honest reaction!
+        </p>
+
+        {/* Steps */}
+        <div className="space-y-3">
+          <p className="text-main">The task has two steps:</p>
+          {[
+            {
+              label: "Read the passage",
+              timing: "~4 min",
+              desc: "Familiarize yourself with the source text that participants used to write their poems.",
+            },
+            {
+              label: "Share your thoughts",
+              timing: "~4 min per poem",
+              desc: "Read several blackout poems one at a time and answer a few questions about each one.",
+            },
+          ].map((step, i) => (
+            <div
+              key={i}
+              className="flex items-start gap-4 p-4 border border-light-grey-2 rounded-lg"
+            >
+              <span className="flex-shrink-0 w-6 h-6 rounded-full text-dark-grey text-xs flex items-center justify-center font-medium">
+                {i + 1}
+              </span>
+              <div>
+                <p className="text-main flex items-center gap-1.5">
+                  <span className="text-h3">{step.label}</span>
+                  <img
+                    src={StarIcon}
+                    alt=""
+                    className="w-2.5 h-2.5 inline-block"
                   />
-                  <Image
-                    alt="Blackout Example 2"
-                    src={BlackoutExample2}
-                    className="w-64"
-                  />
-                </div>
+                  <span className="text-main">{step.timing}</span>
+                </p>
+                <p className="text-sub mt-0.5">{step.desc}</p>
               </div>
-            </Collapsible.Content>
-          </Collapsible.Root>
+            </div>
+          ))}
         </div>
-        <div>
-          <p className="text-main mb-2">The task involves three steps:</p>
-          <ul className="list-decimal mb-4 pl-6 space-y-4">
-            <li className="text-main">
-              <strong>Familiarize yourself with the text</strong>
-              <p className="text-main">
-                You’ll be shown the passage used to create the blackout poems.
-                For now, you won’t start analyzing the poems yet!
-              </p>
-            </li>
-            <li className="text-main">
-              <strong>Read the poems</strong>
-              <p className="text-main w-full max-w-128">
-                You will be shown 4 blackout poems created from the passage one
-                by one. For each poem, take your time to read and reflect on
-                them. After reading each poem, you will be asked a couple of
-                questions about it.
-              </p>
-            </li>
-            <li className="text-main">
-              <strong>Final thoughts</strong>
-              <p className="text-main w-full max-w-128">
-                After reading all the poems, you will be asked a couple of final
-                questions about your experience and thoughts.
-              </p>
-            </li>
-          </ul>
-          <div className="w-full h-max p-4 mt-4 border rounded-lg border-light-grey-2 flex items-center gap-4">
-            <Image alt="Cheat icon" src={CheatIcon} className="w-12" />
-            <p className="text-main mb-0">
-              Important: please do not take screenshots, copy text, or consult
-              external tools such as ChatGPT. We're interested in your best
-              effort and what you learn! In addition, do not refresh or use the
-              browser's back/forward buttons as you will not be able to continue
-              the task.
-            </p>
-          </div>
+
+        <hr className="border-light-grey-2" />
+
+        {/* Warning */}
+        <div className="w-full p-4 border rounded-lg border-light-grey-2 flex items-center gap-4">
+          <Image
+            alt="Cheat icon"
+            src={CheatIcon}
+            className="w-10 flex-shrink-0"
+          />
+          <p className="text-main text-sm">
+            Important: Please do not take screenshots, copy text, or consult
+            external tools such as ChatGPT. We're interested in your best effort
+            and what you learn! In addition, do not refresh or use the browser's
+            back/forward buttons as you will not be able to continue the task.
+          </p>
         </div>
       </div>
     </PageTemplate>

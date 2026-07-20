@@ -99,4 +99,71 @@ router.post("/commit-session", async (req, res) => {
   }
 });
 
+const POEM_OVERVIEW_COLLECTION = "poemOverview";
+
+// Fetch poems from Firebase filtered to LLM and NO_AI artist conditions
+router.get("/audience-poems", async (req, res) => {
+  try {
+    const artistSnapshot = await db
+      .collection(ARTIST_COLLECTION)
+      .where("condition", "in", ["LLM", "NO_AI"])
+      .get();
+
+    if (artistSnapshot.empty) {
+      return res.json({ poems: [] });
+    }
+
+    const poems: any[] = [];
+    for (const artistDoc of artistSnapshot.docs) {
+      const artistData = artistDoc.data();
+      const poemRef = artistData.poem;
+      if (!poemRef) continue;
+
+      const poemDoc = await poemRef.get();
+      if (!poemDoc.exists) continue;
+
+      poems.push({ id: poemDoc.id, artistId: artistDoc.id, ...poemDoc.data() });
+    }
+
+    res.json({ poems });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch audience poems" });
+  }
+});
+
+// Get existing overview for a poem (returns null if not yet generated)
+router.get("/poem-overview/:poemId", async (req, res) => {
+  try {
+    const { poemId } = req.params;
+    const doc = await db.collection(POEM_OVERVIEW_COLLECTION).doc(poemId).get();
+    if (!doc.exists) {
+      return res.json({ overview: null });
+    }
+    res.json({ overview: doc.data()?.overview ?? null });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch poem overview" });
+  }
+});
+
+// Store a generated overview for a poem
+router.post("/poem-overview/:poemId", async (req, res) => {
+  try {
+    const { poemId } = req.params;
+    const { overview } = req.body;
+    if (!overview) {
+      return res.status(400).json({ error: "Missing overview" });
+    }
+    await db
+      .collection(POEM_OVERVIEW_COLLECTION)
+      .doc(poemId)
+      .set({ overview, createdAt: FieldValue.serverTimestamp() });
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to store poem overview" });
+  }
+});
+
 export default router;

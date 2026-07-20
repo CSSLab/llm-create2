@@ -75,6 +75,7 @@ export type Role = (typeof Role)[keyof typeof Role];
 
 // AUDIENCE TYPES
 export interface Audience {
+  condition: AudienceCondition;
   passageId: string;
   surveyResponse: AudienceSurvey;
   poemsViewed: AudiencePoem[];
@@ -106,12 +107,12 @@ export interface Passage {
   text: string;
 }
 
-// export const AudienceCondition = {
-//   NO_KNOWLEDGE: "NO_KNOWLEDGE",
-//   FULL_TRANSPARENCY: "FULL_TRANSPARENCY",
-// } as const;
-// export type AudienceCondition =
-//   (typeof AudienceCondition)[keyof typeof AudienceCondition];
+export const AudienceCondition = {
+  WITH_AI_OVERVIEW: "WITH_AI_OVERVIEW",
+  WITHOUT_AI_OVERVIEW: "WITHOUT_AI_OVERVIEW",
+} as const;
+export type AudienceCondition =
+  (typeof AudienceCondition)[keyof typeof AudienceCondition];
 
 export type QuestionType =
   | "multipleChoice"

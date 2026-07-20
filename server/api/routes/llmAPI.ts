@@ -38,4 +38,49 @@ router.post("/query", async (req: express.Request, res: express.Response) => {
   }
 });
 
+router.post(
+  "/generate-overview",
+  async (req: express.Request, res: express.Response) => {
+    try {
+      const { passageText, selectedWordIndexes } = req.body;
+      if (!passageText || !selectedWordIndexes) {
+        return res
+          .status(400)
+          .json({ error: "Missing passageText or selectedWordIndexes" });
+      }
+
+      const words = passageText.split(" ");
+      const poemWords = (selectedWordIndexes as number[])
+        .map((i: number) => words[i])
+        .filter(Boolean)
+        .join(" ");
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a literary assistant helping readers interpret blackout poetry. " +
+              "Given the words selected from a passage to form a blackout poem, write a brief, " +
+              "thoughtful interpretation (2–3 sentences) of the poem's meaning and mood. " +
+              "Do not mention blackout poetry mechanics — focus only on the meaning conveyed by the words.",
+          },
+          {
+            role: "user",
+            content: `The poem consists of these words selected from the passage: "${poemWords}"`,
+          },
+        ],
+      });
+
+      const overview =
+        completion.choices?.[0]?.message?.content?.trim() ?? "";
+      res.json({ overview });
+    } catch (err) {
+      console.error("Error generating overview:", err);
+      res.status(500).json({ error: "Failed to generate overview." });
+    }
+  }
+);
+
 export default router;

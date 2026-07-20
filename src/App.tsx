@@ -43,9 +43,7 @@ import { Toaster } from "./components/ui/toaster";
 import { globalSaveQueue } from "./utils/saveQueue";
 import AudienceInstructions from "./pages/audience/instructions/Instructions";
 import AudiencePassage from "./pages/audience/step1/Step1";
-import AudienceAI from "./pages/audience/step2/Step2AIDisclousure";
 import AudiencePostSurvey from "./pages/audience/PostSurvey";
-import AudienceReRanking from "./pages/audience/step2/Step2AI";
 import AudienceThankYou from "./pages/audience/ThankYou";
 
 interface DataContextValue {
@@ -264,11 +262,7 @@ function App() {
                     path="/audience/ranking"
                     element={<AudienceRanking />}
                   />
-                  <Route path="/audience/ai" element={<AudienceAI />} />
-                  <Route
-                    path="/audience/ai-disclosure"
-                    element={<AudienceReRanking />}
-                  />
+
                   <Route
                     path="/audience/post-survey"
                     element={<AudiencePostSurvey />}
