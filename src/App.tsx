@@ -36,6 +36,7 @@ import type {
   ArtistSurvey,
   AudienceSurvey,
   ProlificMeta,
+  ArtistCondition,
 } from "./types";
 import { Provider } from "./components/ui/provider";
 import { Toaster } from "./components/ui/toaster";
@@ -57,6 +58,7 @@ interface DataContextValue {
   disableRefreshGuard: () => void;
   isTestMode: boolean;
   setIsTestMode: (value: boolean) => void;
+  previousCondition: ArtistCondition | null;
 }
 
 export const DataContext = createContext<DataContextValue | null>(null);
@@ -66,6 +68,8 @@ function App() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [prolific, setProlific] = useState<ProlificMeta | null>(null);
   const [isTestMode, setIsTestMode] = useState<boolean>(false);
+  const [previousCondition, setPreviousCondition] =
+    useState<ArtistCondition | null>(null);
   const saveTimerRef = useRef<number | null>(null);
 
   const { disable: disableRefreshGuard } = usePreventRefresh(
@@ -91,6 +95,15 @@ function App() {
 
     if (prolificPid && studyId && prolificSessionId) {
       setProlific({ prolificPid, studyId, prolificSessionId });
+      fetch(
+        `/api/firebase/participant-condition?prolificPid=${encodeURIComponent(prolificPid)}`,
+      )
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.condition)
+            setPreviousCondition(data.condition as ArtistCondition);
+        })
+        .catch(() => {});
     }
   }, []);
 
@@ -242,6 +255,7 @@ function App() {
         disableRefreshGuard,
         isTestMode,
         setIsTestMode,
+        previousCondition,
       }}
     >
       <Provider>

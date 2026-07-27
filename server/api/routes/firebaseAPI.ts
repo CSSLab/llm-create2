@@ -109,4 +109,29 @@ router.post("/commit-session", async (req, res) => {
   }
 });
 
+router.get("/participant-condition", async (req, res) => {
+  try {
+    const { prolificPid } = req.query;
+    if (!prolificPid || typeof prolificPid !== "string") {
+      return res.status(400).json({ error: "Missing prolificPid" });
+    }
+
+    const snapshot = await db
+      .collection(ARTIST_COLLECTION)
+      .where("prolific.prolificPid", "==", prolificPid)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return res.json({ condition: null });
+    }
+
+    const condition = snapshot.docs[0].data().condition ?? null;
+    res.json({ condition });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to look up participant condition" });
+  }
+});
+
 export default router;
