@@ -22,7 +22,7 @@ const Captcha = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { userData, addUserData, addRoleSpecificData, setIsTestMode } = context;
+  const { userData, addUserData, addRoleSpecificData, setIsTestMode, previousCondition } = context;
   const [captchaMessage, setCaptchaMessage] = useState("");
   const [inputCaptcha, setInputCaptcha] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -120,7 +120,7 @@ const Captcha = () => {
     } else if (inputCaptcha === captchaMessage) {
       addUserData({ role: "artist" });
       addRoleSpecificData({
-        condition: getRandomArtistCondition(),
+        condition: previousCondition ?? getRandomArtistCondition(),
         poem: makePoem(),
         timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
       });
