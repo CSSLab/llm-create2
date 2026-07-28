@@ -46,6 +46,19 @@ const stageMessages: Record<Stage, string> = {
     "The user is now composing—selecting words from the passage to build the poem. Their current selections appear below and update as they work. Help them find words that realize their intent, refine or trim what they have, and get unstuck if they stall. When suggesting sequences of words, respect the passage-order rule.",
 };
 
+const promptSuggestions: Record<Stage, string[]> = {
+  SPARK: [
+    "What themes could this passage support?",
+    "What moods could I aim for?",
+    "Where should I start?",
+  ],
+  WRITE: [
+    "Help me find words for my idea",
+    "What should I select next?",
+    "How can I improve what I have?",
+  ],
+};
+
 export default function ChatTab({
   messages,
   setMessages,
@@ -87,19 +100,6 @@ ${passage}
 CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
     };
   }, [passage, selectedWordIndexes, stage]);
-
-  const promptSuggestions =
-    stage === "SPARK"
-      ? [
-          "What ideas could this text inspire?",
-          "Which theme feels most compelling?",
-          "Where should I start looking?",
-        ]
-      : [
-          "What directions could my blackout poem take?",
-          "Which themes feels strongest to build around?",
-          "How do I begin choosing words?",
-        ];
 
   const openingMessage = {
     role: Role.LLM,
@@ -331,7 +331,7 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
             <div className="mt-4 space-y-2">
               <p className="text-sm text-gray-600 mb-3">Try asking me:</p>
               <div className="flex flex-wrap gap-2">
-                {promptSuggestions.map((prompt, index) => (
+                {promptSuggestions[stage].map((prompt, index) => (
                   <button
                     key={index}
                     onClick={() => handlePromptSelection(prompt)}
