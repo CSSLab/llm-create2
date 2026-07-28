@@ -9,6 +9,10 @@ import { DataContext } from "../../../App";
 import type { Artist, Passage } from "../../../types";
 import { Button } from "@chakra-ui/react";
 import StarIcon from "../../../assets/star.svg";
+import {
+  createAssistantMessage,
+  STAGE_OPENING_MESSAGES,
+} from "../../../consts/chatMessages";
 
 const ArtistStep1 = () => {
   const navigate = useNavigate();
@@ -26,7 +30,11 @@ const ArtistStep1 = () => {
   const userType = userData?.data.condition as ArtistCondition;
   const isLLM = userType === "LLM";
 
-  const [sparkMessages, setSparkMessages] = useState<Message[]>([]);
+  const [sparkMessages, setSparkMessages] = useState<Message[]>(() =>
+    isLLM
+      ? [createAssistantMessage(STAGE_OPENING_MESSAGES[Stage.SPARK])]
+      : [],
+  );
   const [sparkNotes, setSparkNotes] = useState<string>("");
 
   // 0 = brainstorm instructions (all users), 1 = LLM assistant info (LLM only), done
