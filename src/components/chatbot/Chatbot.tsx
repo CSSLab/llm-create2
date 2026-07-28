@@ -63,6 +63,56 @@ const promptSuggestions: Record<Stage, string[]> = {
   ],
 };
 
+interface StreamEvent {
+  content?: string;
+  choices?: Array<{ delta?: { content?: string } }>;
+}
+
+const readStreamingText = async (
+  response: Response,
+  onText: (text: string) => void,
+) => {
+  if (!response.ok) {
+    throw new Error(`LLM request failed with status ${response.status}`);
+  }
+  if (!response.body) {
+    throw new Error("LLM response did not include a stream");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+  let fullText = "";
+
+  const processLine = (line: string) => {
+    if (!line.startsWith("data: ")) return;
+
+    const data = line.slice("data: ".length).trim();
+    if (!data || data === "[DONE]") return;
+
+    const event = JSON.parse(data) as StreamEvent;
+    const delta = event.content ?? event.choices?.[0]?.delta?.content;
+    if (!delta) return;
+
+    fullText += delta;
+    onText(fullText);
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() ?? "";
+    lines.forEach(processLine);
+
+    if (done) break;
+  }
+
+  if (buffer) processLine(buffer);
+  return fullText;
+};
+
 export default function ChatTab({
   messages,
   setMessages,
@@ -181,38 +231,8 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
         body: JSON.stringify({ messages: newMessages }),
       });
 
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder("utf-8");
+      const fullText = await readStreamingText(response, setMarkdownOutput);
 
-      let fullText = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n"); // Standard SSE split
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const json = line.replace("data: ", "").trim();
-          if (json === "[DONE]") continue;
-
-          try {
-            const parsed = JSON.parse(json);
-            // Ensure you are accessing the correct path for the delta
-            // For OpenAI-style streaming, it's usually: parsed.choices[0].delta.content
-            const delta = parsed.content || parsed.choices?.[0]?.delta?.content;
-
-            if (delta) {
-              fullText += delta;
-              setMarkdownOutput(fullText); // Update UI immediately with every token
-            }
-          } catch (err) {
-            // Ignore partial JSON chunks that occasionally happen in SSE
-          }
-        }
-      }
       // finally, add the completed message to messages array
       const llmMessage: Message = {
         id: nanoid(),
