@@ -349,7 +349,7 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
             </Button>
           </form>
           <p className="text-xs text-gray-500 mt-2 justify-center flex">
-            The Blackout Poetry Partner can make mistakes.
+            The AI Assistant can make mistakes.
           </p>
         </div>
       }
