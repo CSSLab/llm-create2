@@ -1,4 +1,11 @@
-import { useEffect, useState, useRef, useMemo, useContext } from "react";
+import {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useContext,
+  type KeyboardEvent,
+} from "react";
 import { FiSend } from "react-icons/fi";
 import { Button, Textarea } from "@chakra-ui/react";
 import { nanoid } from "nanoid";
@@ -142,8 +149,8 @@ export default function ChatTab({
   const [input, setInput] = useState("");
   // const [lastResponseId] = useState<string | null>(null);
   const [markdownOutput, setMarkdownOutput] = useState("");
-  const [hasUsedFirstPrompt, setHasUsedFirstPrompt] = useState(false);
   const [hasShownIdleNudge, setHasShownIdleNudge] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const hasUserMessageInStage = messages
     .slice(stageStartMessageCountRef.current)
@@ -206,7 +213,7 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
 
   const sendMessage = async (messageContent?: string) => {
     const content = messageContent || input;
-    if (!content.trim()) return;
+    if (!content.trim() || isLLMLoading) return;
 
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -220,9 +227,13 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
       timestamp: new Date(),
     };
 
-    const strippedMessages = messages.map(({ id, timestamp, ...rest }) => rest);
+    const strippedMessages = messages.map(({ role, content }) => ({
+      role,
+      content,
+    }));
 
     setMarkdownOutput("");
+    setSendError(null);
     setMessages((prev) => [...prev, artistMessage]);
     setInput("");
     setIsLLMLoading(true);
@@ -253,12 +264,23 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
       setMarkdownOutput(""); // Clear this so the streaming UI disappears
     } catch (error) {
       console.error("LLM response failed", error);
+      setMarkdownOutput("");
+      setSendError(
+        "The assistant had a connection problem. Send your message again.",
+      );
+      // Remove the optimistic message before restoring it for a clean retry.
+      setMessages((previousMessages) =>
+        previousMessages.filter((message) => message.id !== artistMessage.id),
+      );
+      setInput((currentInput) =>
+        currentInput.trim() ? currentInput : content,
+      );
     } finally {
       setIsLLMLoading(false);
     }
   };
 
-  const handleKeyDown = (e: any) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -266,8 +288,6 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
   };
 
   const handlePromptSelection = (prompt: string) => {
-    setInput(prompt);
-    setHasUsedFirstPrompt(true);
     sendMessage(prompt);
   };
 
@@ -294,7 +314,6 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
 
         {chatReady &&
           !hasUserMessageInStage &&
-          !hasUsedFirstPrompt &&
           !isLLMLoading && (
             <div className="mt-4 space-y-2">
               <p className="text-sm text-gray-600 mb-3">Try asking me:</p>
@@ -339,6 +358,11 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
       {/* Input area */}
       {
         <div className="p-3">
+          {sendError && (
+            <p className="mb-2 text-sm text-red-700" role="alert">
+              {sendError}
+            </p>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -353,7 +377,12 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
               placeholder="Type a message..."
               className="text-main bg-white flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-grey"
             />
-            <Button className="btn-small" onClick={() => sendMessage()}>
+            <Button
+              type="submit"
+              className="btn-small"
+              disabled={isLLMLoading}
+              aria-label="Send message"
+            >
               <FiSend />
             </Button>
           </form>
