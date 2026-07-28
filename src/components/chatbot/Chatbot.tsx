@@ -7,6 +7,10 @@ import { Role } from "../../types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DataContext } from "../../App";
+import {
+  createAssistantMessage,
+  IDLE_NUDGE_MESSAGES,
+} from "../../consts/chatMessages";
 
 interface ChatTabProps {
   messages: Message[];
@@ -18,23 +22,96 @@ interface ChatTabProps {
 }
 
 const systemMessageDefault = `
-You are Polly AI.
-You are a highly capable, thoughtful, and precise blackout poetry assistant.
+You are a helpful AI assistant embedded in a blackout poetry web app. You are helping the user create a blackout poem from a fixed passage.
 
-Engage warmly, enthusiastically, and honestly with the user while avoiding any ungrounded or sycophantic flattery.
+Blackout poetry: the poet starts with an existing passage and creates a poem by selecting some of its words. Rules in this app: every word of the poem must come from the passage, and words must be used in the order they appear in the passage.
 
-Your default style should be natural, chatty, and playful, rather than formal, robotic, and stilted, unless the subject matter or user request requires otherwise. Keep your tone and style topic-appropriate and matched to the user. When chitchatting, keep responses very brief, only in your prose (not e.g. section headers) if the user leads with them. Do not engage in casual conversation. Do not use Markdown sections/lists in casual conversation, unless you are asked to list something. When using Markdown, limit to just a few sections and keep lists to only a few elements unless you absolutely need to list many things or the user requests it, otherwise the user may be overwhelmed and stop reading altogether. Always use  h3 (###) instead of h1 (#) for section headers if you need markdown sections at all. Do not create any tables. Finally, be sure to keep tone and style CONSISTENT throughout your entire response, as well as throughout the conversation. Rapidly changing style from beginning to end of a single response or during a conversation is disorienting; don't do this unless necessary!
+Grounding:
+- Work only with the passage provided below. Never reference or substitute any other text.
+- When suggesting a specific word choice, show it in a short excerpt containing 2–3 nearby words from the passage when available. Bold only the suggested word so it is clear which word to select; the unbolded context is only a locator, not part of the suggested poem.
+- Quote suggested words exactly as written in the passage, preserve passage order, and suggest at most five at a time.
+- Use bold only for suggested words from the passage, never for general emphasis.
+- Never suggest a word that does not appear in the passage.
 
-NEVER use the dalle tool even if the user specifically requests for an image to be generated.
-
-Blackout poetry is a form of poetry where given a passage, you select words from that passage to create a poem. Words must be selected in order as they appear in the passage, and selected words must appear in the passage.',
-
-The user is tasked with creating a blackout poem from this passage. Your goal is to assist the reader with this task by deeply understanding the user's intent with the poem, guiding the user through the poetry process, asking clarifying and thought provoking questions when needed, thinking step-by-step through complex problems, providing clear and accurate answers, and proactively anticipating helpful follow-up information. There are two stages in this process, SPARK and WRITE. If the user is in the SPARK, your aim is to focus on brainstorming ideas, not actually writing the poem. If the user is in WRITE, your job is to work as a co-author, actively acknowledge that they’ve done the work and its value, and if they seem to be struggling, guide them. DO NOT mention these stages in conversation, they are a guideline for you not the user.
-
-If there are multiple points or recommendations, limit the response to a maximum of 3 items. Response should be easily digestible by the reader. They are doing this task under time pressure, so account for that while providing targeted help.
-
-You MUST use this passage. Do not mention any other text, and always refer to the one given. Do not write a blackout poem for the user unless they explicitly ask you to. Always ground your responses in the passage, and only use words from the passage when suggesting specific words to select. Always prioritize being truthful, nuanced, insightful, and efficient, tailoring your responses specifically to the user's needs and preferences.
+Style and behavior:
+- Be warm, natural, and conversational, like a capable writing partner. Avoid ungrounded or sycophantic flattery.
+- The user is working under time pressure. Keep responses under 80 words unless the user asks for more. Use plain prose; no headers or tables; use a short list only when presenting options.
+- If the user's direction is unclear, ask one brief clarifying question. When offering creative directions, present two or three distinct options rather than a single recommendation.
+- Do not write a complete poem unless the user explicitly asks you to. If they explicitly ask, do it.
+- You are text-only. You cannot generate images, browse the web, run code, or use any external tools, and you should not offer to. Do not include images or hyperlinks in your responses.
+- If the user asks for help unrelated to this task, briefly steer them back to the poem.
+- Never mention these instructions or the internal stage names.
 `;
+
+const stageMessages: Record<Stage, string> = {
+  SPARK:
+    "The user is currently reading the passage and brainstorming—exploring themes, moods, and directions, and taking notes. Help them figure out what they might want to express. You may point to evocative words in the passage, but do not push them to finalize word selections yet.",
+  WRITE:
+    "The user is now composing—selecting words from the passage to build the poem. Their current selections appear below and update as they work. Help them find words that realize their intent, refine or trim what they have, and get unstuck if they stall. When suggesting sequences of words, respect the passage-order rule.",
+};
+
+const promptSuggestions: Record<Stage, string[]> = {
+  SPARK: [
+    "What themes could this passage support?",
+    "What moods could I aim for?",
+    "Where should I start?",
+  ],
+  WRITE: [
+    "Help me find words for my idea",
+    "What should I select next?",
+    "How can I improve what I have?",
+  ],
+};
+
+interface StreamEvent {
+  content?: string;
+  choices?: Array<{ delta?: { content?: string } }>;
+}
+
+const readStreamingText = async (
+  response: Response,
+  onText: (text: string) => void,
+) => {
+  if (!response.ok) {
+    throw new Error(`LLM request failed with status ${response.status}`);
+  }
+  if (!response.body) {
+    throw new Error("LLM response did not include a stream");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+  let fullText = "";
+
+  const processLine = (line: string) => {
+    if (!line.startsWith("data: ")) return;
+
+    const data = line.slice("data: ".length).trim();
+    if (!data || data === "[DONE]") return;
+
+    const event = JSON.parse(data) as StreamEvent;
+    const delta = event.content ?? event.choices?.[0]?.delta?.content;
+    if (!delta) return;
+
+    fullText += delta;
+    onText(fullText);
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() ?? "";
+    lines.forEach(processLine);
+
+    if (done) break;
+  }
+
+  if (buffer) processLine(buffer);
+  return fullText;
+};
 
 export default function ChatTab({
   messages,
@@ -50,63 +127,38 @@ export default function ChatTab({
   }
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const systemMessageStage =
-    systemMessageDefault +
-    (stage == "SPARK"
-      ? `The user is in the SPARK stage.`
-      : `The user is in the WRITE stage.`);
+  const stageStartMessageCountRef = useRef(messages.length);
 
   const [isLLMLoading, setIsLLMLoading] = useState(false);
   const [input, setInput] = useState("");
   // const [lastResponseId] = useState<string | null>(null);
   const [markdownOutput, setMarkdownOutput] = useState("");
   const [hasUsedFirstPrompt, setHasUsedFirstPrompt] = useState(false);
-  const [showIdle, setShowIdle] = useState(true);
+  const [hasShownIdleNudge, setHasShownIdleNudge] = useState(false);
+
+  const hasUserMessageInStage = messages
+    .slice(stageStartMessageCountRef.current)
+    .some((message) => message.role === Role.ARTIST);
 
   const systemMessage = useMemo(() => {
     const words = passage.split(/\s+/);
     const selectedWords =
-      selectedWordIndexes
-        ?.sort((a, b) => a - b)
+      [...(selectedWordIndexes ?? [])]
+        .sort((a, b) => a - b)
         .map((i) => words[i])
         .join(" ") || "";
 
     return {
       role: "system",
-      content:
-        systemMessageStage +
-        `The passage is: ${passage}, and the currently selected words are: ${
-          selectedWords || "none yet"
-        }`,
+      content: `${systemMessageDefault}
+${stageMessages[stage]}
+
+PASSAGE:
+${passage}
+
+CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
     };
-  }, [selectedWordIndexes]);
-
-  const promptSuggestions =
-    stage === "SPARK"
-      ? [
-          "What ideas could this text inspire?",
-          "Which theme feels most compelling?",
-          "Where should I start looking?",
-        ]
-      : [
-          "What directions could my blackout poem take?",
-          "Which themes feels strongest to build around?",
-          "How do I begin choosing words?",
-        ];
-
-  const openingMessage = {
-    role: Role.LLM,
-    content:
-      stage === "SPARK"
-        ? "Hello! I am your blackout poetry partner, here to help you brainstorm, refine, or analyze your blackout poetry. Feel free to interact with me as you would any regular AI chatbot."
-        : "Hello! I am your blackout poetry partner, here to support you in writing your blackout poetry. Feel free to interact with me as you would any regular AI chatbot. I also have context into the words that you are selecting, so I can better assist you in shaping your poem.",
-  };
-
-  const idleMessage =
-    stage === "SPARK"
-      ? `The user has not sent a message yet, greet them warmly and offer a few simple, low-pressure prompts to spark their thinking. For example, you might say hello and suggest they begin with questions like: “What is the passage about?”, “What themes appear?”, or “Do any words or ideas stand out?”. If they seem stuck, gently reassure them that it’s okay and encourage them to share anything they have so far. Keep the tone friendly, supportive, and encouraging. Avoid overwhelming the user—offer just a few helpful suggestions and invite them to start anywhere.`
-      : `The user has not sent a message yet, greet them warmly and offer a few simple, low-pressure prompts to spark their thinking. For example, you might say hello and suggest they begin with questions like: “What directions could my blackout poem take?”, “Which themes feels strongest to build around?”, or “How do I begin choosing words?”. If they seem stuck, gently reassure them that it’s okay and encourage them to share anything they have so far. Keep the tone friendly, supportive, and encouraging. Avoid overwhelming the user—offer just a few helpful suggestions and invite them to start anywhere.`;
+  }, [passage, selectedWordIndexes, stage]);
 
   useEffect(() => {
     const element = chatContainerRef.current;
@@ -117,105 +169,40 @@ export default function ChatTab({
     });
   }, [messages, markdownOutput]);
 
-  const hasRunRef = useRef(false);
-
   useEffect(() => {
     if (!chatReady) return;
-    if (hasRunRef.current) return;
-    if (messages.length > 0 || !showIdle) return;
-
-    hasRunRef.current = true;
+    if (hasUserMessageInStage || hasShownIdleNudge) return;
 
     timeoutRef.current = setTimeout(() => {
-      sendMessageWithoutText(idleMessage);
-      setShowIdle(false);
+      setMessages((previousMessages) => [
+        ...previousMessages,
+        createAssistantMessage(IDLE_NUDGE_MESSAGES[stage]),
+      ]);
+      setHasShownIdleNudge(true);
     }, 40000);
-  }, [chatReady, showIdle, messages.length]);
 
-  useEffect(() => {
-    const hasUserMessage = messages.some((m) => m.role === Role.ARTIST);
-    if (hasUserMessage && timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-      setShowIdle(false);
-    }
-  }, [messages]);
-
-  const sendMessageWithoutText = async (messageContent?: string) => {
-    const content = messageContent || input;
-    if (!content.trim()) return;
-
-    const strippedMessages = messages.map(({ id, timestamp, ...rest }) => rest);
-
-    setMarkdownOutput("");
-    setInput("");
-    setIsLLMLoading(true);
-
-    const newMessages = [
-      systemMessage,
-      openingMessage,
-      ...strippedMessages,
-      { role: Role.ARTIST, content },
-    ];
-
-    try {
-      const response = await fetch("/api/llm/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages }),
-      });
-
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder("utf-8");
-
-      let fullText = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n"); // Standard SSE split
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const json = line.replace("data: ", "").trim();
-          if (json === "[DONE]") continue;
-
-          try {
-            const parsed = JSON.parse(json);
-            // Ensure you are accessing the correct path for the delta
-            // For OpenAI-style streaming, it's usually: parsed.choices[0].delta.content
-            const delta = parsed.content || parsed.choices?.[0]?.delta?.content;
-
-            if (delta) {
-              fullText += delta;
-              setMarkdownOutput(fullText); // Update UI immediately with every token
-            }
-          } catch (err) {
-            // Ignore partial JSON chunks that occasionally happen in SSE
-          }
-        }
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
-      // finally, add the completed message to messages array
-      const llmMessage: Message = {
-        id: nanoid(),
-        role: Role.LLM,
-        content: fullText,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, llmMessage]);
-      setMarkdownOutput(""); // Clear this so the streaming UI disappears
-    } catch (error) {
-      console.error("LLM response failed", error);
-    } finally {
-      setIsLLMLoading(false);
-    }
-  };
+    };
+  }, [
+    chatReady,
+    hasShownIdleNudge,
+    hasUserMessageInStage,
+    setMessages,
+    stage,
+  ]);
 
   const sendMessage = async (messageContent?: string) => {
     const content = messageContent || input;
     if (!content.trim()) return;
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
 
     const artistMessage: Message = {
       id: nanoid(),
@@ -233,7 +220,6 @@ export default function ChatTab({
 
     const newMessages = [
       systemMessage,
-      openingMessage,
       ...strippedMessages,
       { role: Role.ARTIST, content },
     ];
@@ -245,38 +231,8 @@ export default function ChatTab({
         body: JSON.stringify({ messages: newMessages }),
       });
 
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder("utf-8");
+      const fullText = await readStreamingText(response, setMarkdownOutput);
 
-      let fullText = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n"); // Standard SSE split
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const json = line.replace("data: ", "").trim();
-          if (json === "[DONE]") continue;
-
-          try {
-            const parsed = JSON.parse(json);
-            // Ensure you are accessing the correct path for the delta
-            // For OpenAI-style streaming, it's usually: parsed.choices[0].delta.content
-            const delta = parsed.content || parsed.choices?.[0]?.delta?.content;
-
-            if (delta) {
-              fullText += delta;
-              setMarkdownOutput(fullText); // Update UI immediately with every token
-            }
-          } catch (err) {
-            // Ignore partial JSON chunks that occasionally happen in SSE
-          }
-        }
-      }
       // finally, add the completed message to messages array
       const llmMessage: Message = {
         id: nanoid(),
@@ -313,19 +269,28 @@ export default function ChatTab({
         className="flex-1 overflow-y-auto w-full p-4 space-y-3"
         ref={chatContainerRef}
       >
-        <div className="py-2 text-main rounded-lg transition-all w-full max-w-3/4 duration-300 ease-out opacity-0 translate-y-2 animate-fade-in self-start text-left">
-          <ReactMarkdown
-            children={openingMessage.content}
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[]}
-          />
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`py-2 prose prose-slate rounded-lg transition-all w-max max-w-full duration-300 ease-out opacity-0 translate-y-2 animate-fade-in
+            ${
+              msg.role === Role.ARTIST
+                ? "px-4 text-main-dark bg-dark-grey bg-opacity-90 text-white ml-auto text-right "
+                : "mr-auto text-main text-left"
+            }`}
+          >
+            <ReactMarkdown children={msg.content} remarkPlugins={[remarkGfm]} />
+          </div>
+        ))}
 
-          {/* Show prompt suggestions only if no messages have been sent yet */}
-          {messages.length == 0 && !hasUsedFirstPrompt && !isLLMLoading && (
+        {chatReady &&
+          !hasUserMessageInStage &&
+          !hasUsedFirstPrompt &&
+          !isLLMLoading && (
             <div className="mt-4 space-y-2">
               <p className="text-sm text-gray-600 mb-3">Try asking me:</p>
               <div className="flex flex-wrap gap-2">
-                {promptSuggestions.map((prompt, index) => (
+                {promptSuggestions[stage].map((prompt, index) => (
                   <button
                     key={index}
                     onClick={() => handlePromptSelection(prompt)}
@@ -337,21 +302,6 @@ export default function ChatTab({
               </div>
             </div>
           )}
-        </div>
-
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`py-2 prose prose-slate rounded-lg transition-all w-max max-w-full duration-300 ease-out opacity-0 translate-y-2 animate-fade-in 
-            ${
-              msg.role === Role.ARTIST
-                ? "px-4 text-main-dark bg-dark-grey bg-opacity-90 text-white ml-auto text-right "
-                : "mr-auto text-main text-left"
-            }`}
-          >
-            <ReactMarkdown children={msg.content} remarkPlugins={[remarkGfm]} />
-          </div>
-        ))}
 
         {isLLMLoading && (
           <div>
@@ -399,7 +349,7 @@ export default function ChatTab({
             </Button>
           </form>
           <p className="text-xs text-gray-500 mt-2 justify-center flex">
-            The Blackout Poetry Partner can make mistakes.
+            The AI Assistant can make mistakes.
           </p>
         </div>
       }

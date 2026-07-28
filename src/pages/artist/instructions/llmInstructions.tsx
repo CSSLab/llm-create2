@@ -34,7 +34,7 @@ const LLMInstruction = () => {
               />
             </svg>
           </div>
-          <p className="text-h1">Meet your Blackout Assistant</p>
+          <p className="text-h1">Meet your AI Assistant</p>
         </div>
 
         <p className="text-main text-grey">

@@ -17,7 +17,7 @@ router.post("/query", async (req: express.Request, res: express.Response) => {
     const { messages } = req.body;
 
     const stream = await openai.responses.create({
-      model: "gpt-5.6",
+      model: "gpt-5.6-sol",
       input: messages,
       text: { verbosity: "low" },
       stream: true,

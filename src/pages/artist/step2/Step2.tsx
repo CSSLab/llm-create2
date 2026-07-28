@@ -12,6 +12,10 @@ import { useContext } from "react";
 import { DataContext } from "../../../App";
 import { Stage } from "../../../types";
 import { Button } from "@chakra-ui/react";
+import {
+  createAssistantMessage,
+  STAGE_OPENING_MESSAGES,
+} from "../../../consts/chatMessages";
 
 const ArtistStep2 = () => {
   const navigate = useNavigate();
@@ -24,6 +28,7 @@ const ArtistStep2 = () => {
 
   const artistData = userData?.data as Artist;
   const artistPoem = artistData?.poem;
+  const userType = userData?.data.condition as ArtistCondition;
 
   const writeMessagesRef = useRef<Message[]>([]);
   const selectedWordIndexesRef = useRef<number[]>([]);
@@ -32,12 +37,16 @@ const ArtistStep2 = () => {
   const [writeNotes, setWriteNotes] = useState(
     artistData?.poem?.sparkNotes || "",
   );
-  const [writeMessages, setWriteMessages] = useState<Message[]>(
-    artistPoem?.sparkConversation ?? [],
+  const [writeMessages, setWriteMessages] = useState<Message[]>(() =>
+    userType === "LLM"
+      ? [
+          ...(artistPoem?.sparkConversation ?? []),
+          createAssistantMessage(STAGE_OPENING_MESSAGES[Stage.WRITE]),
+        ]
+      : [...(artistPoem?.sparkConversation ?? [])],
   );
   const [selectedWordIndexes, setSelectedWordIndexes] = useState<number[]>([]);
   const [poemSnapshots, setPoemSnapshots] = useState<PoemSnapshot[]>([]);
-  const userType = userData?.data.condition as ArtistCondition;
   const [showPopup, setShowPopup] = useState(true);
 
   const onComplete = useCallback(() => {
