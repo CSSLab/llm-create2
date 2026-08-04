@@ -3,7 +3,12 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import MultiPageTemplate from "../../../components/shared/pages/multiPage";
 import { ArtistCondition } from "../../../types";
 import { Stage } from "../../../types";
-import type { Message, Poem } from "../../../types";
+import type {
+  ChatOpening,
+  LlmRequestLog,
+  Message,
+  Poem,
+} from "../../../types";
 import { useContext } from "react";
 import { DataContext } from "../../../App";
 import type { Artist, Passage } from "../../../types";
@@ -25,10 +30,19 @@ const ArtistStep1 = () => {
 
   const sparkMessagesRef = useRef<Message[]>([]);
   const sparkNotesRef = useRef<string>("");
+  const phaseStartedAtRef = useRef<Date | null>(null);
 
-  const passage = (userData?.data as Artist)?.poem?.passage as Passage;
+  const artistData = userData?.data as Artist;
+  const existingPoem = artistData?.poem;
+  const passage = existingPoem?.passage as Passage;
   const userType = userData?.data.condition as ArtistCondition;
   const isLLM = userType === "LLM";
+  const llmRequestsRef = useRef<LlmRequestLog[]>(
+    existingPoem?.llmUsage?.requests ?? [],
+  );
+  const chatOpeningsRef = useRef<ChatOpening[]>(
+    existingPoem?.llmUsage?.chatOpenings ?? [],
+  );
 
   const [sparkMessages, setSparkMessages] = useState<Message[]>(() =>
     isLLM
@@ -42,26 +56,60 @@ const ArtistStep1 = () => {
   const totalPopups = isLLM ? 2 : 1;
   const showingPopup = popupStep < totalPopups;
 
-  let artistPoem: Poem = {
-    passageId: passage.id,
-    passage: passage,
-    text: [],
-    poemSnapshot: [],
-    sparkConversation: [],
-    writeConversation: [],
-    sparkNotes: "",
-    writeNotes: "",
-  };
+  const handleChatOpened = useCallback((opening: ChatOpening) => {
+    const alreadyLogged = chatOpeningsRef.current.some(
+      (item) => item.stage === opening.stage,
+    );
+    if (!alreadyLogged) chatOpeningsRef.current.push(opening);
+  }, []);
+
+  const handleRequestUpdate = useCallback((request: LlmRequestLog) => {
+    const existingIndex = llmRequestsRef.current.findIndex(
+      (item) => item.id === request.id,
+    );
+    if (existingIndex >= 0) {
+      llmRequestsRef.current[existingIndex] = request;
+    } else {
+      llmRequestsRef.current.push(request);
+    }
+  }, []);
 
   const onComplete = useCallback(() => {
-    artistPoem.sparkConversation = sparkMessagesRef.current;
-    artistPoem.sparkNotes = sparkNotesRef.current;
+    const completedAt = new Date();
+    const startedAt = phaseStartedAtRef.current ?? completedAt;
+    const artistPoem: Poem = {
+      ...existingPoem,
+      sparkConversation: sparkMessagesRef.current,
+      sparkNotes: sparkNotesRef.current,
+      taskTiming: {
+        ...(existingPoem.taskTiming ?? { phases: {} }),
+        startedAt: existingPoem.taskTiming?.startedAt ?? startedAt,
+        phases: {
+          ...(existingPoem.taskTiming?.phases ?? {}),
+          spark: {
+            startedAt,
+            completedAt,
+            durationMs: completedAt.getTime() - startedAt.getTime(),
+          },
+        },
+      },
+      llmUsage: {
+        chatOpenings: chatOpeningsRef.current,
+        requests: llmRequestsRef.current,
+      },
+    };
     addRoleSpecificData({
       poem: artistPoem,
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
     });
     navigate("/artist/blackout");
-  }, []);
+  }, [addRoleSpecificData, existingPoem, navigate, userData?.data?.timeStamps]);
+
+  useEffect(() => {
+    if (!showingPopup && !phaseStartedAtRef.current) {
+      phaseStartedAtRef.current = new Date();
+    }
+  }, [showingPopup]);
 
   useEffect(() => {
     sparkMessagesRef.current = sparkMessages;
@@ -134,6 +182,8 @@ const ArtistStep1 = () => {
         setMessages={setSparkMessages}
         notes={sparkNotes}
         setNotes={setSparkNotes}
+        onChatOpened={isLLM ? handleChatOpened : undefined}
+        onRequestUpdate={isLLM ? handleRequestUpdate : undefined}
       >
         <div
           className={`w-full h-full flex flex-col items-center transition-all duration-300 ${showingPopup ? "blur-sm pointer-events-none select-none" : ""}`}

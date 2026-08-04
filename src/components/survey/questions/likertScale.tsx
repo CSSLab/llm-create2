@@ -46,6 +46,7 @@ const LikertScale: React.FC<Props> = ({ question, value, onChange }) => {
             <RadioGroup.Item
               value={opt.value.toString()}
               className="cursor-pointer"
+              aria-label={opt.label}
             >
               <RadioGroup.ItemHiddenInput />
               <RadioGroup.ItemIndicator className="border border-light-grey-1 rounded-full w-4 h-4 focus:border-grey focus:border-2 hover:cursor-pointer" />
@@ -64,6 +65,7 @@ const LikertScale: React.FC<Props> = ({ question, value, onChange }) => {
           <RadioGroup.Item
             value={opt.value.toString()}
             className="cursor-pointer flex-shrink-0"
+            aria-label={opt.label}
           >
             <RadioGroup.ItemHiddenInput />
             <RadioGroup.ItemIndicator className="border border-light-grey-1 rounded-full w-4 h-4 focus:border-grey focus:border-2 hover:cursor-pointer" />
@@ -85,6 +87,7 @@ const LikertScale: React.FC<Props> = ({ question, value, onChange }) => {
         value={value != null ? value.toString() : ""}
         onValueChange={(e) => onChange(question.id, parseInt(e.value!, 10))}
         className="w-full"
+        aria-label={question.question}
       >
         {horizontalLayout}
         {verticalLayout}

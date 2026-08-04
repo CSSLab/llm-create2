@@ -1,7 +1,12 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Textarea, Button } from "@chakra-ui/react";
 import ChatTab from "../../chatbot/Chatbot";
-import type { Message, Stage } from "../../../types";
+import type {
+  ChatOpening,
+  LlmRequestLog,
+  Message,
+  Stage,
+} from "../../../types";
 import type { ReactNode } from "react";
 
 interface PageTemplateProps {
@@ -24,10 +29,12 @@ interface PageTemplateProps {
   setNotes: React.Dispatch<React.SetStateAction<string>>;
   passage: string;
   selectedWordIndexes?: number[];
+  onChatOpened?: (opening: ChatOpening) => void;
+  onRequestUpdate?: (request: LlmRequestLog) => void;
 }
 
 interface Button {
-  text: String;
+  text: string;
   action?: () => void;
 }
 
@@ -48,6 +55,8 @@ function MultiPageTemplate({
   setNotes,
   selectedWordIndexes,
   passage,
+  onChatOpened,
+  onRequestUpdate,
 }: PageTemplateProps) {
   const [leftWidth, setLeftWidth] = useState(70); // %
   const [topHeight, setTopHeight] = useState(80); // %
@@ -74,28 +83,6 @@ function MultiPageTemplate({
     document.body.style.userSelect = "none";
   };
 
-  const updateDrag = (clientX: number, clientY: number) => {
-    if (isDraggingX.current) {
-      const newWidth = (clientX / window.innerWidth) * 100;
-      if (newWidth > 40 && newWidth < 80) setLeftWidth(newWidth);
-    }
-    if (isDraggingY.current) {
-      const containerHeight = window.innerHeight;
-      const newHeight = (clientY / containerHeight) * 100;
-      if (newHeight > 10 && newHeight < 90) setTopHeight(newHeight);
-    }
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    updateDrag(e.clientX, e.clientY);
-  };
-
-  const handleTouchMove = (e: TouchEvent) => {
-    if (e.touches.length === 1) {
-      updateDrag(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  };
-
   const stopDrag = () => {
     isDraggingX.current = false;
     isDraggingY.current = false;
@@ -103,6 +90,26 @@ function MultiPageTemplate({
   };
 
   useEffect(() => {
+    const updateDrag = (clientX: number, clientY: number) => {
+      if (isDraggingX.current) {
+        const newWidth = (clientX / window.innerWidth) * 100;
+        if (newWidth > 40 && newWidth < 80) setLeftWidth(newWidth);
+      }
+      if (isDraggingY.current) {
+        const containerHeight = window.innerHeight;
+        const newHeight = (clientY / containerHeight) * 100;
+        if (newHeight > 10 && newHeight < 90) setTopHeight(newHeight);
+      }
+    };
+    const handleMouseMove = (event: MouseEvent) => {
+      updateDrag(event.clientX, event.clientY);
+    };
+    const handleTouchMove = (event: TouchEvent) => {
+      if (event.touches.length === 1) {
+        updateDrag(event.touches[0].clientX, event.touches[0].clientY);
+      }
+    };
+
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", stopDrag);
     window.addEventListener("touchmove", handleTouchMove);
@@ -116,10 +123,10 @@ function MultiPageTemplate({
     };
   }, []);
 
-  const startFadeOut = () => {
+  const startFadeOut = useCallback(() => {
     setIsVisible(false);
     setTimeout(() => afterDuration?.(), 500); // matches CSS duration
-  };
+  }, [afterDuration]);
 
   useEffect(() => {
     // fade in on mount
@@ -162,7 +169,7 @@ function MultiPageTemplate({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [duration, isTimeUp, afterDuration, autoRedirectDuration]);
+  }, [duration, isTimeUp, autoRedirectDuration, startFadeOut]);
 
   // timer for auto-direct
   useEffect(() => {
@@ -292,6 +299,8 @@ function MultiPageTemplate({
                 passage={passage}
                 selectedWordIndexes={selectedWordIndexes}
                 chatReady={chatReady}
+                onChatOpened={onChatOpened}
+                onRequestUpdate={onRequestUpdate}
               />
             </div>
           </>

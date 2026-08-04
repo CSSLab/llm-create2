@@ -20,6 +20,7 @@ const MultipleChoice: React.FC<Props> = ({ question, value, onChange }) => {
         value={value}
         onValueChange={(e) => onChange(question.id, e.value!)}
         className="flex flex-col gap-4 font-light"
+        aria-label={question.question}
       >
         {question.options.map((opt) => (
           <RadioGroup.Item

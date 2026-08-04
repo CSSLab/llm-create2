@@ -3,9 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { useContext, useRef, useState } from "react";
 import { DataContext } from "../../App";
 import { ArtistPostSurveyQuestions } from "../../consts/surveyQuestions";
-import type { SurveyDefinition, Artist } from "../../types";
+import type {
+  Artist,
+  SurveyAnswers,
+  SurveyDefinition,
+} from "../../types";
 import { toaster } from "../../components/ui/toaster";
 import PoemPageTemplate from "../../components/shared/pages/poemPage";
+import {
+  deriveArtistMetrics,
+  getFinalPoemText,
+} from "../../utils/artistMetrics";
 
 const ArtistPostSurvey = () => {
   const context = useContext(DataContext);
@@ -20,7 +28,7 @@ const ArtistPostSurvey = () => {
   const submitInFlightRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const poemData = userData?.data && (userData.data as Artist).poem;
-  const submitDb = async (answers: any) => {
+  const submitDb = async (answers: SurveyAnswers) => {
     // format the data
     if (!userData || !userData.data) {
       console.error("userData not loaded yet!");
@@ -40,17 +48,24 @@ const ArtistPostSurvey = () => {
 
     const poemData = {
       passageId: poem.passageId,
+      passage: poem.passage,
       text: poem.text,
+      selectedWordIndexes: poem.text,
+      finalPoem: getFinalPoemText(poem),
       snapshot: poem.poemSnapshot,
+      editHistory: poem.poemSnapshot,
       sparkConversation: poem.sparkConversation,
       sparkNotes: poem.sparkNotes,
       writeConversation: poem.writeConversation,
       writeNotes: poem.writeNotes,
+      taskTiming: poem.taskTiming,
+      llmUsage: poem.llmUsage,
+      derivedMetrics: deriveArtistMetrics(poem),
     };
 
     // SEND IT RAHHHH
     try {
-      await fetch("/api/firebase/commit-session", {
+      const response = await fetch("/api/firebase/commit-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -61,6 +76,9 @@ const ArtistPostSurvey = () => {
           prolific: prolific ?? null,
         }),
       });
+      if (!response.ok) {
+        throw new Error(`Session commit failed with status ${response.status}`);
+      }
 
       toaster.create({
         description: "Survey successfully submitted!",
@@ -87,7 +105,7 @@ const ArtistPostSurvey = () => {
     }
   };
 
-  const handleSubmit = async (answers: any) => {
+  const handleSubmit = async (answers: SurveyAnswers) => {
     if (submitInFlightRef.current) return;
     submitInFlightRef.current = true;
     setIsSubmitting(true);

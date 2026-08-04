@@ -33,6 +33,7 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
       action: isSelected ? "REMOVE" : "ADD",
       index,
       timestamp: new Date(),
+      source: "DIRECT",
     };
     setPoemSnapshots((prev) => [...prev, newSnapshot]);
 
@@ -66,6 +67,7 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
           action: actionType,
           index: snapshot.index,
           timestamp: new Date(),
+          source: "UNDO",
         },
       ]);
 
@@ -99,6 +101,7 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
           action: actionType,
           index: snapshot.index,
           timestamp: new Date(),
+          source: "REDO",
         },
       ]);
 

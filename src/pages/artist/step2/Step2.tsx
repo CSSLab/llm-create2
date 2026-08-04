@@ -5,6 +5,8 @@ import BlackoutPoetry from "../../../components/blackout/Blackout";
 import type {
   Artist,
   ArtistCondition,
+  ChatOpening,
+  LlmRequestLog,
   Message,
   PoemSnapshot,
 } from "../../../types";
@@ -34,6 +36,13 @@ const ArtistStep2 = () => {
   const selectedWordIndexesRef = useRef<number[]>([]);
   const poemSnapshotsRef = useRef<PoemSnapshot[]>([]);
   const writeNotesRef = useRef<string>("");
+  const phaseStartedAtRef = useRef<Date | null>(null);
+  const llmRequestsRef = useRef<LlmRequestLog[]>(
+    artistPoem?.llmUsage?.requests ?? [],
+  );
+  const chatOpeningsRef = useRef<ChatOpening[]>(
+    artistPoem?.llmUsage?.chatOpenings ?? [],
+  );
   const [writeNotes, setWriteNotes] = useState(
     artistData?.poem?.sparkNotes || "",
   );
@@ -49,18 +58,66 @@ const ArtistStep2 = () => {
   const [poemSnapshots, setPoemSnapshots] = useState<PoemSnapshot[]>([]);
   const [showPopup, setShowPopup] = useState(true);
 
+  const handleChatOpened = useCallback((opening: ChatOpening) => {
+    const alreadyLogged = chatOpeningsRef.current.some(
+      (item) => item.stage === opening.stage,
+    );
+    if (!alreadyLogged) chatOpeningsRef.current.push(opening);
+  }, []);
+
+  const handleRequestUpdate = useCallback((request: LlmRequestLog) => {
+    const existingIndex = llmRequestsRef.current.findIndex(
+      (item) => item.id === request.id,
+    );
+    if (existingIndex >= 0) {
+      llmRequestsRef.current[existingIndex] = request;
+    } else {
+      llmRequestsRef.current.push(request);
+    }
+  }, []);
+
   const onComplete = useCallback(() => {
-    artistPoem.writeConversation = writeMessagesRef.current || [];
-    artistPoem.text = selectedWordIndexesRef.current;
-    artistPoem.poemSnapshot = poemSnapshotsRef.current;
-    artistPoem.writeNotes = writeNotesRef.current || "";
+    const completedAt = new Date();
+    const startedAt = phaseStartedAtRef.current ?? completedAt;
+    const taskStartedAt = artistPoem.taskTiming?.startedAt ?? startedAt;
+    const updatedPoem = {
+      ...artistPoem,
+      writeConversation: writeMessagesRef.current || [],
+      text: selectedWordIndexesRef.current,
+      poemSnapshot: poemSnapshotsRef.current,
+      writeNotes: writeNotesRef.current || "",
+      taskTiming: {
+        ...(artistPoem.taskTiming ?? { phases: {} }),
+        startedAt: taskStartedAt,
+        completedAt,
+        totalDurationMs: completedAt.getTime() - taskStartedAt.getTime(),
+        phases: {
+          ...(artistPoem.taskTiming?.phases ?? {}),
+          write: {
+            startedAt,
+            completedAt,
+            durationMs: completedAt.getTime() - startedAt.getTime(),
+          },
+        },
+      },
+      llmUsage: {
+        chatOpenings: chatOpeningsRef.current,
+        requests: llmRequestsRef.current,
+      },
+    };
 
     addRoleSpecificData({
-      poem: artistPoem,
+      poem: updatedPoem,
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
     });
     navigate("/artist/post-survey");
-  }, [addRoleSpecificData, userData?.data?.timeStamps, navigate]);
+  }, [addRoleSpecificData, artistPoem, userData?.data?.timeStamps, navigate]);
+
+  useEffect(() => {
+    if (!showPopup && !phaseStartedAtRef.current) {
+      phaseStartedAtRef.current = new Date();
+    }
+  }, [showPopup]);
 
   useEffect(() => {
     writeMessagesRef.current = writeMessages;
@@ -105,6 +162,7 @@ const ArtistStep2 = () => {
         afterDuration={onComplete}
         buttonText="Submit"
         llmAccess={userType == "LLM"}
+        chatReady={!showPopup}
         stage={Stage.WRITE}
         passage={artistPoem?.passage.text || ""}
         messages={writeMessages}
@@ -112,6 +170,8 @@ const ArtistStep2 = () => {
         notes={writeNotes}
         setNotes={setWriteNotes}
         selectedWordIndexes={selectedWordIndexes}
+        onChatOpened={userType === "LLM" ? handleChatOpened : undefined}
+        onRequestUpdate={userType === "LLM" ? handleRequestUpdate : undefined}
       >
         <div className="h-max w-full flex flex-col justify-between">
           <BlackoutPoetry

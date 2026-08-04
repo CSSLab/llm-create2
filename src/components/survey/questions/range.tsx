@@ -4,7 +4,7 @@ import type { RangeQuestion } from "../../../types";
 
 interface Props {
   question: RangeQuestion;
-  value: number;
+  value: number | undefined;
   onChange: (id: string, value: number) => void;
 }
 

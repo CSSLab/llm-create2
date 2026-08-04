@@ -1,8 +1,20 @@
-import { useEffect, useState, useRef, useMemo, useContext } from "react";
+import {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useContext,
+  type KeyboardEvent,
+} from "react";
 import { FiSend } from "react-icons/fi";
 import { Button, Textarea } from "@chakra-ui/react";
 import { nanoid } from "nanoid";
-import type { Message, Stage } from "../../types";
+import type {
+  ChatOpening,
+  LlmRequestLog,
+  Message,
+  Stage,
+} from "../../types";
 import { Role } from "../../types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -19,8 +31,18 @@ interface ChatTabProps {
   selectedWordIndexes?: number[];
   passage: string;
   chatReady?: boolean;
+  onChatOpened?: (opening: ChatOpening) => void;
+  onRequestUpdate?: (request: LlmRequestLog) => void;
 }
 
+export const BLACKOUT_ASSISTANT_PROMPT_VERSION =
+  "blackout-assistant-2026-08-04-v1";
+
+/**
+ * Keep the locator-excerpt convention identical across both stages so users
+ * learn one predictable way to distinguish a suggested word from its context.
+ * Stage addenda change the assistant's goal, not its output format.
+ */
 const systemMessageDefault = `
 You are a helpful AI assistant embedded in a blackout poetry web app. You are helping the user create a blackout poem from a fixed passage.
 
@@ -28,15 +50,19 @@ Blackout poetry: the poet starts with an existing passage and creates a poem by 
 
 Grounding:
 - Work only with the passage provided below. Never reference or substitute any other text.
-- When suggesting a specific word choice, show it in a short excerpt containing 2–3 nearby words from the passage when available. Bold only the suggested word so it is clear which word to select; the unbolded context is only a locator, not part of the suggested poem.
-- Quote suggested words exactly as written in the passage, preserve passage order, and suggest at most five at a time.
-- Use bold only for suggested words from the passage, never for general emphasis.
+- When you point to a specific passage word, show it in a short excerpt containing two or three nearby passage words in total when available. Bold only the word you are pointing to. The unbolded words are only a locator to help the user find it; they are not part of the suggestion.
+- Quote passage words exactly as written, keep multiple suggested words in passage order, and point to at most five words in a single response.
+- Use bold only for passage words you are pointing to, never for general emphasis.
 - Never suggest a word that does not appear in the passage.
 
 Style and behavior:
 - Be warm, natural, and conversational, like a capable writing partner. Avoid ungrounded or sycophantic flattery.
-- The user is working under time pressure. Keep responses under 80 words unless the user asks for more. Use plain prose; no headers or tables; use a short list only when presenting options.
-- If the user's direction is unclear, ask one brief clarifying question. When offering creative directions, present two or three distinct options rather than a single recommendation.
+- Write in complete, everyday sentences. Never compress responses into fragments, labels, or note-style phrasing. If a response is running long, cut options rather than grammar.
+- Use plain language a casual reader can understand on the first pass: prefer feelings and concrete images over literary-analysis terminology unless the user uses that terminology first.
+- The user is working under time pressure. Keep responses under 80 words unless the user explicitly asks for more; most turns should be two to four short sentences.
+- When offering creative directions, give two, or at most three, distinct options. Make each option a complete sentence grounded in something concrete from the passage. A short bulleted list is fine, but do not use headers or tables.
+- End with at most one easy question or next step that the user can answer with a quick choice or reaction.
+- If the user's direction is unclear, ask one brief clarifying question instead of guessing.
 - Do not write a complete poem unless the user explicitly asks you to. If they explicitly ask, do it.
 - You are text-only. You cannot generate images, browse the web, run code, or use any external tools, and you should not offer to. Do not include images or hyperlinks in your responses.
 - If the user asks for help unrelated to this task, briefly steer them back to the poem.
@@ -45,9 +71,9 @@ Style and behavior:
 
 const stageMessages: Record<Stage, string> = {
   SPARK:
-    "The user is currently reading the passage and brainstorming—exploring themes, moods, and directions, and taking notes. Help them figure out what they might want to express. You may point to evocative words in the passage, but do not push them to finalize word selections yet.",
+    "The user is reading the passage and brainstorming—figuring out what they might want to express and taking notes for later. Talk about the passage's images, moments, and feelings. You may point out striking words as material worth noting, but nothing is final yet. Do not pressure the user to commit to a direction or start building lines.",
   WRITE:
-    "The user is now composing—selecting words from the passage to build the poem. Their current selections appear below and update as they work. Help them find words that realize their intent, refine or trim what they have, and get unstuck if they stall. When suggesting sequences of words, respect the passage-order rule.",
+    "The user is now composing—selecting words from the passage to build the poem. Their current selections appear below and update as they work. Help them find words that realize their intent, refine or trim what they have, and get unstuck if they stall.",
 };
 
 const promptSuggestions: Record<Stage, string[]> = {
@@ -64,13 +90,21 @@ const promptSuggestions: Record<Stage, string[]> = {
 };
 
 interface StreamEvent {
+  type?: "metadata" | "error";
   content?: string;
   choices?: Array<{ delta?: { content?: string } }>;
+  error?: string;
+  metadata?: {
+    model: string;
+    modelVersion: string;
+    generationParameters: Record<string, unknown>;
+  };
 }
 
 const readStreamingText = async (
   response: Response,
   onText: (text: string) => void,
+  onMetadata: (metadata: NonNullable<StreamEvent["metadata"]>) => void,
 ) => {
   if (!response.ok) {
     throw new Error(`LLM request failed with status ${response.status}`);
@@ -91,6 +125,13 @@ const readStreamingText = async (
     if (!data || data === "[DONE]") return;
 
     const event = JSON.parse(data) as StreamEvent;
+    if (event.type === "error") {
+      throw new Error(event.error || "The model request failed");
+    }
+    if (event.type === "metadata" && event.metadata) {
+      onMetadata(event.metadata);
+      return;
+    }
     const delta = event.content ?? event.choices?.[0]?.delta?.content;
     if (!delta) return;
 
@@ -120,6 +161,8 @@ export default function ChatTab({
   stage,
   passage,
   chatReady = true,
+  onChatOpened,
+  onRequestUpdate,
 }: ChatTabProps) {
   const context = useContext(DataContext);
   if (!context) {
@@ -128,13 +171,14 @@ export default function ChatTab({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stageStartMessageCountRef = useRef(messages.length);
+  const hasLoggedOpeningRef = useRef(false);
 
   const [isLLMLoading, setIsLLMLoading] = useState(false);
   const [input, setInput] = useState("");
   // const [lastResponseId] = useState<string | null>(null);
   const [markdownOutput, setMarkdownOutput] = useState("");
-  const [hasUsedFirstPrompt, setHasUsedFirstPrompt] = useState(false);
   const [hasShownIdleNudge, setHasShownIdleNudge] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const hasUserMessageInStage = messages
     .slice(stageStartMessageCountRef.current)
@@ -159,6 +203,12 @@ ${passage}
 CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
     };
   }, [passage, selectedWordIndexes, stage]);
+
+  useEffect(() => {
+    if (!chatReady || hasLoggedOpeningRef.current) return;
+    hasLoggedOpeningRef.current = true;
+    onChatOpened?.({ stage, timestamp: new Date() });
+  }, [chatReady, onChatOpened, stage]);
 
   useEffect(() => {
     const element = chatContainerRef.current;
@@ -197,7 +247,7 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
 
   const sendMessage = async (messageContent?: string) => {
     const content = messageContent || input;
-    if (!content.trim()) return;
+    if (!content.trim() || isLLMLoading) return;
 
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -210,10 +260,26 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
       content,
       timestamp: new Date(),
     };
+    const requestId = nanoid();
+    let requestLog: LlmRequestLog = {
+      id: requestId,
+      stage,
+      userMessageId: artistMessage.id,
+      userMessageContent: content,
+      requestedAt: new Date(),
+      status: "STARTED",
+      systemPrompt: systemMessage.content,
+      promptVersion: BLACKOUT_ASSISTANT_PROMPT_VERSION,
+    };
+    onRequestUpdate?.(requestLog);
 
-    const strippedMessages = messages.map(({ id, timestamp, ...rest }) => rest);
+    const strippedMessages = messages.map(({ role, content }) => ({
+      role,
+      content,
+    }));
 
     setMarkdownOutput("");
+    setSendError(null);
     setMessages((prev) => [...prev, artistMessage]);
     setInput("");
     setIsLLMLoading(true);
@@ -228,10 +294,25 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
       const response = await fetch("/api/llm/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({
+          messages: newMessages,
+          promptVersion: BLACKOUT_ASSISTANT_PROMPT_VERSION,
+        }),
       });
 
-      const fullText = await readStreamingText(response, setMarkdownOutput);
+      const fullText = await readStreamingText(
+        response,
+        setMarkdownOutput,
+        (metadata) => {
+          requestLog = {
+            ...requestLog,
+            model: metadata.model,
+            modelVersion: metadata.modelVersion,
+            generationParameters: metadata.generationParameters,
+          };
+          onRequestUpdate?.(requestLog);
+        },
+      );
 
       // finally, add the completed message to messages array
       const llmMessage: Message = {
@@ -240,16 +321,41 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
         content: fullText,
         timestamp: new Date(),
       };
+      requestLog = {
+        ...requestLog,
+        assistantMessageId: llmMessage.id,
+        completedAt: new Date(),
+        status: "COMPLETED",
+      };
+      onRequestUpdate?.(requestLog);
       setMessages((prev) => [...prev, llmMessage]);
       setMarkdownOutput(""); // Clear this so the streaming UI disappears
     } catch (error) {
       console.error("LLM response failed", error);
+      requestLog = {
+        ...requestLog,
+        failedAt: new Date(),
+        status: "FAILED",
+        error: error instanceof Error ? error.message : "Unknown LLM error",
+      };
+      onRequestUpdate?.(requestLog);
+      setMarkdownOutput("");
+      setSendError(
+        "The assistant had a connection problem. Send your message again.",
+      );
+      // Remove the optimistic message before restoring it for a clean retry.
+      setMessages((previousMessages) =>
+        previousMessages.filter((message) => message.id !== artistMessage.id),
+      );
+      setInput((currentInput) =>
+        currentInput.trim() ? currentInput : content,
+      );
     } finally {
       setIsLLMLoading(false);
     }
   };
 
-  const handleKeyDown = (e: any) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -257,8 +363,6 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
   };
 
   const handlePromptSelection = (prompt: string) => {
-    setInput(prompt);
-    setHasUsedFirstPrompt(true);
     sendMessage(prompt);
   };
 
@@ -285,7 +389,6 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
 
         {chatReady &&
           !hasUserMessageInStage &&
-          !hasUsedFirstPrompt &&
           !isLLMLoading && (
             <div className="mt-4 space-y-2">
               <p className="text-sm text-gray-600 mb-3">Try asking me:</p>
@@ -330,6 +433,11 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
       {/* Input area */}
       {
         <div className="p-3">
+          {sendError && (
+            <p className="mb-2 text-sm text-red-700" role="alert">
+              {sendError}
+            </p>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -344,7 +452,12 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
               placeholder="Type a message..."
               className="text-main bg-white flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-grey"
             />
-            <Button className="btn-small" onClick={() => sendMessage()}>
+            <Button
+              type="submit"
+              className="btn-small"
+              disabled={isLLMLoading}
+              aria-label="Send message"
+            >
               <FiSend />
             </Button>
           </form>

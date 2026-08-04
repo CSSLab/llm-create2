@@ -7,6 +7,49 @@ const ARTIST_COLLECTION = "artist";
 const ARTIST_SURVEY_COLLECTION = "artistSurvey";
 const POEM_COLLECTION = "poem";
 const INCOMPLETE_SESSION_COLLECTION = "artistIncompleteSession";
+const ASSIGNMENT_COLLECTION = "artistAssignment";
+
+router.post("/artist-assignment", async (req, res) => {
+  try {
+    const { sessionId, passageId, prolificPid } = req.body;
+    if (!sessionId || !passageId) {
+      return res.status(400).json({ error: "Missing sessionId or passageId" });
+    }
+
+    const assignmentRef = db.collection(ASSIGNMENT_COLLECTION).doc(sessionId);
+    const assignment = await db.runTransaction(async (transaction) => {
+      const existingAssignment = await transaction.get(assignmentRef);
+      if (existingAssignment.exists) {
+        const existing = existingAssignment.data()!;
+        return {
+          passageId: existing.passageId as string,
+          condition: existing.condition as "LLM" | "NO_AI",
+          strategy: existing.strategy as string,
+        };
+      }
+
+      const condition: "LLM" | "NO_AI" =
+        Math.random() < 0.5 ? "LLM" : "NO_AI";
+      const strategy = "INDEPENDENT_RANDOM_1_TO_1";
+
+      transaction.set(assignmentRef, {
+        sessionId,
+        prolificPid: prolificPid || null,
+        passageId: String(passageId),
+        condition,
+        strategy,
+        assignedAt: FieldValue.serverTimestamp(),
+      });
+
+      return { passageId: String(passageId), condition, strategy };
+    });
+
+    res.json(assignment);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to assign study condition" });
+  }
+});
 
 router.post("/autosave", async (req, res) => {
   try {
@@ -80,8 +123,9 @@ router.post("/commit-session", async (req, res) => {
       .collection(INCOMPLETE_SESSION_COLLECTION)
       .doc(sessionId);
 
-    const artist: Record<string, any> = {
+    const artist: Record<string, unknown> = {
       condition: artistData.condition,
+      assignment: artistData.assignment ?? null,
       surveyResponse: surveyRef,
       poem: poemRef,
       timestamps: [...(artistData.timeStamps ?? []), new Date()],
