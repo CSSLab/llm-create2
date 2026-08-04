@@ -8,7 +8,10 @@ export interface Artist {
 }
 
 export interface ArtistAssignment {
-  strategy: "PASSAGE_STRATIFIED_1_TO_1" | "TEST_OVERRIDE";
+  strategy:
+    | "INDEPENDENT_RANDOM_1_TO_1"
+    | "PASSAGE_STRATIFIED_1_TO_1"
+    | "TEST_OVERRIDE";
   passageId: string;
   condition: ArtistCondition;
   assignedAt: Date;

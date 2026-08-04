@@ -5,7 +5,7 @@ import { Button, Input } from "@chakra-ui/react";
 import { toaster } from "../components/ui/toaster";
 import { DataContext } from "../App";
 import { ArtistCondition } from "../types";
-import type { Poem } from "../types";
+import type { ArtistAssignment, Poem } from "../types";
 import { Passages } from "../consts/passages";
 import type { ChangeEvent, KeyboardEvent } from "react";
 
@@ -100,8 +100,7 @@ const Captcha = () => {
   const startArtist = (
     condition: ArtistCondition,
     passageId = "1",
-    strategy: "PASSAGE_STRATIFIED_1_TO_1" | "TEST_OVERRIDE" =
-      "TEST_OVERRIDE",
+    strategy: ArtistAssignment["strategy"] = "TEST_OVERRIDE",
   ) => {
     addUserData({ role: "artist" });
     addRoleSpecificData({
@@ -162,10 +161,15 @@ const Captcha = () => {
         const assignment = (await response.json()) as {
           passageId: string;
           condition: ArtistCondition;
+          strategy: ArtistAssignment["strategy"];
         };
+        const hasValidStrategy =
+          assignment.strategy === "INDEPENDENT_RANDOM_1_TO_1" ||
+          assignment.strategy === "PASSAGE_STRATIFIED_1_TO_1";
         if (
           !Passages.some((passage) => passage.id === assignment.passageId) ||
-          !Object.values(ArtistCondition).includes(assignment.condition)
+          !Object.values(ArtistCondition).includes(assignment.condition) ||
+          !hasValidStrategy
         ) {
           throw new Error("Assignment response was invalid");
         }
@@ -173,7 +177,7 @@ const Captcha = () => {
         startArtist(
           assignment.condition,
           assignment.passageId,
-          "PASSAGE_STRATIFIED_1_TO_1",
+          assignment.strategy,
         );
         navigate("/consent");
       } catch (error) {
