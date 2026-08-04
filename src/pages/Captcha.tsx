@@ -7,14 +7,9 @@ import { DataContext } from "../App";
 import { ArtistCondition } from "../types";
 import type { Poem } from "../types";
 import { Passages } from "../consts/passages";
+import type { ChangeEvent, KeyboardEvent } from "react";
 
 const TEST_CAPTCHA = "TEST";
-
-const getRandomArtistCondition = (): ArtistCondition => {
-  const values = Object.values(ArtistCondition);
-  const randomIndex = Math.floor(Math.random() * values.length);
-  return values[randomIndex];
-};
 
 const Captcha = () => {
   const navigate = useNavigate();
@@ -22,16 +17,25 @@ const Captcha = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { userData, addUserData, addRoleSpecificData, setIsTestMode, previousCondition } = context;
+  const {
+    userData,
+    addUserData,
+    addRoleSpecificData,
+    setIsTestMode,
+    sessionId,
+    prolific,
+  } = context;
   const [captchaMessage, setCaptchaMessage] = useState("");
   const [inputCaptcha, setInputCaptcha] = useState("");
+  const [isAssigning, setIsAssigning] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     generateCaptchaCheck();
   }, []);
 
-  const handleChange = (event: any) => setInputCaptcha(event.target.value);
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) =>
+    setInputCaptcha(event.target.value);
 
   const generateCaptchaCheck = () => {
     let captcha_text = "";
@@ -71,14 +75,14 @@ const Captcha = () => {
     }
   }, [captchaMessage]);
 
-  const handleKeyDown = (event: any) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       handleSubmit();
     }
   };
 
-  const makePoem = (): Poem => {
-    const passage = Passages.find((p) => p.id === "1")!;
+  const makePoem = (passageId = "1"): Poem => {
+    const passage = Passages.find((p) => p.id === passageId) ?? Passages[0];
     return {
       passageId: passage.id,
       passage,
@@ -88,21 +92,38 @@ const Captcha = () => {
       sparkNotes: "",
       writeNotes: "",
       poemSnapshot: [],
+      taskTiming: { phases: {} },
+      llmUsage: { chatOpenings: [], requests: [] },
     };
   };
 
-  const handleSubmit = () => {
+  const startArtist = (
+    condition: ArtistCondition,
+    passageId = "1",
+    strategy: "PASSAGE_STRATIFIED_1_TO_1" | "TEST_OVERRIDE" =
+      "TEST_OVERRIDE",
+  ) => {
+    addUserData({ role: "artist" });
+    addRoleSpecificData({
+      condition,
+      poem: makePoem(passageId),
+      assignment: {
+        strategy,
+        passageId,
+        condition,
+        assignedAt: new Date(),
+      },
+      timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (isAssigning) return;
     if (inputCaptcha === "blackout") {
-      addUserData({ role: "artist" });
-      addRoleSpecificData({ condition: ArtistCondition.LLM, poem: makePoem() });
+      startArtist(ArtistCondition.LLM);
       navigate("/artist/blackout");
     } else if (inputCaptcha === "control" || inputCaptcha === "noai") {
-      addUserData({ role: "artist" });
-      addRoleSpecificData({
-        condition: ArtistCondition.NO_AI,
-        poem: makePoem(),
-        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
-      });
+      startArtist(ArtistCondition.NO_AI);
       navigate("/consent");
     } else if (
       inputCaptcha === "llm" ||
@@ -110,47 +131,73 @@ const Captcha = () => {
       inputCaptcha === "writing" ||
       inputCaptcha === "complete"
     ) {
-      addUserData({ role: "artist" });
-      addRoleSpecificData({
-        condition: ArtistCondition.LLM,
-        poem: makePoem(),
-        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
-      });
+      startArtist(ArtistCondition.LLM);
       navigate("/consent");
     } else if (inputCaptcha === captchaMessage) {
-      addUserData({ role: "artist" });
-      addRoleSpecificData({
-        condition: previousCondition ?? getRandomArtistCondition(),
-        poem: makePoem(),
-        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
-      });
-      navigate("/consent");
+      if (!sessionId) {
+        toaster.create({
+          description: "The session is still loading. Please try again.",
+          type: "error",
+          duration: 5000,
+        });
+        return;
+      }
+
+      setIsAssigning(true);
+      try {
+        const proposedPassage =
+          Passages[Math.floor(Math.random() * Passages.length)];
+        const response = await fetch("/api/firebase/artist-assignment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId,
+            passageId: proposedPassage.id,
+            prolificPid: prolific?.prolificPid ?? null,
+          }),
+        });
+        if (!response.ok) {
+          throw new Error(`Assignment failed with status ${response.status}`);
+        }
+        const assignment = (await response.json()) as {
+          passageId: string;
+          condition: ArtistCondition;
+        };
+        if (
+          !Passages.some((passage) => passage.id === assignment.passageId) ||
+          !Object.values(ArtistCondition).includes(assignment.condition)
+        ) {
+          throw new Error("Assignment response was invalid");
+        }
+
+        startArtist(
+          assignment.condition,
+          assignment.passageId,
+          "PASSAGE_STRATIFIED_1_TO_1",
+        );
+        navigate("/consent");
+      } catch (error) {
+        console.error("Study assignment failed", error);
+        toaster.create({
+          description:
+            "We could not start your session. Please check your connection and try again.",
+          type: "error",
+          duration: 5000,
+        });
+      } finally {
+        setIsAssigning(false);
+      }
     } else if (inputCaptcha === "LLM_TEST") {
       setIsTestMode(true);
-      addUserData({ role: "artist" });
-      addRoleSpecificData({
-        condition: ArtistCondition.LLM,
-        poem: makePoem(),
-        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
-      });
+      startArtist(ArtistCondition.LLM);
       navigate("/consent");
     } else if (inputCaptcha === "NOLLM_TEST") {
       setIsTestMode(true);
-      addUserData({ role: "artist" });
-      addRoleSpecificData({
-        condition: ArtistCondition.NO_AI,
-        poem: makePoem(),
-        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
-      });
+      startArtist(ArtistCondition.NO_AI);
       navigate("/consent");
     } else if (inputCaptcha == TEST_CAPTCHA) {
       setIsTestMode(true);
-      addUserData({ role: "artist" });
-      addRoleSpecificData({
-        condition: ArtistCondition.LLM,
-        poem: makePoem(),
-        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
-      });
+      startArtist(ArtistCondition.LLM);
       navigate("/consent");
     } else {
       toaster.create({
@@ -178,10 +225,15 @@ const Captcha = () => {
           value={inputCaptcha}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          disabled={isAssigning}
           placeholder="Type code here"
         />
-        <Button className="btn-primary" onClick={handleSubmit}>
-          Continue
+        <Button
+          className="btn-primary"
+          onClick={handleSubmit}
+          disabled={isAssigning}
+        >
+          {isAssigning ? "Starting…" : "Continue"}
         </Button>
       </div>
     </HalfPageTemplate>

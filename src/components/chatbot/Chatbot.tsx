@@ -9,7 +9,12 @@ import {
 import { FiSend } from "react-icons/fi";
 import { Button, Textarea } from "@chakra-ui/react";
 import { nanoid } from "nanoid";
-import type { Message, Stage } from "../../types";
+import type {
+  ChatOpening,
+  LlmRequestLog,
+  Message,
+  Stage,
+} from "../../types";
 import { Role } from "../../types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -26,7 +31,12 @@ interface ChatTabProps {
   selectedWordIndexes?: number[];
   passage: string;
   chatReady?: boolean;
+  onChatOpened?: (opening: ChatOpening) => void;
+  onRequestUpdate?: (request: LlmRequestLog) => void;
 }
+
+export const BLACKOUT_ASSISTANT_PROMPT_VERSION =
+  "blackout-assistant-2026-08-04-v1";
 
 /**
  * Keep the locator-excerpt convention identical across both stages so users
@@ -80,13 +90,21 @@ const promptSuggestions: Record<Stage, string[]> = {
 };
 
 interface StreamEvent {
+  type?: "metadata" | "error";
   content?: string;
   choices?: Array<{ delta?: { content?: string } }>;
+  error?: string;
+  metadata?: {
+    model: string;
+    modelVersion: string;
+    generationParameters: Record<string, unknown>;
+  };
 }
 
 const readStreamingText = async (
   response: Response,
   onText: (text: string) => void,
+  onMetadata: (metadata: NonNullable<StreamEvent["metadata"]>) => void,
 ) => {
   if (!response.ok) {
     throw new Error(`LLM request failed with status ${response.status}`);
@@ -107,6 +125,13 @@ const readStreamingText = async (
     if (!data || data === "[DONE]") return;
 
     const event = JSON.parse(data) as StreamEvent;
+    if (event.type === "error") {
+      throw new Error(event.error || "The model request failed");
+    }
+    if (event.type === "metadata" && event.metadata) {
+      onMetadata(event.metadata);
+      return;
+    }
     const delta = event.content ?? event.choices?.[0]?.delta?.content;
     if (!delta) return;
 
@@ -136,6 +161,8 @@ export default function ChatTab({
   stage,
   passage,
   chatReady = true,
+  onChatOpened,
+  onRequestUpdate,
 }: ChatTabProps) {
   const context = useContext(DataContext);
   if (!context) {
@@ -144,6 +171,7 @@ export default function ChatTab({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stageStartMessageCountRef = useRef(messages.length);
+  const hasLoggedOpeningRef = useRef(false);
 
   const [isLLMLoading, setIsLLMLoading] = useState(false);
   const [input, setInput] = useState("");
@@ -175,6 +203,12 @@ ${passage}
 CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
     };
   }, [passage, selectedWordIndexes, stage]);
+
+  useEffect(() => {
+    if (!chatReady || hasLoggedOpeningRef.current) return;
+    hasLoggedOpeningRef.current = true;
+    onChatOpened?.({ stage, timestamp: new Date() });
+  }, [chatReady, onChatOpened, stage]);
 
   useEffect(() => {
     const element = chatContainerRef.current;
@@ -226,6 +260,18 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
       content,
       timestamp: new Date(),
     };
+    const requestId = nanoid();
+    let requestLog: LlmRequestLog = {
+      id: requestId,
+      stage,
+      userMessageId: artistMessage.id,
+      userMessageContent: content,
+      requestedAt: new Date(),
+      status: "STARTED",
+      systemPrompt: systemMessage.content,
+      promptVersion: BLACKOUT_ASSISTANT_PROMPT_VERSION,
+    };
+    onRequestUpdate?.(requestLog);
 
     const strippedMessages = messages.map(({ role, content }) => ({
       role,
@@ -248,10 +294,25 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
       const response = await fetch("/api/llm/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({
+          messages: newMessages,
+          promptVersion: BLACKOUT_ASSISTANT_PROMPT_VERSION,
+        }),
       });
 
-      const fullText = await readStreamingText(response, setMarkdownOutput);
+      const fullText = await readStreamingText(
+        response,
+        setMarkdownOutput,
+        (metadata) => {
+          requestLog = {
+            ...requestLog,
+            model: metadata.model,
+            modelVersion: metadata.modelVersion,
+            generationParameters: metadata.generationParameters,
+          };
+          onRequestUpdate?.(requestLog);
+        },
+      );
 
       // finally, add the completed message to messages array
       const llmMessage: Message = {
@@ -260,10 +321,24 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
         content: fullText,
         timestamp: new Date(),
       };
+      requestLog = {
+        ...requestLog,
+        assistantMessageId: llmMessage.id,
+        completedAt: new Date(),
+        status: "COMPLETED",
+      };
+      onRequestUpdate?.(requestLog);
       setMessages((prev) => [...prev, llmMessage]);
       setMarkdownOutput(""); // Clear this so the streaming UI disappears
     } catch (error) {
       console.error("LLM response failed", error);
+      requestLog = {
+        ...requestLog,
+        failedAt: new Date(),
+        status: "FAILED",
+        error: error instanceof Error ? error.message : "Unknown LLM error",
+      };
+      onRequestUpdate?.(requestLog);
       setMarkdownOutput("");
       setSendError(
         "The assistant had a connection problem. Send your message again.",

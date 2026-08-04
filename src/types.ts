@@ -4,6 +4,14 @@ export interface Artist {
   surveyResponse: ArtistSurvey;
   poem: Poem;
   timeStamps: Date[];
+  assignment?: ArtistAssignment;
+}
+
+export interface ArtistAssignment {
+  strategy: "PASSAGE_STRATIFIED_1_TO_1" | "TEST_OVERRIDE";
+  passageId: string;
+  condition: ArtistCondition;
+  assignedAt: Date;
 }
 
 export interface ArtistSurvey {
@@ -29,6 +37,8 @@ export interface Poem {
   writeConversation?: Message[]; // LLM conversation in writing phase
   sparkNotes: string;
   writeNotes: string;
+  taskTiming: TaskTiming;
+  llmUsage: LlmUsage;
 }
 
 export interface Message {
@@ -36,6 +46,50 @@ export interface Message {
   role: Role;
   content: string;
   timestamp: Date;
+}
+
+export interface PhaseTiming {
+  startedAt: Date;
+  completedAt: Date;
+  durationMs: number;
+}
+
+export interface TaskTiming {
+  startedAt?: Date;
+  completedAt?: Date;
+  totalDurationMs?: number;
+  phases: {
+    spark?: PhaseTiming;
+    write?: PhaseTiming;
+  };
+}
+
+export interface ChatOpening {
+  stage: Stage;
+  timestamp: Date;
+}
+
+export interface LlmRequestLog {
+  id: string;
+  stage: Stage;
+  userMessageId: string;
+  userMessageContent: string;
+  assistantMessageId?: string;
+  requestedAt: Date;
+  completedAt?: Date;
+  failedAt?: Date;
+  status: "STARTED" | "COMPLETED" | "FAILED";
+  systemPrompt: string;
+  promptVersion: string;
+  model?: string;
+  modelVersion?: string;
+  generationParameters?: Record<string, unknown>;
+  error?: string;
+}
+
+export interface LlmUsage {
+  chatOpenings: ChatOpening[];
+  requests: LlmRequestLog[];
 }
 
 export interface Passage {
@@ -105,15 +159,22 @@ export type QuestionType =
   | "openEnded"
   | "likertScale"
   | "circularChoice"
+  | "emotionWheel"
   | "range"
   | "topXRanking";
+
+export interface AnswerCondition {
+  questionId: string;
+  equals: string | number;
+}
 
 export interface BaseQuestion {
   id: string;
   type: QuestionType;
   question: string;
   required?: boolean;
-  answer?: any;
+  answer?: unknown;
+  showWhen?: AnswerCondition;
 }
 
 export interface MultipleChoiceQuestion extends BaseQuestion {
@@ -124,6 +185,10 @@ export interface MultipleChoiceQuestion extends BaseQuestion {
 export interface OpenEndedQuestion extends BaseQuestion {
   type: "openEnded";
   placeholder?: string;
+  softWordTarget?: {
+    min: number;
+    max: number;
+  };
 }
 
 export interface LikertScaleQuestion extends BaseQuestion {
@@ -147,11 +212,24 @@ export interface CircularMultipleChoiceQuestion extends BaseQuestion {
   options: string[];
 }
 
+export interface EmotionWheelQuestion extends BaseQuestion {
+  type: "emotionWheel";
+  options: string[];
+  intensityLevels: 5;
+  includeNoEmotion: true;
+}
+
+export interface EmotionWheelAnswer {
+  emotion: string;
+  intensity: 0 | 1 | 2 | 3 | 4 | 5;
+}
+
 export type Question =
   | MultipleChoiceQuestion
   | OpenEndedQuestion
   | LikertScaleQuestion
   | CircularMultipleChoiceQuestion
+  | EmotionWheelQuestion
   | RangeQuestion
   | TopXRankingQuestion;
 
@@ -171,7 +249,12 @@ export interface SurveyDefinition {
   sections: Section[];
 }
 
-export type AnswerValue = string | string[] | number | null;
+export type AnswerValue =
+  | string
+  | string[]
+  | number
+  | EmotionWheelAnswer
+  | null;
 
 export interface SurveyAnswers {
   [questionId: string]: AnswerValue;
@@ -197,6 +280,7 @@ export type PoemSnapshot = {
   action: "ADD" | "REMOVE";
   index: number;
   timestamp: Date;
+  source: "DIRECT" | "UNDO" | "REDO";
 };
 
 export interface SurveyQuestion {

@@ -21,12 +21,12 @@ function PoemPageTemplate({
   const visibleIndexes = poem ? poem.text : [];
   return (
     <div
-      className={`w-full h-full min-w-96 bg-white overflow-hidden p-16 md:p-20`}
+      className="h-full w-full overflow-hidden bg-white p-6 sm:p-10 md:p-20"
     >
-      <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 md:gap-x-16 overflow-scroll md:overflow-hidden">
+      <div className="grid h-full w-full grid-cols-1 gap-y-10 overflow-auto md:grid-cols-2 md:gap-x-16 md:gap-y-0 md:overflow-hidden">
         {poem ? (
-          <div className="content-center pb-4 h-max md:h-[70vh] text-center leading-relaxed flex flex-wrap bg-white rounded-xl">
-            <div className="w-max justify-center h-max text-center leading-relaxed flex flex-wrap p-8 bg-white border rounded-xl overflow-auto">
+          <div className="flex h-max flex-wrap content-center justify-center rounded-xl bg-white pb-4 text-center leading-relaxed md:h-[70vh]">
+            <div className="flex h-max w-full max-w-lg flex-wrap justify-center overflow-auto rounded-xl border bg-white p-5 text-center leading-relaxed sm:p-8">
               <div className="w-full text-h2 mb-4 flex flex-row items-center justify-items-center">
                 <div className="w-6 h-6 mr-2">
                   <svg viewBox="0 0 92 106" className="w-full h-full">
@@ -38,7 +38,7 @@ function PoemPageTemplate({
                 </div>
                 <p className="text-h2"> Your Final Poem</p>
               </div>
-              <div className="leading-relaxed flex flex-wrap select-none h-max min-w-[350px] w-[350px]">
+              <div className="flex h-max w-full min-w-0 select-none flex-wrap leading-relaxed">
                 {words.map((word, i) => {
                   const isVisible = visibleIndexes.includes(i);
                   return (

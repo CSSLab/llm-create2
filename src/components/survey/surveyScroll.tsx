@@ -1,5 +1,10 @@
 import React, { useState, useContext, useMemo, useRef } from "react";
-import type { SurveyDefinition, SurveyAnswers } from "../../types";
+import type {
+  AnswerValue,
+  Question,
+  SurveyDefinition,
+  SurveyAnswers,
+} from "../../types";
 import QuestionRenderer from "./questionRenderer";
 import { Progress, Button } from "@chakra-ui/react";
 import { DataContext } from "../../App";
@@ -11,7 +16,11 @@ interface Props {
   isSubmitting?: boolean;
 }
 
-const SurveyScroll: React.FC<Props> = ({ survey, onSubmit, isSubmitting = false }) => {
+const SurveyScroll: React.FC<Props> = ({
+  survey,
+  onSubmit,
+  isSubmitting = false,
+}) => {
   const [answers, setAnswers] = useState<SurveyAnswers>({});
   const submitCalledRef = useRef(false);
   const context = useContext(DataContext);
@@ -19,7 +28,7 @@ const SurveyScroll: React.FC<Props> = ({ survey, onSubmit, isSubmitting = false 
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const updateAnswer = (questionId: string, value: any) => {
+  const updateAnswer = (questionId: string, value: AnswerValue) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
@@ -28,9 +37,13 @@ const SurveyScroll: React.FC<Props> = ({ survey, onSubmit, isSubmitting = false 
     [survey.sections],
   );
 
-  const requiredQuestions = allQuestions.filter((q) => q.required);
+  const isQuestionVisible = (q: (typeof allQuestions)[number]) =>
+    !q.showWhen || answers[q.showWhen.questionId] === q.showWhen.equals;
 
-  const isQuestionAnswered = (q: any) => {
+  const visibleQuestions = allQuestions.filter(isQuestionVisible);
+  const requiredQuestions = visibleQuestions.filter((q) => q.required);
+
+  const isQuestionAnswered = (q: Question) => {
     const answer = answers[q.id];
     if (answer === undefined || answer === null) return false;
 
@@ -45,6 +58,16 @@ const SurveyScroll: React.FC<Props> = ({ survey, onSubmit, isSubmitting = false 
         return answer;
       case "circularChoice":
         return answer;
+      case "emotionWheel":
+        return (
+          typeof answer === "object" &&
+          answer !== null &&
+          !Array.isArray(answer) &&
+          typeof answer.emotion === "string" &&
+          typeof answer.intensity === "number" &&
+          answer.intensity >= 0 &&
+          answer.intensity <= 5
+        );
       case "topXRanking":
         return (
           Array.isArray(answer) &&
@@ -57,7 +80,9 @@ const SurveyScroll: React.FC<Props> = ({ survey, onSubmit, isSubmitting = false 
   };
 
   const answeredCount = requiredQuestions.filter(isQuestionAnswered).length;
-  const progress = Math.round((answeredCount / requiredQuestions.length) * 100);
+  const progress = requiredQuestions.length
+    ? Math.round((answeredCount / requiredQuestions.length) * 100)
+    : 100;
 
   const isSurveyComplete = answeredCount === requiredQuestions.length;
 
@@ -65,7 +90,15 @@ const SurveyScroll: React.FC<Props> = ({ survey, onSubmit, isSubmitting = false 
     if (isSubmitting || submitCalledRef.current) return;
     submitCalledRef.current = true;
     if (isSurveyComplete) {
-      onSubmit(answers);
+      const visibleAnswers = visibleQuestions.reduce<SurveyAnswers>(
+        (result, question) => {
+          const answer = answers[question.id];
+          if (answer !== undefined) result[question.id] = answer;
+          return result;
+        },
+        {},
+      );
+      onSubmit(visibleAnswers);
     } else {
       submitCalledRef.current = false;
       toaster.create({
@@ -95,20 +128,23 @@ const SurveyScroll: React.FC<Props> = ({ survey, onSubmit, isSubmitting = false 
 
       {/* Sections */}
       <div className="w-full h-100vh space-y-10 overflow-y-scroll">
-        {survey.sections.map((section, index) => (
-          <div key={index} className="space-y-6 border-b pb-8">
+        {survey.sections.map((section) => (
+          <div key={section.id} className="space-y-6 border-b pb-8">
+            <h2 className="text-h2">{section.title}</h2>
             {section.description && (
               <p className="text-sub text-dark-grey">{section.description}</p>
             )}
             <div className="space-y-4">
-              {section.questions.map((q) => (
-                <QuestionRenderer
-                  key={q.id}
-                  question={q}
-                  value={answers[q.id]}
-                  onChange={updateAnswer}
-                />
-              ))}
+              {section.questions.map((q) =>
+                isQuestionVisible(q) ? (
+                  <QuestionRenderer
+                    key={q.id}
+                    question={q}
+                    value={answers[q.id]}
+                    onChange={updateAnswer}
+                  />
+                ) : null,
+              )}
             </div>
           </div>
         ))}

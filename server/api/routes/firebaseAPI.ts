@@ -7,6 +7,73 @@ const ARTIST_COLLECTION = "artist";
 const ARTIST_SURVEY_COLLECTION = "artistSurvey";
 const POEM_COLLECTION = "poem";
 const INCOMPLETE_SESSION_COLLECTION = "artistIncompleteSession";
+const ASSIGNMENT_COLLECTION = "artistAssignment";
+const ASSIGNMENT_COUNTER_COLLECTION = "artistAssignmentCounter";
+
+router.post("/artist-assignment", async (req, res) => {
+  try {
+    const { sessionId, passageId, prolificPid } = req.body;
+    if (!sessionId || !passageId) {
+      return res.status(400).json({ error: "Missing sessionId or passageId" });
+    }
+
+    const assignmentRef = db.collection(ASSIGNMENT_COLLECTION).doc(sessionId);
+    const counterRef = db
+      .collection(ASSIGNMENT_COUNTER_COLLECTION)
+      .doc(String(passageId));
+
+    const assignment = await db.runTransaction(async (transaction) => {
+      const existingAssignment = await transaction.get(assignmentRef);
+      if (existingAssignment.exists) {
+        const existing = existingAssignment.data()!;
+        return {
+          passageId: existing.passageId as string,
+          condition: existing.condition as "LLM" | "NO_AI",
+        };
+      }
+
+      const counterSnapshot = await transaction.get(counterRef);
+      const counts = counterSnapshot.exists
+        ? counterSnapshot.data()!
+        : { LLM: 0, NO_AI: 0 };
+      const llmCount = Number(counts.LLM || 0);
+      const noAiCount = Number(counts.NO_AI || 0);
+      const condition: "LLM" | "NO_AI" =
+        llmCount < noAiCount
+          ? "LLM"
+          : noAiCount < llmCount
+            ? "NO_AI"
+            : Math.random() < 0.5
+              ? "LLM"
+              : "NO_AI";
+
+      transaction.set(
+        counterRef,
+        {
+          LLM: llmCount + (condition === "LLM" ? 1 : 0),
+          NO_AI: noAiCount + (condition === "NO_AI" ? 1 : 0),
+          lastAssignedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      transaction.set(assignmentRef, {
+        sessionId,
+        prolificPid: prolificPid || null,
+        passageId: String(passageId),
+        condition,
+        strategy: "PASSAGE_STRATIFIED_1_TO_1",
+        assignedAt: FieldValue.serverTimestamp(),
+      });
+
+      return { passageId: String(passageId), condition };
+    });
+
+    res.json(assignment);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to assign study condition" });
+  }
+});
 
 router.post("/autosave", async (req, res) => {
   try {
@@ -80,8 +147,9 @@ router.post("/commit-session", async (req, res) => {
       .collection(INCOMPLETE_SESSION_COLLECTION)
       .doc(sessionId);
 
-    const artist: Record<string, any> = {
+    const artist: Record<string, unknown> = {
       condition: artistData.condition,
+      assignment: artistData.assignment ?? null,
       surveyResponse: surveyRef,
       poem: poemRef,
       timestamps: [...(artistData.timeStamps ?? []), new Date()],

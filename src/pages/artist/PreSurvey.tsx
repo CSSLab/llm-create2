@@ -4,6 +4,7 @@ import { DataContext } from "../../App";
 import { ArtistPreSurveyQuestions } from "../../consts/surveyQuestions";
 import SurveyScroll from "../../components/survey/surveyScroll";
 import FullPageTemplate from "../../components/shared/pages/fullScrollPage";
+import type { SurveyAnswers } from "../../types";
 
 const AristPreSurvey = () => {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ const AristPreSurvey = () => {
 
   const { userData, addPreSurvey, addRoleSpecificData } = context;
 
-  const handleSubmit = (answers: any) => {
+  const handleSubmit = (answers: SurveyAnswers) => {
     addRoleSpecificData({
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
     });
