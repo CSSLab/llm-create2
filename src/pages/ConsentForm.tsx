@@ -21,7 +21,11 @@ const ConsentForm = () => {
       addRoleSpecificData({
         timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
       });
-      navigate("/artist/pre-survey");
+      navigate(
+        userData?.role === "audience"
+          ? "/audience/instructions"
+          : "/artist/pre-survey",
+      );
     } else {
       toaster.create({
         description: "Please give your consent to proceed",
@@ -48,11 +52,12 @@ const ConsentForm = () => {
           </p>
           {/* Try not to make it scary  */}
           <p className="text-main mb-2">
-            As a participant, you will be asked to write a (blackout) poem. You
-            will also be asked to provide some demographic information and
-            general thoughts on this survey. By taking part, you will help us
-            better understand how we can guide responsible AI development and
-            usage in creative contexts.
+            As a participant, you will be asked to {userData?.role === "audience"
+              ? "read and respond to several blackout poems"
+              : "write a blackout poem"}. You will also be asked to provide
+            some background information and general thoughts. By taking part,
+            you will help us better understand how we can guide responsible AI
+            development and usage in creative contexts.
           </p>
           <p className="text-main mb-2">
             There are no potential risks or preparatory requirements for

@@ -12,13 +12,13 @@ const Range: React.FC<Props> = ({ question, value, onChange }) => {
   return (
     <div className="mb-6 w-full flex flex-col">
       <span className="text-main mb-4">
-        {question.question.replace("____", `${value ?? "____"}`)}
+        {question.question}
         {question.required && <span className="text-red-700">*</span>}
       </span>
 
       <div className="w-full flex flex-col items-center">
         <Slider.Root
-          value={[value || 50]}
+          value={[value ?? 50]}
           min={0}
           max={100}
           step={1}
@@ -40,6 +40,10 @@ const Range: React.FC<Props> = ({ question, value, onChange }) => {
             </Slider.Thumb>
           </Slider.Control>
         </Slider.Root>
+
+        <span className="mt-2 text-sm font-medium text-dark-grey" aria-live="polite">
+          {value === undefined ? "Choose a value" : `${value}%`}
+        </span>
 
         <div className="flex justify-between w-full mt-2">
           <span className="text-sub font-light text-sm">

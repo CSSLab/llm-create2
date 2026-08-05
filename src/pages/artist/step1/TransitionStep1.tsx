@@ -16,7 +16,8 @@ const ArtistTransitionStep1 = () => {
   }
 
   const { userData, addRoleSpecificData } = context;
-  const condition = userData?.data.condition;
+  const condition =
+    userData?.role === "artist" ? userData.data.condition : undefined;
 
   const handleSubmit = () => {
     addRoleSpecificData({

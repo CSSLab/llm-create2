@@ -164,40 +164,66 @@ export const Role = {
 export type Role = (typeof Role)[keyof typeof Role];
 
 // AUDIENCE TYPES
-export interface Audience {
-  condition: AudienceCondition;
-  surveyResponse: AudienceSurvey;
-  poemFeedback: PoemFeedback;
-  timeStamps: Date[];
+export interface AudiencePoem {
+  id: string;
+  passageId: string;
+  passage: Passage;
+  selectedWordIndexes: number[];
 }
 
-// TODO: Exact survey questions tbd
-export interface AudienceSurvey {
+export interface StatementOption {
   id: string;
-  preSurvey: SurveyDefinition;
-  preAnswers: SurveyAnswers;
-  postSurvey: SurveyDefinition;
-  postAnswers: SurveyAnswers;
+  statement: string;
 }
 
-// TODO: Exact poem feedback fields tbd
-export interface PoemFeedback {
+export interface StatementTrial {
+  poemId: string;
+  options: StatementOption[];
+}
+
+export interface AudienceAssignment {
   id: string;
+  passageId: string;
+  tutorialPassageId: string;
+  taskPassageId: string;
+  passagePoolVersion: string;
+  poems: AudiencePoem[];
+  statementTrials: StatementTrial[];
+}
+
+export interface AudiencePoemAnswers extends SurveyAnswers {
+  poemId: string;
+}
+
+export interface StatementMatch {
+  poemId: string;
+  selectedStatementId: string;
+  isCorrect: boolean;
+}
+
+export interface AudienceRating {
   poemId: string;
   rating: number;
 }
 
-export interface Passage {
+export interface AudienceSurvey {
   id: string;
-  text: string;
+  preSurvey?: SurveyDefinition;
+  preAnswers?: SurveyAnswers;
+  poemSurvey?: SurveyDefinition;
+  poemAnswers: AudiencePoemAnswers[];
+  statementMatches: StatementMatch[];
+  creativityRatings: AudienceRating[];
+  aiLikelihoodRatings: AudienceRating[];
+  postSurvey?: SurveyDefinition;
+  postAnswers: SurveyAnswers;
 }
 
-export const AudienceCondition = {
-  NO_KNOWLEDGE: "NO_KNOWLEDGE",
-  FULL_TRANSPARENCY: "FULL_TRANSPARENCY",
-} as const;
-export type AudienceCondition =
-  (typeof AudienceCondition)[keyof typeof AudienceCondition];
+export interface Audience {
+  assignment: AudienceAssignment;
+  surveyResponse: AudienceSurvey;
+  timeStamps: Date[];
+}
 
 export type QuestionType =
   | "multipleChoice"
@@ -205,6 +231,7 @@ export type QuestionType =
   | "likertScale"
   | "circularChoice"
   | "emotionWheel"
+  | "iosCloseness"
   | "range"
   | "topXRanking";
 
@@ -262,11 +289,20 @@ export interface EmotionWheelQuestion extends BaseQuestion {
   options: string[];
   intensityLevels: 5;
   includeNoEmotion: true;
+  intensityPrompt?: string;
 }
 
 export interface EmotionWheelAnswer {
   emotion: string;
   intensity: 0 | 1 | 2 | 3 | 4 | 5;
+}
+
+export interface IosClosenessQuestion extends BaseQuestion {
+  type: "iosCloseness";
+  labels: {
+    self: string;
+    other: string;
+  };
 }
 
 export type Question =
@@ -275,6 +311,7 @@ export type Question =
   | LikertScaleQuestion
   | CircularMultipleChoiceQuestion
   | EmotionWheelQuestion
+  | IosClosenessQuestion
   | RangeQuestion
   | TopXRankingQuestion;
 
@@ -286,7 +323,7 @@ export interface Section {
   questions: Question[];
 }
 
-export type Condition = ArtistCondition | AudienceCondition | undefined;
+export type Condition = ArtistCondition | undefined;
 
 export interface SurveyDefinition {
   id: string;

@@ -26,8 +26,8 @@ const EmotionWheel = ({ question, value, onChange }: Props) => {
       </legend>
 
       <p className="text-sub">
-        Choose one circle. Intensity increases from 1 near the centre to 5 at
-        the outside.
+        {question.intensityPrompt ??
+          "Choose one circle. Intensity increases from 1 near the centre to 5 at the outside."}
       </p>
 
       <div className="mx-auto w-[min(100%,35rem)] px-1 sm:px-4">

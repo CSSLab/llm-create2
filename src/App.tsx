@@ -17,15 +17,14 @@ import usePreventRefresh from "./components/shared/preventRefresh";
 import usePreventBack from "./components/shared/preventBackBttn";
 import { nanoid } from "nanoid";
 
-// import AudienceInstructions from "./pages/audience/instructions/Instructions";
-// ================= AUDIENCE PAGES =================
-// import ChooseYourCharacter from "./pages/ChooseYourCharacter";
-// import AudiencePreSurvey from "./pages/audience/PreSurvey";
-// import AudienceTransitionStep1 from "./pages/audience/step1/TransitionStep1";
-// import AudienceStep1 from "./pages/audience/step1/Step1";
-// import AudienceStep2 from "./pages/audience/step2/Step2";
-// import AudienceTransitionStep2 from "./pages/audience/step2/TransitionStep2";
-// import AudiencePostSurvey from "./pages/audience/PostSurvey";
+import AudienceCaptcha from "./pages/audience/AudienceCaptcha";
+import AudienceInstructions from "./pages/audience/instructions/Instructions";
+import AudiencePoems from "./pages/audience/step2/Step2";
+import StatementMatch from "./pages/audience/StatementMatch";
+import Creativity from "./pages/audience/Creativity";
+import AIDetection from "./pages/audience/AIDetection";
+import AudiencePostSurvey from "./pages/audience/PostSurvey";
+import AudienceThankYou from "./pages/audience/ThankYou";
 import LLMInstruction from "./pages/artist/instructions/llmInstructions";
 import ArtistTutorial from "./pages/artist/tutorial/Tutorial";
 import { useState, createContext, useEffect, useRef } from "react";
@@ -108,7 +107,7 @@ function App() {
   }, []);
 
   const enqueueAutosave = (data: UserData | null) => {
-    if (!data || !sessionId) return;
+    if (!data || !sessionId || isTestMode) return;
 
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(async () => {
@@ -140,7 +139,7 @@ function App() {
   const addRoleSpecificData = (
     updates: Partial<Artist> | Partial<Audience>,
   ) => {
-    setUserData((prev: any) => {
+    setUserData((prev) => {
       if (!prev || !prev.data) {
         throw new Error(
           "Tried to update data when userData is null or incomplete.",
@@ -155,14 +154,14 @@ function App() {
         },
       };
       enqueueAutosave(next as UserData);
-      return next;
+      return next as UserData;
     });
   };
 
   const addPreSurvey = (
     updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>,
   ) => {
-    setUserData((prev: any) => {
+    setUserData((prev) => {
       if (!prev || !prev.data) {
         throw new Error("Tried to update pre-survey when userData is null.");
       }
@@ -185,14 +184,14 @@ function App() {
         },
       };
       enqueueAutosave(next as UserData);
-      return next;
+      return next as UserData;
     });
   };
 
   const addPostSurvey = (
     updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>,
   ) => {
-    setUserData((prev: any) => {
+    setUserData((prev) => {
       if (!prev || !prev.data) {
         throw new Error("Tried to update post-survey when userData is null.");
       }
@@ -215,7 +214,7 @@ function App() {
         },
       };
       enqueueAutosave(next as UserData);
-      return next;
+      return next as UserData;
     });
   };
 
@@ -263,7 +262,9 @@ function App() {
           <Toaster />
           <Router>
             <Routes>
-              <Route path="/" element={<Captcha />} />
+              <Route path="/" element={<AudienceCaptcha />} />
+              <Route path="/audience" element={<AudienceCaptcha />} />
+              <Route path="/artist" element={<Captcha />} />
               <Route path="/consent" element={<ConsentForm />} />
               <Route path="/poem-viewer" element={<PoemViewer />} />
               {userData && (
@@ -296,43 +297,35 @@ function App() {
                     element={<LLMInstruction />}
                   />
                   <Route path="/artist/thank-you" element={<ThankYou />} />
+                  <Route
+                    path="/audience/instructions"
+                    element={<AudienceInstructions />}
+                  />
+                  <Route path="/audience/poems" element={<AudiencePoems />} />
+                  <Route
+                    path="/audience/statements"
+                    element={<StatementMatch />}
+                  />
+                  <Route
+                    path="/audience/creativity"
+                    element={<Creativity />}
+                  />
+                  <Route
+                    path="/audience/ai-detection"
+                    element={<AIDetection />}
+                  />
+                  <Route
+                    path="/audience/post-survey"
+                    element={<AudiencePostSurvey />}
+                  />
+                  <Route
+                    path="/audience/thank-you"
+                    element={<AudienceThankYou />}
+                  />
                 </>
               )}
 
               <Route path="/*" element={<UserError />} />
-              {/* 
-              AUDIENCE ROUTES
-              <Route
-                path="/audience/step-1"
-                element={<AudienceTransitionStep1 />}
-              />
-              <Route path="/audience/read" element={<AudienceStep1 />} />
-              <Route
-                path="/audience/step-2"
-                element={<AudienceTransitionStep2 />}
-              />
-               <Route
-                path="/audience/poem-surveys"
-                element={<AudienceStep2 />}
-              />
-
-
-               <Route
-                path="/audience/pre-survey"
-                element={<AudiencePreSurvey />}
-              />
-
-              <Route
-                path="/audience/instructions"
-                element={<AudienceInstructions />}
-              />
-
-              <Route
-                path="/audience/post-survey"
-                element={<AudiencePostSurvey />}
-              /> */}
-
-              {/* <Route path="/choice" element={<ChooseYourCharacter />} /> */}
             </Routes>
           </Router>
         </div>

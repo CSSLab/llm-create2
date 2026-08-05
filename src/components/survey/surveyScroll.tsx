@@ -14,12 +14,16 @@ interface Props {
   survey: SurveyDefinition;
   onSubmit: (answers: SurveyAnswers) => void;
   isSubmitting?: boolean;
+  buttonText?: string;
+  noProgressBar?: boolean;
 }
 
 const SurveyScroll: React.FC<Props> = ({
   survey,
   onSubmit,
   isSubmitting = false,
+  buttonText = "Submit",
+  noProgressBar = false,
 }) => {
   const [answers, setAnswers] = useState<SurveyAnswers>({});
   const submitCalledRef = useRef(false);
@@ -55,7 +59,7 @@ const SurveyScroll: React.FC<Props> = ({
       case "likertScale":
         return typeof answer === "number";
       case "range":
-        return answer;
+        return typeof answer === "number";
       case "circularChoice":
         return answer;
       case "emotionWheel":
@@ -68,6 +72,8 @@ const SurveyScroll: React.FC<Props> = ({
           answer.intensity >= 0 &&
           answer.intensity <= 5
         );
+      case "iosCloseness":
+        return typeof answer === "number" && answer >= 1 && answer <= 7;
       case "topXRanking":
         return (
           Array.isArray(answer) &&
@@ -112,7 +118,7 @@ const SurveyScroll: React.FC<Props> = ({
   return (
     <div className="h-full w-full flex flex-col py-4">
       {/* Progress Bar */}
-      <div className="w-full">
+      {!noProgressBar ? <div className="w-full">
         <Progress.Root
           value={progress}
           className="flex flex-row mb-6 items-center space-x-2"
@@ -124,7 +130,7 @@ const SurveyScroll: React.FC<Props> = ({
             {progress}%
           </Progress.ValueText>
         </Progress.Root>
-      </div>
+      </div> : null}
 
       {/* Sections */}
       <div className="w-full h-100vh space-y-10 overflow-y-scroll">
@@ -158,7 +164,7 @@ const SurveyScroll: React.FC<Props> = ({
             disabled={!isSurveyComplete || isSubmitting}
             onClick={handleSubmit}
           >
-            {isSubmitting ? "Submitting…" : "Submit"}
+            {isSubmitting ? "Submitting…" : buttonText}
           </Button>
         </div>
       </div>

@@ -33,7 +33,7 @@ const ArtistStep1 = () => {
   const artistData = userData?.data as Artist;
   const existingPoem = artistData?.poem;
   const passage = existingPoem?.passage as Passage;
-  const userType = userData?.data.condition as ArtistCondition;
+  const userType = artistData.condition as ArtistCondition;
   const isLLM = userType === "LLM";
   const llmRequestsRef = useRef<LlmRequestLog[]>(
     existingPoem?.llmUsage?.requests ?? [],

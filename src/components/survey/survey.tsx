@@ -1,5 +1,9 @@
 import React, { useState } from "react";
-import type { SurveyDefinition, SurveyAnswers } from "../../types";
+import type {
+  AnswerValue,
+  SurveyDefinition,
+  SurveyAnswers,
+} from "../../types";
 import QuestionRenderer from "./questionRenderer";
 import { Progress, Button } from "@chakra-ui/react";
 import { useRef } from "react";
@@ -22,7 +26,7 @@ const Survey: React.FC<Props> = ({ survey, onSubmit }) => {
 
   const section = survey.sections[currentSection];
 
-  const updateAnswer = (questionId: string, value: any) => {
+  const updateAnswer = (questionId: string, value: AnswerValue) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
@@ -45,8 +49,17 @@ const Survey: React.FC<Props> = ({ survey, onSubmit }) => {
           return typeof answer === "number";
 
         case "range":
-          console.log(answer);
           return typeof answer === "number";
+
+        case "emotionWheel":
+          return (
+            typeof answer === "object" &&
+            answer !== null &&
+            !Array.isArray(answer)
+          );
+
+        case "iosCloseness":
+          return typeof answer === "number" && answer >= 1 && answer <= 7;
 
         case "circularChoice":
           return answer !== "" && answer !== null && answer !== undefined;

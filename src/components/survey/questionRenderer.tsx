@@ -7,6 +7,7 @@ import TopXRanking from "./questions/topX";
 import CircularMultipleChoice from "./questions/circularMultipleChoice";
 import Range from "./questions/range";
 import EmotionWheel from "./questions/emotionWheel";
+import IosCloseness from "./questions/iosCloseness";
 
 interface Props {
   question: Question;
@@ -61,6 +62,14 @@ const QuestionRenderer: React.FC<Props> = ({ question, value, onChange }) => {
         <EmotionWheel
           question={question}
           value={value as EmotionWheelAnswer | undefined}
+          onChange={onChange}
+        />
+      );
+    case "iosCloseness":
+      return (
+        <IosCloseness
+          question={question}
+          value={typeof value === "number" ? value : undefined}
           onChange={onChange}
         />
       );

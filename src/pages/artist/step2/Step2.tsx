@@ -28,7 +28,7 @@ const ArtistStep2 = () => {
 
   const artistData = userData?.data as Artist;
   const artistPoem = artistData?.poem;
-  const userType = userData?.data.condition as ArtistCondition;
+  const userType = artistData.condition as ArtistCondition;
 
   const writeMessagesRef = useRef<Message[]>([]);
   const selectedWordIndexesRef = useRef<number[]>([]);

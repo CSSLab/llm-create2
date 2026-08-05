@@ -338,3 +338,172 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
     },
   ],
 };
+
+const agreement7 = [
+  { label: "1 · Strongly disagree", value: 1 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+  { label: "4 · Neither agree nor disagree", value: 4 },
+  { label: "5", value: 5 },
+  { label: "6", value: 6 },
+  { label: "7 · Strongly agree", value: 7 },
+];
+
+const audienceLiking7 = [
+  { label: "1 · Not at all", value: 1 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+  { label: "4", value: 4 },
+  { label: "5", value: 5 },
+  { label: "6", value: 6 },
+  { label: "7 · Very much", value: 7 },
+];
+
+export const AudiencePoemQuestions: SurveyDefinition = {
+  id: "audience-poem-reception-v1",
+  title: "Your response to this poem",
+  sections: [
+    {
+      id: "interpretation",
+      title: "Your interpretation",
+      questions: [
+        {
+          id: "open_interpretation",
+          type: "openEnded",
+          question:
+            "In one or two sentences, what do you think this poem is expressing or about?",
+          placeholder: "Share your interpretation in one or two sentences...",
+          softWordTarget: { min: 8, max: 60 },
+          required: true,
+        },
+      ],
+    },
+    {
+      id: "felt-emotion",
+      title: "What you felt",
+      questions: [
+        {
+          id: "felt_emotion",
+          type: "emotionWheel",
+          question:
+            "Which emotion, if any, did you feel most strongly while reading this poem?",
+          options: [...GENEVA_EMOTION_FAMILIES],
+          intensityLevels: 5,
+          includeNoEmotion: true,
+          required: true,
+        },
+      ],
+    },
+    {
+      id: "communicated-emotion",
+      title: "What the creator communicated",
+      questions: [
+        {
+          id: "perceived_emotion",
+          type: "emotionWheel",
+          question:
+            "Which emotion, if any, do you think the creator most wanted this poem to convey?",
+          intensityPrompt:
+            "How strongly did the poem convey this emotion? Choose an intensity from 1 near the centre to 5 at the outside.",
+          options: [...GENEVA_EMOTION_FAMILIES],
+          intensityLevels: 5,
+          includeNoEmotion: true,
+          required: true,
+        },
+      ],
+    },
+    {
+      id: "understanding-and-connection",
+      title: "Understanding and connection",
+      questions: [
+        {
+          id: "subjective_understanding",
+          type: "likertScale",
+          question:
+            "I felt that I understood what the creator wanted this poem to express.",
+          options: agreement7,
+          required: true,
+        },
+        {
+          id: "creator_connection",
+          type: "iosCloseness",
+          question:
+            "Select the pair of circles that best represents how connected you felt to the person who created this poem while reading it.",
+          labels: { self: "You", other: "Creator" },
+          required: true,
+        },
+      ],
+    },
+    {
+      id: "evaluation",
+      title: "Your overall response",
+      questions: [
+        {
+          id: "liking",
+          type: "likertScale",
+          question: "How much did you like this poem?",
+          options: audienceLiking7,
+          required: true,
+        },
+        {
+          id: "continued_interest",
+          type: "likertScale",
+          question:
+            "I would be interested in reading another poem by this creator.",
+          options: agreement7,
+          required: true,
+        },
+      ],
+    },
+  ],
+};
+
+export const AudiencePostSurveyQuestions: SurveyDefinition = {
+  id: "audience-background-v1",
+  title: "About you",
+  sections: [
+    {
+      id: "ai-background",
+      title: "Your experience with AI",
+      questions: [
+        {
+          id: "creative_writing_ai_frequency",
+          type: "likertScale",
+          question:
+            "How often do you use generative AI for creative writing?",
+          options: frequency5,
+          required: true,
+        },
+        {
+          id: "ai_attitude",
+          type: "multipleChoice",
+          question:
+            "Increased use of AI computer programs in creative tasks makes you feel:",
+          options: [
+            "Equally concerned and excited",
+            "More concerned than excited",
+            "More excited than concerned",
+          ],
+          required: true,
+        },
+        {
+          id: "optional_comments",
+          type: "openEnded",
+          question: "Is there anything else you would like to share with us?",
+          placeholder: "Optional comments...",
+          required: false,
+        },
+      ],
+    },
+  ],
+};
+
+export const AUDIENCE_CREATIVITY_OPTIONS = [
+  { label: "1 · Not at all creative", value: 1 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+  { label: "4", value: 4 },
+  { label: "5", value: 5 },
+  { label: "6", value: 6 },
+  { label: "7 · Extremely creative", value: 7 },
+];
