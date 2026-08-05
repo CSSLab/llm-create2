@@ -72,8 +72,6 @@ interface DataContextValue {
   sessionId: string | null;
   prolific: ProlificMeta | null;
   flushSaves: () => Promise<void>;
-  isTestMode: boolean;
-  setIsTestMode: (value: boolean) => void;
 }
 
 export const DataContext = createContext<DataContextValue | null>(null);
@@ -383,8 +381,6 @@ function App() {
         sessionId,
         prolific,
         flushSaves,
-        isTestMode,
-        setIsTestMode,
       }}
     >
       <Provider>
