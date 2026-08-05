@@ -104,7 +104,7 @@ export const ArtistPreSurveyQuestions: SurveyDefinition = {
 };
 
 export const ArtistPostSurveyQuestions: SurveyDefinition = {
-  id: "artist-post-survey-v2",
+  id: "artist-post-survey-v3",
   title: "Creator post-task survey",
   sections: [
     {
@@ -255,25 +255,6 @@ export const ArtistPostSurveyQuestions: SurveyDefinition = {
             { label: "Some", value: 3 },
             { label: "A lot", value: 4 },
             { label: "A great deal", value: 5 },
-          ],
-          required: true,
-        },
-      ],
-    },
-    {
-      id: "llm-attribution",
-      title: "AI contribution",
-      conditions: ["LLM"],
-      questions: [
-        {
-          id: "llm_contribution_attribution",
-          type: "multipleChoice",
-          question: "During the blackout-poem process, I felt that…",
-          options: [
-            "I was creating the poem and AI was assisting me.",
-            "AI was creating the poem and I was assisting it.",
-            "AI and I contributed approximately equally.",
-            "I did not use the AI tool.",
           ],
           required: true,
         },

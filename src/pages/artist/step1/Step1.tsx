@@ -195,7 +195,11 @@ const ArtistStep1 = () => {
 
             <p className="text-xs text-grey text-left pt-2">
               <span className="italic">{'"' + passage.title + '"'}</span>
-              <span>{", " + passage.author}</span>
+              <span>
+                {", " +
+                  passage.author +
+                  (passage.publication ? `, ${passage.publication}` : "")}
+              </span>
             </p>
           </div>
         </div>
