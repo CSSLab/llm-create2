@@ -1,21 +1,15 @@
 import PageTemplate from "../../../components/shared/pages/audiencePages/scrollFullPage";
 import { useNavigate } from "react-router-dom";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { DataContext } from "../../../App";
 import { Passages } from "../../../consts/passages";
 import type { Poem, SurveyAnswers } from "../../../types";
 import { AudienceCondition } from "../../../types";
 import SurveyScroll from "../../../components/survey/surveyScroll";
 import { AudiencePoemQuestions } from "../../../consts/surveyQuestions";
-import { Button, Spinner } from "@chakra-ui/react";
+import { Button } from "@chakra-ui/react";
 import { LuEyeClosed } from "react-icons/lu";
 import { HiOutlineDocumentText } from "react-icons/hi2";
-import type { SurveyAnswers } from "../../../types";
-
-interface FetchedPoem {
-  poemId: string;
-  text: number[];
-}
 
 interface FirebasePoem extends Poem {
   id: string;
@@ -26,10 +20,6 @@ const AudiencePoems = () => {
   const [currPoem, setCurrPoem] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showPassage, setShowPassage] = useState(false);
-  const [poems, setPoems] = useState<FetchedPoem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const hasFetched = useRef(false);
 
   const navigate = useNavigate();
   const context = useContext(DataContext);
@@ -38,7 +28,7 @@ const AudiencePoems = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { userData, addPoemEvaluation, addRoleSpecificData } = context;
+  const { userData, addRoleSpecificData } = context;
 
   const passageId = (userData as any)?.data?.passage || "1";
   const condition: AudienceCondition =
@@ -114,27 +104,6 @@ const AudiencePoems = () => {
     }
     navigate("/audience/ranking");
   };
-
-  if (poems.length === 0) {
-    return (
-      <PageTemplate title="No poems available" description="">
-        <p className="text-main">
-          No poems are available right now. Please contact the study
-          administrator.
-        </p>
-      </PageTemplate>
-    );
-  }
-
-  const currentPoem = poems[currPoem];
-  const currentOverview = withAIOverview
-    ? (overviews[currentPoem?.id] ?? "")
-    : "";
-
-  const poemWords = currentPoem?.passage?.text?.split(" ") ?? words;
-  const selectedIndexes: number[] = Array.isArray(currentPoem?.text)
-    ? (currentPoem.text as unknown as number[])
-    : [];
 
   if (poems.length === 0) {
     return (

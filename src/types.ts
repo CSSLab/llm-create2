@@ -63,6 +63,11 @@ export const Role = {
 export type Role = (typeof Role)[keyof typeof Role];
 
 // AUDIENCE TYPES
+export interface AudiencePoem {
+  id: string;
+  poemId: string;
+}
+
 export interface Audience {
   condition: AudienceCondition;
   passageId: string;
@@ -90,6 +95,8 @@ export interface AudienceSurvey {
   rankingAnswers: SurveyAnswers;
   postSurvey: SurveyDefinition;
   postAnswers: SurveyAnswers;
+  AISurvey: SurveyDefinition;
+  AIAnswers: SurveyAnswers;
 }
 
 // TODO: Exact poem feedback fields tbd

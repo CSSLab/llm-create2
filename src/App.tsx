@@ -116,8 +116,13 @@ function App() {
     pendingSaveRef.current = null;
     if (!data || !sessionId) return Promise.resolve();
 
+    const endpoint =
+      data.role === "artist"
+        ? "/api/firebase/artist/autosave"
+        : "/api/firebase/audience/autosave";
+
     return globalSaveQueue.enqueue(() =>
-      fetch("/api/firebase/autosave", {
+      fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, data }),
@@ -133,24 +138,6 @@ function App() {
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null;
       runPendingSave();
-  const autoSave = (data: UserData | null) => {
-    if (!data || !sessionId) return;
-
-    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = window.setTimeout(async () => {
-      if (data.role === "artist") {
-        await fetch("/api/firebase/artist/autosave", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, data }),
-        });
-      } else {
-        await fetch("/api/firebase/audience/autosave", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, data }),
-        });
-      }
     }, 500);
   };
 
@@ -196,7 +183,7 @@ function App() {
           ...updates,
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
@@ -226,7 +213,7 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
@@ -256,7 +243,7 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
@@ -287,7 +274,7 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
@@ -308,7 +295,7 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
@@ -329,7 +316,7 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
@@ -350,7 +337,7 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };

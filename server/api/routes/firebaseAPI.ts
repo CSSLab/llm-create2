@@ -28,8 +28,8 @@ function trimAudiencePoemRefs(audienceData: any) {
   return trimmed;
 }
 
-// ARTIST ROUTES
-router.post("/artist/autosave", async (req, res) => {
+// ARTIST + AUDIENCE ROUTES (shared autosave handler, branches by role)
+const autosaveHandler: express.RequestHandler = async (req, res) => {
   try {
     const { sessionId, data } = req.body;
 
@@ -75,7 +75,10 @@ router.post("/artist/autosave", async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Failed to autosave" });
   }
-});
+};
+
+router.post("/artist/autosave", autosaveHandler);
+router.post("/audience/autosave", autosaveHandler);
 
 router.post("/artist/commit-session", async (req, res) => {
   try {
@@ -103,7 +106,7 @@ router.post("/artist/commit-session", async (req, res) => {
     const surveyRef = db.collection(ARTIST_SURVEY_COLLECTION).doc();
     const poemRef = db.collection(POEM_COLLECTION).doc();
     const incompleteRef = db
-      .collection(ARTIST_INCOMPLETE_SESSION_COLLECTION)
+      .collection(INCOMPLETE_SESSION_COLLECTION)
       .doc(sessionId);
 
     const artist = {

@@ -27,8 +27,7 @@ const AudienceAI = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { userData, addRoleSpecificData, addAISurvey } = context;
-  // const { userData, addRoleSpecificData, addAISurvey } = context ?? defaultContextValue;
+  const { userData, addRoleSpecificData } = context;
 
   const passageId = (userData as any)?.data?.passage || "1";
   const passage = Passages.find((p) => p.id === passageId) || Passages[0];
