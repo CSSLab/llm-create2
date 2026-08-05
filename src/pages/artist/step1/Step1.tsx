@@ -4,7 +4,8 @@ import MultiPageTemplate from "../../../components/shared/pages/multiPage";
 import { ArtistCondition } from "../../../types";
 import { Stage } from "../../../types";
 import type {
-  ChatOpening,
+  ChatAvailability,
+  ChatInputActivity,
   LlmRequestLog,
   Message,
   Poem,
@@ -14,10 +15,7 @@ import { DataContext } from "../../../App";
 import type { Artist, Passage } from "../../../types";
 import { Button } from "@chakra-ui/react";
 import StarIcon from "../../../assets/star.svg";
-import {
-  createAssistantMessage,
-  STAGE_OPENING_MESSAGES,
-} from "../../../consts/chatMessages";
+import { getChatAvailability } from "../../../utils/llmUsage";
 
 const ArtistStep1 = () => {
   const navigate = useNavigate();
@@ -40,15 +38,14 @@ const ArtistStep1 = () => {
   const llmRequestsRef = useRef<LlmRequestLog[]>(
     existingPoem?.llmUsage?.requests ?? [],
   );
-  const chatOpeningsRef = useRef<ChatOpening[]>(
-    existingPoem?.llmUsage?.chatOpenings ?? [],
+  const chatAvailabilityRef = useRef<ChatAvailability[]>(
+    getChatAvailability(existingPoem?.llmUsage),
+  );
+  const inputActivityRef = useRef<ChatInputActivity[]>(
+    existingPoem?.llmUsage?.inputActivity ?? [],
   );
 
-  const [sparkMessages, setSparkMessages] = useState<Message[]>(() =>
-    isLLM
-      ? [createAssistantMessage(STAGE_OPENING_MESSAGES[Stage.SPARK])]
-      : [],
-  );
+  const [sparkMessages, setSparkMessages] = useState<Message[]>([]);
   const [sparkNotes, setSparkNotes] = useState<string>("");
 
   // 0 = brainstorm instructions (all users), 1 = LLM assistant info (LLM only), done
@@ -56,12 +53,26 @@ const ArtistStep1 = () => {
   const totalPopups = isLLM ? 2 : 1;
   const showingPopup = popupStep < totalPopups;
 
-  const handleChatOpened = useCallback((opening: ChatOpening) => {
-    const alreadyLogged = chatOpeningsRef.current.some(
-      (item) => item.stage === opening.stage,
+  const handleChatAvailable = useCallback((availability: ChatAvailability) => {
+    const alreadyLogged = chatAvailabilityRef.current.some(
+      (item) => item.stage === availability.stage,
     );
-    if (!alreadyLogged) chatOpeningsRef.current.push(opening);
+    if (!alreadyLogged) chatAvailabilityRef.current.push(availability);
   }, []);
+
+  const handleInputActivityUpdate = useCallback(
+    (activity: ChatInputActivity) => {
+      const existingIndex = inputActivityRef.current.findIndex(
+        (item) => item.stage === activity.stage,
+      );
+      if (existingIndex >= 0) {
+        inputActivityRef.current[existingIndex] = activity;
+      } else {
+        inputActivityRef.current.push(activity);
+      }
+    },
+    [],
+  );
 
   const handleRequestUpdate = useCallback((request: LlmRequestLog) => {
     const existingIndex = llmRequestsRef.current.findIndex(
@@ -94,7 +105,8 @@ const ArtistStep1 = () => {
         },
       },
       llmUsage: {
-        chatOpenings: chatOpeningsRef.current,
+        chatAvailability: chatAvailabilityRef.current,
+        inputActivity: inputActivityRef.current,
         requests: llmRequestsRef.current,
       },
     };
@@ -182,7 +194,13 @@ const ArtistStep1 = () => {
         setMessages={setSparkMessages}
         notes={sparkNotes}
         setNotes={setSparkNotes}
-        onChatOpened={isLLM ? handleChatOpened : undefined}
+        initialInputActivity={inputActivityRef.current.find(
+          (activity) => activity.stage === Stage.SPARK,
+        )}
+        onChatAvailable={isLLM ? handleChatAvailable : undefined}
+        onInputActivityUpdate={
+          isLLM ? handleInputActivityUpdate : undefined
+        }
         onRequestUpdate={isLLM ? handleRequestUpdate : undefined}
       >
         <div
