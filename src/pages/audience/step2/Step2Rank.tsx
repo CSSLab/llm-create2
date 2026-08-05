@@ -5,7 +5,12 @@ import { DataContext } from "../../../App";
 import { Passages } from "../../../consts/passages";
 import SurveyScroll from "../../../components/survey/surveyScroll";
 import { AudienceRankingQuestions } from "../../../consts/surveyQuestions";
-import type { Poem, SurveyDefinition, Section } from "../../../types";
+import type {
+  Poem,
+  SurveyDefinition,
+  Section,
+  SurveyAnswers,
+} from "../../../types";
 import { AudienceCondition } from "../../../types";
 import { Spinner } from "@chakra-ui/react";
 
@@ -14,13 +19,10 @@ interface FirebasePoem extends Poem {
   artistId: string;
 }
 
-const NUM_POEMS = 4;
-
 const AudienceRanking = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [poems, setPoems] = useState<FirebasePoem[]>([]);
-  const [overviews, setOverviews] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
+  const [artistStatements, setArtistStatements] = useState<string[]>([]);
+  const [statementsLoading, setStatementsLoading] = useState(true);
 
   const navigate = useNavigate();
   const context = useContext(DataContext);
@@ -36,74 +38,68 @@ const AudienceRanking = () => {
     (userData as any)?.data?.condition ?? AudienceCondition.WITHOUT_AI_OVERVIEW;
   const withAIOverview = condition === AudienceCondition.WITH_AI_OVERVIEW;
 
+  // Poems and overviews were fetched once at captcha time and stay fixed
+  // for the rest of the study, so this shows the same 4 poems as Step 2.
+  const poems: FirebasePoem[] = (userData as any)?.data?.poems ?? [];
+  const overviews: Record<string, string> =
+    (userData as any)?.data?.overviews ?? {};
+
   const passage = Passages.find((p) => p.id === passageId) || Passages[0];
 
-  const artistStatements = [
-    "Statement A",
-    "Statement B",
-    "Statement C",
-    "Statement D",
-    "Unsure",
-  ];
+  const statementOptions = [...artistStatements, "Unsure"];
 
-  // Fetch poems from Firebase
+  // Fetch the real artist statements for the poems being shown, plus a set
+  // of decoy statements from other poems, and shuffle them together so
+  // audience members can't guess by elimination alone.
   useEffect(() => {
-    const fetchPoems = async () => {
+    if (poems.length === 0) {
+      setStatementsLoading(false);
+      return;
+    }
+
+    const fetchArtistStatements = async () => {
       try {
-        const res = await fetch("/api/firebase/audience-poems");
-        const data = await res.json();
-        const allPoems: FirebasePoem[] = data.poems ?? [];
-        const shuffled = allPoems.sort(() => Math.random() - 0.5);
-        setPoems(shuffled.slice(0, NUM_POEMS));
-      } catch (err) {
-        console.error("Failed to fetch poems:", err);
-        setPoems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPoems();
-  }, []);
+        const poemIds = poems.map((p) => p.id);
+        const [realRes, decoyRes] = await Promise.all([
+          fetch("/api/firebase/audience/artist-statements", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ poemIds }),
+          }),
+          fetch("/api/firebase/audience/distractor-statements", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ excludePoemIds: poemIds, count: 4 }),
+          }),
+        ]);
+        const realData = await realRes.json();
+        const decoyData = await decoyRes.json();
 
-  // Fetch cached overviews for all poems once they're loaded
-  useEffect(() => {
-    if (!withAIOverview || poems.length === 0) return;
+        const realStatements: string[] = (realData.poemStatements ?? []).map(
+          (s: { poemId: string; statement: string }) => s.statement,
+        );
+        const distractors: { poemId: string; statement: string }[] =
+          decoyData.distractors ?? [];
+        addRoleSpecificData({ distractorStatements: distractors });
 
-    const fetchAllOverviews = async () => {
-      for (const poem of poems) {
-        if (overviews[poem.id] !== undefined) continue;
-        try {
-          const res = await fetch(`/api/firebase/poem-overview/${poem.id}`);
-          const data = await res.json();
-          if (data.overview) {
-            setOverviews((prev) => ({ ...prev, [poem.id]: data.overview }));
-          } else {
-            // Generate if not cached yet
-            const genRes = await fetch("/api/llm/generate-overview", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                passageText: poem.passage?.text ?? passage.text,
-                selectedWordIndexes: poem.text,
-              }),
-            });
-            const genData = await genRes.json();
-            const overview = genData.overview ?? "";
-            await fetch(`/api/firebase/poem-overview/${poem.id}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ overview }),
-            });
-            setOverviews((prev) => ({ ...prev, [poem.id]: overview }));
-          }
-        } catch {
-          setOverviews((prev) => ({ ...prev, [poem.id]: "" }));
+        const decoyStatements = distractors.map((d) => d.statement);
+        const combined = [...realStatements, ...decoyStatements];
+        for (let i = combined.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [combined[i], combined[j]] = [combined[j], combined[i]];
         }
+
+        setArtistStatements(combined);
+      } catch (err) {
+        console.error("Failed to fetch artist statements:", err);
+        setArtistStatements([]);
+      } finally {
+        setStatementsLoading(false);
       }
     };
 
-    fetchAllOverviews();
-  }, [poems, withAIOverview]);
+    fetchArtistStatements();
+  }, [poems]);
 
   useEffect(() => {
     const container = document.querySelector(
@@ -128,11 +124,18 @@ const AudienceRanking = () => {
     }
   }, []);
 
-  const handleSubmit = () => {
+  const handleSubmit = (answers: SurveyAnswers) => {
+    const surveyResponse = ((userData?.data as any)?.surveyResponse ?? {}) as any;
+
     addRoleSpecificData({
+      surveyResponse: {
+        ...surveyResponse,
+        rankingSurvey: AudienceRankingQuestions,
+        rankingAnswers: answers,
+      },
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
-    });
-    navigate("/audience/post-survey");
+    } as any);
+    navigate("/audience/rank-continued");
   };
 
   const renderPoem = (poem: FirebasePoem, _index: number) => {
@@ -140,20 +143,15 @@ const AudienceRanking = () => {
     const selectedIndexes: number[] = Array.isArray(poem.text)
       ? (poem.text as unknown as number[])
       : [];
-    const overview = withAIOverview ? (overviews[poem.id] ?? null) : null;
+    const overview = withAIOverview ? (overviews[poem.id] ?? "") : "";
 
     return (
       <div className="flex flex-col md:flex-row gap-4 py-2">
         {/* Overview — top on mobile, right on desktop */}
         {withAIOverview && (
-          <div className="order-1 md:order-2 md:w-56 shrink-0 self-start p-3 border rounded-lg border-light-grey-2 bg-gray-50">
+          <div className="order-1 md:order-2 order-1 md:order-2 md:w-52 shrink-0 p-4 border rounded-lg border-light-grey-2 bg-gray-50 overflow-y-auto">
             <p className="text-sub font-semibold mb-1 text-xs">AI Overview</p>
-            {overview === null ? (
-              <div className="flex items-center gap-2 text-sub text-light-grey-1">
-                <Spinner size="sm" />
-                <span className="text-xs">Generating...</span>
-              </div>
-            ) : overview === "" ? (
+            {overview === "" ? (
               <p className="text-sub text-light-grey-1 italic text-xs">
                 Unavailable.
               </p>
@@ -165,18 +163,20 @@ const AudienceRanking = () => {
 
         {/* Poem */}
         <div
-          className="order-2 md:order-1 flex flex-wrap select-none h-max w-[355px] min-w-[355px]"
+          className="order-2 md:order-1 flex mx-auto flex-wrap select-none w-[350px] min-w-[350px] h-max"
           onCopy={(e) => e.preventDefault()}
         >
           {poemWords.map((word, i) => {
             const isVisible = selectedIndexes.includes(i);
-            const blackoutStyle = isVisible
-              ? "text-main font-serif text-dark-grey"
-              : "text-main font-serif text-dark-grey bg-dark-grey";
+
             return (
               <span
                 key={i}
-                className={`tracking-[0] antialiased [font-optical-sizing:none] [font-variation-settings:'opsz'_0] [text-rendering:geometricPrecision] transition duration-200 ${blackoutStyle}`}
+                className={`text-sm font-serif tracking-[0] antialiased [font-optical-sizing:none] [font-variation-settings:'opsz'_0] [text-rendering:geometricPrecision] transition duration-200 ${
+                  isVisible
+                    ? "text-black bg-white"
+                    : "text-transparent bg-dark-grey"
+                }`}
               >
                 {word + "\u00A0"}
               </span>
@@ -207,7 +207,15 @@ const AudienceRanking = () => {
                 title: `Poem ${i + 1}`,
                 content: renderPoem(poem, i),
               }));
-              return { ...q, items };
+              return {
+                ...q,
+                items,
+                // Show poems expanded by default on the first ranking
+                // question only, since it's their first exposure here.
+                ...(q.id === "q1" && {
+                  defaultExpanded: items.map((item) => item.id),
+                }),
+              };
             }),
           };
         }
@@ -221,7 +229,7 @@ const AudienceRanking = () => {
                 type: "multipleChoice",
                 children: renderPoem(poem, i),
                 question: `Poem ${i + 1}`,
-                options: artistStatements,
+                options: statementOptions,
                 required: true,
               },
               {
@@ -246,7 +254,7 @@ const AudienceRanking = () => {
       title="Step 2: Answer some questions about the poems"
       description="Now that you have read all the blackout poems, please answer the following questions about them."
     >
-      {loading ? (
+      {statementsLoading ? (
         <div className="flex justify-center items-center h-40">
           <Spinner size="lg" />
         </div>
@@ -254,7 +262,7 @@ const AudienceRanking = () => {
         <>
           <div className="w-full flex justify-center pt-4 md:pt-8">
             <div
-              className="flex flex-wrap select-none h-max w-[355px] min-w-[355px] md:min-w-[400px] md:w-[400px]"
+              className="flex mx-auto flex-wrap select-none w-[350px] min-w-[350px] md:min-w-[400ox] md:w-[400px] h-max"
               onCopy={(e) => e.preventDefault()}
             >
               {passage.text.split(" ").map((word, i) => (

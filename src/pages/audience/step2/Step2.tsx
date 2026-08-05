@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useContext, useEffect, useState } from "react";
 import { DataContext } from "../../../App";
 import { Passages } from "../../../consts/passages";
-import type { Poem } from "../../../types";
+import type { Poem, SurveyAnswers } from "../../../types";
 import { AudienceCondition } from "../../../types";
 import SurveyScroll from "../../../components/survey/surveyScroll";
 import { AudiencePoemQuestions } from "../../../consts/surveyQuestions";
-import { Button, Spinner } from "@chakra-ui/react";
+import { Button } from "@chakra-ui/react";
 import { LuEyeClosed } from "react-icons/lu";
 import { HiOutlineDocumentText } from "react-icons/hi2";
 
@@ -16,15 +16,10 @@ interface FirebasePoem extends Poem {
   artistId: string;
 }
 
-const NUM_POEMS = 4;
-
 const AudiencePoems = () => {
   const [currPoem, setCurrPoem] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showPassage, setShowPassage] = useState(false);
-  const [poems, setPoems] = useState<FirebasePoem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [overviews, setOverviews] = useState<Record<string, string>>({});
 
   const navigate = useNavigate();
   const context = useContext(DataContext);
@@ -40,75 +35,14 @@ const AudiencePoems = () => {
     (userData as any)?.data?.condition ?? AudienceCondition.WITHOUT_AI_OVERVIEW;
   const withAIOverview = condition === AudienceCondition.WITH_AI_OVERVIEW;
 
+  // Poems and overviews were fetched once at captcha time and stay fixed
+  // for the rest of the study.
+  const poems: FirebasePoem[] = (userData as any)?.data?.poems ?? [];
+  const overviews: Record<string, string> =
+    (userData as any)?.data?.overviews ?? {};
+
   const passage = Passages.find((p) => p.id === passageId) || Passages[0];
   const words = passage.text.split(" ");
-
-  // Fetch poems from Firebase on mount
-  useEffect(() => {
-    const fetchPoems = async () => {
-      try {
-        const res = await fetch("/api/firebase/audience-poems");
-        const data = await res.json();
-        const allPoems: FirebasePoem[] = data.poems ?? [];
-
-        // Shuffle and pick NUM_POEMS
-        const shuffled = allPoems.sort(() => Math.random() - 0.5);
-        setPoems(shuffled.slice(0, NUM_POEMS));
-      } catch (err) {
-        console.error("Failed to fetch poems:", err);
-        setPoems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPoems();
-  }, []);
-
-  // Fetch or generate overview for current poem when condition is WITH_AI_OVERVIEW
-  useEffect(() => {
-    if (!withAIOverview || poems.length === 0) return;
-    const poem = poems[currPoem];
-    if (!poem || overviews[poem.id] !== undefined) return;
-
-    const getOrGenerateOverview = async () => {
-      // Check cache in Firebase
-      const checkRes = await fetch(`/api/firebase/poem-overview/${poem.id}`);
-      const checkData = await checkRes.json();
-
-      if (checkData.overview) {
-        setOverviews((prev) => ({ ...prev, [poem.id]: checkData.overview }));
-        return;
-      }
-
-      // Generate via LLM
-      try {
-        const genRes = await fetch("/api/llm/generate-overview", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            passageText: poem.passage?.text ?? passage.text,
-            selectedWordIndexes: poem.text,
-          }),
-        });
-        const genData = await genRes.json();
-        const overview = genData.overview ?? "";
-
-        // Store in Firebase
-        await fetch(`/api/firebase/poem-overview/${poem.id}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ overview }),
-        });
-
-        setOverviews((prev) => ({ ...prev, [poem.id]: overview }));
-      } catch (err) {
-        console.error("Failed to generate overview:", err);
-        setOverviews((prev) => ({ ...prev, [poem.id]: "" }));
-      }
-    };
-
-    getOrGenerateOverview();
-  }, [currPoem, poems, withAIOverview]);
 
   useEffect(() => {
     const container = document.querySelector(
@@ -133,8 +67,25 @@ const AudiencePoems = () => {
     }
   }, []);
 
-  const handleSubmit = () => {
-    if (currPoem < poems.length - 1) {
+  const handleSubmit = (answers: SurveyAnswers) => {
+    const surveyResponse = ((userData?.data as any)?.surveyResponse ?? {}) as any;
+    const isLastPoem = currPoem >= poems.length - 1;
+
+    addRoleSpecificData({
+      surveyResponse: {
+        ...surveyResponse,
+        poemSurvey: [...(surveyResponse.poemSurvey ?? []), AudiencePoemQuestions],
+        poemAnswers: [
+          ...(surveyResponse.poemAnswers ?? []),
+          { poemId: poems[currPoem].id, ...answers },
+        ],
+      },
+      ...(isLastPoem && {
+        timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
+      }),
+    } as any);
+
+    if (!isLastPoem) {
       setCurrPoem(currPoem + 1);
       setShowPassage(false);
       const container = document.querySelector(
@@ -147,21 +98,8 @@ const AudiencePoems = () => {
       }
       return;
     }
-    addRoleSpecificData({
-      timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
-    });
-    navigate("/audience/post-survey");
+    navigate("/audience/ranking");
   };
-
-  if (loading) {
-    return (
-      <PageTemplate title="Loading poems..." description="">
-        <div className="flex justify-center items-center h-40">
-          <Spinner size="lg" />
-        </div>
-      </PageTemplate>
-    );
-  }
 
   if (poems.length === 0) {
     return (
@@ -176,8 +114,8 @@ const AudiencePoems = () => {
 
   const currentPoem = poems[currPoem];
   const currentOverview = withAIOverview
-    ? (overviews[currentPoem?.id] ?? null)
-    : null;
+    ? (overviews[currentPoem?.id] ?? "")
+    : "";
 
   const poemWords = currentPoem?.passage?.text?.split(" ") ?? words;
   const selectedIndexes: number[] = Array.isArray(currentPoem?.text)
@@ -193,30 +131,23 @@ const AudiencePoems = () => {
     >
       {/* Top Controls */}
       <div className="w-full flex flex-row justify-between">
-        <div className="flex flex-row space-x-2">
+        <div className="flex flex-row space-x-2 w-full md:w-auto">
           <Button
-            className="btn-small-inverted"
+            className="btn-small-inverted w-full md:w-auto justify-center"
             onClick={() => setShowPassage(!showPassage)}
           >
             {showPassage ? <LuEyeClosed /> : <HiOutlineDocumentText />}
-            <p className="hidden md:block">
-              {showPassage ? "View as Poem" : "View as Passage"}
-            </p>
+            <p>{showPassage ? "View as Poem" : "View as Passage"}</p>
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 py-4 md:py-8 self-center">
+      <div className="flex flex-col md:flex-row gap-6 py-4 md:py-8 self-center md:items-stretch">
         {/* Overview — top on mobile, right on desktop */}
         {withAIOverview && (
-          <div className="order-1 md:order-2 md:w-64 shrink-0 self-start p-4 border rounded-lg border-light-grey-2 bg-gray-50">
+          <div className="order-1 md:order-2 md:w-64 shrink-0 p-4 border rounded-lg border-light-grey-2 bg-gray-50 overflow-y-auto">
             <p className="text-sub font-semibold mb-2">AI Overview</p>
-            {currentOverview === null ? (
-              <div className="flex items-center gap-2 text-sub text-light-grey-1">
-                <Spinner size="sm" />
-                <span>Generating overview...</span>
-              </div>
-            ) : currentOverview === "" ? (
+            {currentOverview === "" ? (
               <p className="text-sub text-light-grey-1 italic">
                 Overview unavailable.
               </p>
@@ -228,19 +159,19 @@ const AudiencePoems = () => {
 
         {/* Poem */}
         <div
-          className="order-2 md:order-1 flex flex-wrap select-none h-max w-[355px] min-w-[355px] md:min-w-[400px] md:w-[400px]"
+          className="order-2 md:order-1 flex mx-auto flex-wrap select-none w-[350px] min-w-[350px] md:min-w-[400ox] md:w-[400px] h-max "
           onCopy={(e) => e.preventDefault()}
         >
           {poemWords.map((word, i) => {
-            const isVisible = selectedIndexes.includes(i);
-            const blackoutStyle =
-              isVisible || showPassage
-                ? "text-main font-serif text-dark-grey"
-                : "text-main font-serif text-dark-grey bg-dark-grey";
+            const isVisible = selectedIndexes.includes(i) || showPassage;
             return (
               <span
                 key={i}
-                className={`tracking-[0] antialiased [font-optical-sizing:none] [font-variation-settings:'opsz'_0] [text-rendering:geometricPrecision] transition duration-200 ${blackoutStyle}`}
+                className={`text-main font-serif tracking-[0] antialiased [font-optical-sizing:none] [font-variation-settings:'opsz'_0] [text-rendering:geometricPrecision] transition duration-200 ${
+                  isVisible
+                    ? "text-black bg-white"
+                    : "text-transparent bg-dark-grey"
+                }`}
               >
                 {word + "\u00A0"}
               </span>

@@ -9,6 +9,27 @@ interface Props {
 }
 
 const MultipleChoice: React.FC<Props> = ({ question, value, onChange }) => {
+  // Radio items are keyed/valued by index rather than option text: options
+  // (e.g. shuffled statements) can repeat identical text, and matching by
+  // text would highlight every option that shares that text. The clicked
+  // index is tracked directly rather than re-derived from `value` on every
+  // render — re-deriving via indexOf() always resolves to the *first*
+  // option with that text, which would make every other duplicate appear
+  // unclickable (clicking one always re-highlights the first match).
+  const [selectedIndex, setSelectedIndex] = useState<number>(() =>
+    value ? question.options.indexOf(value) : -1,
+  );
+
+  // Only re-derive from `value` when our current selection no longer
+  // matches it (e.g. the answer was reset or restored from saved state
+  // outside of this component).
+  if (question.options[selectedIndex] !== (value || undefined)) {
+    const restored = value ? question.options.indexOf(value) : -1;
+    if (restored !== selectedIndex) {
+      setSelectedIndex(restored);
+    }
+  }
+
   return (
     <div className="mb-4 w-full flex flex-col space-y-4">
       <div className="flex justify-start w-full">
@@ -25,14 +46,18 @@ const MultipleChoice: React.FC<Props> = ({ question, value, onChange }) => {
       </div>
 
       <RadioGroup.Root
-        value={value}
-        onValueChange={(e) => onChange(question.id, e.value!)}
+        value={selectedIndex === -1 ? "" : String(selectedIndex)}
+        onValueChange={(e) => {
+          const index = Number(e.value);
+          setSelectedIndex(index);
+          onChange(question.id, question.options[index]);
+        }}
         className="flex flex-col gap-4 font-light"
       >
-        {question.options.map((opt) => (
+        {question.options.map((opt, i) => (
           <RadioGroup.Item
-            key={opt}
-            value={opt}
+            key={i}
+            value={String(i)}
             className="flex items-center gap-2 cursor-pointer"
           >
             <RadioGroup.ItemHiddenInput />

@@ -4,6 +4,8 @@ import { DataContext } from "../../App";
 import { AudiencePostSurveyQuestions } from "../../consts/surveyQuestions";
 import SurveyScroll from "../../components/survey/surveyScroll";
 import PageTemplate from "../../components/shared/pages/audiencePages/scrollFullPage";
+import { toaster } from "../../components/ui/toaster";
+import type { Audience } from "../../types";
 
 const AudiencePostSurvey = () => {
   const navigate = useNavigate();
@@ -13,18 +15,63 @@ const AudiencePostSurvey = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { userData, addPreSurvey, addRoleSpecificData } = context;
+  const { userData, addPostSurvey, addRoleSpecificData, sessionId } = context;
+
+  const submitDb = async (answers: any) => {
+    if (!userData || !userData.data) {
+      console.error("userData not loaded yet!");
+      return;
+    }
+
+    const audienceData = userData.data as Audience;
+    const timeStamps = [...(audienceData.timeStamps ?? []), new Date()];
+
+    // Build the payload directly from fresh values rather than relying on
+    // userData, since the addPostSurvey call below hasn't landed in state yet.
+    const audiencePayload: Audience = {
+      ...audienceData,
+      timeStamps,
+      surveyResponse: {
+        ...audienceData.surveyResponse,
+        postSurvey: AudiencePostSurveyQuestions,
+        postAnswers: answers,
+      },
+    };
+
+    try {
+      await fetch("/api/firebase/commit-audience-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audienceData: audiencePayload, sessionId }),
+      });
+
+      toaster.create({
+        description: "Survey successfully submitted!",
+        type: "success",
+        duration: 5000,
+      });
+
+      navigate("/audience/thank-you");
+    } catch (error) {
+      console.error("Error saving data:", error);
+      toaster.create({
+        description:
+          "There was an error submitting your survey. Please try again.",
+        type: "error",
+        duration: 5000,
+      });
+    }
+  };
 
   const handleSubmit = (answers: any) => {
     addRoleSpecificData({
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
     });
-    navigate("/audience/thank-you");
-    addPreSurvey({
-      id: "audienceSurvey",
-      preSurvey: AudiencePostSurveyQuestions,
-      preAnswers: answers,
+    addPostSurvey({
+      postSurvey: AudiencePostSurveyQuestions,
+      postAnswers: answers,
     });
+    submitDb(answers);
   };
 
   return (

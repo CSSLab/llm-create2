@@ -79,7 +79,15 @@ export interface Audience {
   passageId: string;
   surveyResponse: AudienceSurvey;
   poemsViewed: AudiencePoem[];
+  // The 4 poems (and their AI overviews, if applicable) chosen for this
+  // audience member at captcha time. Fixed for the rest of the study.
+  poems: (Poem & { id: string; artistId: string })[];
+  overviews: Record<string, string>;
   timeStamps: Date[];
+  // The decoy poems/statements (from other artists' poems) shown alongside
+  // the real ones in the "guess which statement matches which poem" question.
+  distractorStatements: { poemId: string; statement: string }[];
+  prolific?: ProlificMeta;
 }
 
 // TODO: Exact survey questions tbd
@@ -89,6 +97,8 @@ export interface AudienceSurvey {
   preAnswers: SurveyAnswers;
   poemSurvey: PoemSurveyDefinition[];
   poemAnswers: PoemSurveyAnswers[];
+  rankingSurvey: SurveyDefinition;
+  rankingAnswers: SurveyAnswers;
   postSurvey: SurveyDefinition;
   postAnswers: SurveyAnswers;
   AISurvey: SurveyDefinition;
@@ -241,8 +251,14 @@ export interface DragRankQuestion extends BaseQuestion {
   draggable?: boolean;
 }
 
+export interface ProlificMeta {
+  prolificPid: string;
+  studyId: string;
+  prolificSessionId: string;
+}
+
 export type UserData =
-  | { role: "artist"; data: Artist }
+  | { role: "artist"; data: Artist; prolific?: ProlificMeta }
   | { role: "audience"; data: Audience };
 
 export type PoemSnapshot = {

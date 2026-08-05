@@ -58,22 +58,28 @@ const SelectAll: React.FC<Props> = ({ question, value = [], onChange }) => {
           return (
             <div
               key={item.id}
-              className="border rounded p-3 bg-white flex flex-col"
+              onClick={() => toggleSelect(item.id)}
+              className={`border rounded p-3 flex flex-col cursor-pointer ${
+                isChecked ? "bg-light-grey-4 border-dark-grey" : "bg-white"
+              }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <label className="flex items-center gap-3 cursor-pointer accent-dark-grey">
+                <div className="flex items-center gap-3 accent-dark-grey">
                   <input
                     type="checkbox"
                     checked={isChecked}
-                    onChange={() => toggleSelect(item.id)}
-                    className="w-4 h-4"
+                    readOnly
+                    className="w-4 h-4 pointer-events-none"
                   />
                   <span className="text-main">{item.title}</span>
-                </label>
+                </div>
 
                 {item.content && (
                   <button
-                    onClick={() => toggleExpanded(item.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleExpanded(item.id);
+                    }}
                     className="text-xs text-grey underline hover:opacity-70"
                     type="button"
                   >

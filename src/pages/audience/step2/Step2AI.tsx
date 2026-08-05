@@ -42,7 +42,7 @@ const AudienceReRanking = () => {
                 title: `Poem ${i + 1}`,
                 content: (
                   <div className="w-[50vh] h-max flex-col space-y-6 py-4 self-center">
-                    <div className="leading-none text-justify select-none h-max">
+                    <div className="flex mx-auto flex-wrap select-none w-[350px] min-w-[350px] md:min-w-[400ox] md:w-[400px] h-max">
                       {words.map((word, i) => {
                         const isVisible = poem.text.includes(i);
                         return (
@@ -54,7 +54,7 @@ const AudienceReRanking = () => {
                                 : "text-transparent bg-dark-grey"
                             }`}
                           >
-                            {word + " "}
+                            {word + "\u00A0"}
                           </span>
                         );
                       })}
@@ -62,9 +62,7 @@ const AudienceReRanking = () => {
                         <span className="italic">
                           {'"' + passage.title + '"'}
                         </span>
-                        <span>
-                          {", " + passage.author + " from The New York Times"}
-                        </span>
+                        <span>{", " + passage.author}</span>
                       </p>
                     </div>
                   </div>
@@ -94,7 +92,7 @@ const AudienceReRanking = () => {
 
   useEffect(() => {
     const container = document.querySelector(
-      ".overflow-y-auto"
+      ".overflow-y-auto",
     ) as HTMLElement | null;
     const onScroll = () => {
       if (container) {
@@ -153,7 +151,7 @@ const AudienceReRanking = () => {
         <button
           onClick={() => {
             const container = document.querySelector(
-              ".overflow-y-auto"
+              ".overflow-y-auto",
             ) as HTMLElement | null;
             if (container) {
               container.scrollTo({ top: 0, behavior: "smooth" });

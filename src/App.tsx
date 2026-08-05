@@ -29,6 +29,7 @@ import AudienceRanking from "./pages/audience/step2/Step2Rank";
 // import AudienceStep2 from "./pages/audience/step2/Step2";
 // import AudienceTransitionStep2 from "./pages/audience/step2/TransitionStep2";
 // import AudiencePostSurvey from "./pages/audience/PostSurvey";
+import AudienceAI from "./pages/audience/step2/Step2AIDisclousure";
 import LLMInstruction from "./pages/artist/instructions/llmInstructions";
 import { useState, createContext, useEffect, useRef } from "react";
 import type {
@@ -37,6 +38,7 @@ import type {
   Audience,
   ArtistSurvey,
   AudienceSurvey,
+  ProlificMeta,
 } from "./types";
 import { Provider } from "./components/ui/provider";
 import { Toaster } from "./components/ui/toaster";
@@ -51,12 +53,13 @@ interface DataContextValue {
   addUserData: (newData: Partial<UserData>) => void;
   addRoleSpecificData: (updates: Partial<Artist> | Partial<Audience>) => void;
   addPreSurvey: (
-    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>,
   ) => void;
   addPostSurvey: (
-    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>,
   ) => void;
   sessionId: string | null;
+  prolific: ProlificMeta | null;
   flushSaves: () => Promise<void>;
 }
 
@@ -65,39 +68,72 @@ export const DataContext = createContext<DataContextValue | null>(null);
 function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [prolific, setProlific] = useState<ProlificMeta | null>(null);
   const saveTimerRef = useRef<number | null>(null);
+  const pendingSaveRef = useRef<UserData | null>(null);
 
   usePreventRefresh(
-    "To make sure your session counts, please avoid refreshing the page. Do you still want to refresh?"
+    "To make sure your session counts, please avoid refreshing the page. Do you still want to refresh?",
   );
   usePreventBack(
-    "To make sure your session counts, please avoid pressing the back button."
+    "To make sure your session counts, please avoid pressing the back button.",
   );
 
   // clear session storage and set the session ID on first render
   useEffect(() => {
-    const id = nanoid();
-
     sessionStorage.clear();
+
+    const params = new URLSearchParams(window.location.search);
+    const prolificPid = params.get("PROLIFIC_PID");
+    const studyId = params.get("STUDY_ID");
+    const prolificSessionId = params.get("SESSION_ID");
+
+    const id = prolificSessionId ?? nanoid();
 
     sessionStorage.setItem("sessionId", id);
     setSessionId(id);
+
+    if (prolificPid && studyId && prolificSessionId) {
+      setProlific({ prolificPid, studyId, prolificSessionId });
+    }
   }, []);
 
-  const enqueueAutosave = (data: UserData | null) => {
-    if (!data || !sessionId) return;
+  // Runs whatever save is currently pending, right now, via the serial
+  // queue (so concurrent/rapid saves don't race each other in Firestore).
+  const runPendingSave = () => {
+    const data = pendingSaveRef.current;
+    pendingSaveRef.current = null;
+    if (!data || !sessionId) return Promise.resolve();
 
-    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = window.setTimeout(async () => {
-      await fetch("/api/firebase/autosave", {
+    return globalSaveQueue.enqueue(() =>
+      fetch("/api/firebase/autosave", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, data }),
-      });
+      }).then(() => undefined),
+    );
+  };
+
+  const enqueueAutosave = (data: UserData | null) => {
+    if (!data || !sessionId) return;
+    pendingSaveRef.current = data;
+
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(() => {
+      saveTimerRef.current = null;
+      runPendingSave();
     }, 500);
   };
 
-  const flushSaves = () => globalSaveQueue.flush();
+  // Cancels the debounce timer and saves immediately — used when the tab is
+  // being hidden/closed, so a save doesn't get lost waiting on the timeout.
+  const flushSaves = () => {
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    return runPendingSave().then(() => globalSaveQueue.flush());
+  };
 
   const addUserData = (newData: Partial<UserData>) => {
     setUserData((prev) => {
@@ -115,12 +151,12 @@ function App() {
   };
 
   const addRoleSpecificData = (
-    updates: Partial<Artist> | Partial<Audience>
+    updates: Partial<Artist> | Partial<Audience>,
   ) => {
     setUserData((prev: any) => {
       if (!prev || !prev.data) {
         throw new Error(
-          "Tried to update data when userData is null or incomplete."
+          "Tried to update data when userData is null or incomplete.",
         );
       }
 
@@ -137,7 +173,7 @@ function App() {
   };
 
   const addPreSurvey = (
-    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>,
   ) => {
     setUserData((prev: any) => {
       if (!prev || !prev.data) {
@@ -167,7 +203,7 @@ function App() {
   };
 
   const addPostSurvey = (
-    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>,
   ) => {
     setUserData((prev: any) => {
       if (!prev || !prev.data) {
@@ -227,6 +263,7 @@ function App() {
         addPostSurvey,
         addPreSurvey,
         sessionId,
+        prolific,
         flushSaves,
       }}
     >
@@ -248,6 +285,11 @@ function App() {
                   <Route
                     path="/audience/pre-survey"
                     element={<AudiencePreSurvey />}
+                  />
+
+                  <Route
+                    path="/audience/rank-continued"
+                    element={<AudienceAI />}
                   />
                   <Route
                     path="/audience/instructions"

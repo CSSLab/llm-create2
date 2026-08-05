@@ -35,10 +35,7 @@ const AudiencePassage = () => {
       buttonText="Begin Reading Poems"
     >
       <div className="w-full h-full flex flex-col items-center">
-        <div
-          className="flex flex-wrap select-none h-max w-[355px] min-w-[355px] md:min-w-[400px] md:w-[400px]"
-          onCopy={(e) => e.preventDefault()}
-        >
+        <div className="flex mx-auto flex-wrap select-none w-[350px] min-w-[350px] md:min-w-[400ox] md:w-[400px] h-max ">
           {passage.text.split(" ").map((word, i) => (
             <span
               key={i}
