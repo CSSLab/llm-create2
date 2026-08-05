@@ -11,5 +11,7 @@ Our experimental design involves two phases: one for artists and another for the
 
 We plan to continue this research in a second part through a longitudinal field study.
 
+Developer documentation for the creator dataset is in [`src/pages/artist/README.md`](src/pages/artist/README.md).
+
 1. Kwan, L. Y. -Y., Leung, A. K. -y., & Liou, S. (2018). Culture, creativity, and innovation. Journal of Cross-Cultural Psychology, 49(2), 165–170. https://doi.org/10.1177/0022022117753306s
 2. Elisondo, R. (2016). Creativity is Always a Social Process. Creativity. Theories – Research - Applications, 3(2), 2016. 194-210. https://doi.org/10.1515/ctra-2016-0013
