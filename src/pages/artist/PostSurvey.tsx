@@ -48,7 +48,7 @@ const ArtistPostSurvey = () => {
 
     // SEND IT RAHHHH
     try {
-      await fetch("/api/firebase/commit-session", {
+      await fetch("/api/firebase/artist/commit-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

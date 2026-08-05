@@ -112,6 +112,12 @@ const Captcha = () => {
     setCaptchaMessage(captcha_text);
   };
 
+  const getRandomPassage = () => {
+    const numPassages = Passages.length;
+    const randomIndex = Math.floor(Math.random() * numPassages) + 1;
+    return randomIndex.toString();
+  };
+
   useEffect(() => {
     if (canvasRef.current) {
       const canvas = canvasRef.current;

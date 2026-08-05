@@ -6,7 +6,25 @@ import { Passages } from "../../../consts/passages";
 import { Poems } from "../../../consts/poems";
 import SurveyScroll from "../../../components/survey/surveyScroll";
 import { AudienceReRankingQuestions } from "../../../consts/surveyQuestions";
-import type { SurveyDefinition, Section } from "../../../types";
+import type { SurveyDefinition, Section, SurveyAnswers, PoemRankings, ReRankingData } from "../../../types";
+
+// Dummy data for standalone rendering/testing
+// const defaultContextValue = {
+//   userData: {
+//     role: "audience" as const,
+//     data: {
+//       passage: "1",
+//       timeStamps: [] as Date[],
+//       poemsViewed: ["poem1", "poem2", "poem3", "poem4"],
+//     },
+//   },
+//   addRoleSpecificData: (_updates: any) => {
+//     console.log("[Standalone Mode] addRoleSpecificData called:", _updates);
+//   },
+//   addReRankSurvey: (_reRankingData: ReRankingData) => {
+//     console.log("[Standalone Mode] addReRankSurvey called:", _reRankingData);
+//   },
+// };
 
 const AudienceReRanking = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -18,9 +36,12 @@ const AudienceReRanking = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { userData, addRoleSpecificData } = context;
+  const { userData, addRoleSpecificData, addReRankSurvey } = context;
+  // const { userData, addRoleSpecificData, addReRankSurvey } = context ?? defaultContextValue;
 
-  const passageId = (userData as any)?.data?.passage || "1";
+
+  const passageId = (userData as any)?.data?.passageId || "1";
+  const poemsViewed: string[] = (userData as any)?.data?.poemsViewed || ["poem1", "poem2", "poem3", "poem4"];
 
   const passage = Passages.find((p) => p.id === passageId) || Passages[0];
   const poems = Poems;
@@ -114,7 +135,35 @@ const AudienceReRanking = () => {
     }
   }, []);
 
-  const handleSubmit = () => {
+  const handleSubmit = (answers: SurveyAnswers) => {
+    // Helper to process a dragRank answer into ordered poemIds
+    const processRanking = (questionId: string): string[] => {
+      const rankingAnswer = answers[questionId] as string[] | undefined;
+      return rankingAnswer
+        ? rankingAnswer.map((itemId) => {
+            // Extract poem index from item ID (e.g., "q1-poem-2" -> 2)
+            const match = itemId.match(/poem-(\d+)$/);
+            const index = match ? parseInt(match[1], 10) : 0;
+            return poemsViewed[index] || itemId;
+          })
+        : [];
+    };
+
+    // Process all three re-rankings
+    const poemRankings: PoemRankings = {
+      favourite: processRanking("q1"),
+      impact: processRanking("q2"),
+      creative: processRanking("q3"),
+    };
+
+    // Save re-ranking data
+    const reRankingData: ReRankingData = {
+      poemRankings,
+    };
+    console.log(reRankingData);
+    addReRankSurvey(reRankingData);
+
+    // Update timestamps and navigate
     addRoleSpecificData({
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
     });

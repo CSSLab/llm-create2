@@ -16,17 +16,6 @@ export interface ArtistSurvey {
   postAnswers: SurveyAnswers;
 }
 
-export interface AudiencePoem {
-  id: string;
-  poemId: string;
-}
-
-// export interface SurveyQuestion {
-//   id: string;
-//   q: string;
-//   answerType:
-// }
-
 export interface Poem {
   passageId: string; // passageId in Passage.id
   passage: Passage;
@@ -101,8 +90,6 @@ export interface AudienceSurvey {
   rankingAnswers: SurveyAnswers;
   postSurvey: SurveyDefinition;
   postAnswers: SurveyAnswers;
-  AISurvey: SurveyDefinition;
-  AIAnswers: SurveyAnswers;
 }
 
 // TODO: Exact poem feedback fields tbd
@@ -204,6 +191,29 @@ export interface PoemSurveyDefinition extends SurveyDefinition {}
 
 export interface PoemSurveyAnswers extends SurveyAnswers {
   poemId: string;
+}
+
+// Ranking survey data structures
+export interface StatementMatch {
+  poemId: string;
+  isCorrect: boolean;
+  chosenStatement: string;
+  explanation?: string;
+}
+
+export interface PoemRankings {
+  favourite: string[]; // most liked to least liked
+  impact: string[]; // most emotionally impactful to least
+  creative: string[]; // most creative to least
+}
+
+export interface RankingData {
+  poemRankings: PoemRankings;
+  statementMatches: StatementMatch[];
+}
+
+export interface ReRankingData {
+  poemRankings: PoemRankings;
 }
 
 export type AnswerValue = string | string[] | number | null;

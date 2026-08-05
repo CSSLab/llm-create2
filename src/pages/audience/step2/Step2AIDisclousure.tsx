@@ -5,7 +5,12 @@ import { DataContext } from "../../../App";
 import { Passages } from "../../../consts/passages";
 import SurveyScroll from "../../../components/survey/surveyScroll";
 import { AudienceAIQuestionSurvey } from "../../../consts/surveyQuestions";
-import type { Poem, SurveyDefinition, Section, SurveyAnswers } from "../../../types";
+import type {
+  Poem,
+  SurveyDefinition,
+  Section,
+  SurveyAnswers,
+} from "../../../types";
 
 interface FirebasePoem extends Poem {
   id: string;
@@ -22,7 +27,8 @@ const AudienceAI = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { userData, addRoleSpecificData } = context;
+  const { userData, addRoleSpecificData, addAISurvey } = context;
+  // const { userData, addRoleSpecificData, addAISurvey } = context ?? defaultContextValue;
 
   const passageId = (userData as any)?.data?.passage || "1";
   const passage = Passages.find((p) => p.id === passageId) || Passages[0];
@@ -58,7 +64,8 @@ const AudienceAI = () => {
   }, []);
 
   const handleSubmit = (answers: SurveyAnswers) => {
-    const surveyResponse = ((userData?.data as any)?.surveyResponse ?? {}) as any;
+    const surveyResponse = ((userData?.data as any)?.surveyResponse ??
+      {}) as any;
 
     addRoleSpecificData({
       surveyResponse: {
@@ -120,7 +127,9 @@ const AudienceAI = () => {
                         );
                       })}
                       <p className="text-xs text-grey text-left pt-2 w-full">
-                        <span className="italic">{'"' + passage.title + '"'}</span>
+                        <span className="italic">
+                          {'"' + passage.title + '"'}
+                        </span>
                         <span>{", " + passage.author}</span>
                       </p>
                     </div>

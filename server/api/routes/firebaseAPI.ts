@@ -3,6 +3,7 @@ import { db, FieldValue } from "../firebase/firebase";
 
 const router = express.Router();
 
+// ARTIST COLLECTIONS
 const ARTIST_COLLECTION = "artist";
 const ARTIST_SURVEY_COLLECTION = "artistSurvey";
 const POEM_COLLECTION = "poem";
@@ -21,13 +22,14 @@ function trimAudiencePoemRefs(audienceData: any) {
   }
   if (Array.isArray(trimmed.distractorStatements)) {
     trimmed.distractorStatements = trimmed.distractorStatements.map(
-      (d: any) => d?.poemId ?? d
+      (d: any) => d?.poemId ?? d,
     );
   }
   return trimmed;
 }
 
-router.post("/autosave", async (req, res) => {
+// ARTIST ROUTES
+router.post("/artist/autosave", async (req, res) => {
   try {
     const { sessionId, data } = req.body;
 
@@ -75,7 +77,7 @@ router.post("/autosave", async (req, res) => {
   }
 });
 
-router.post("/commit-session", async (req, res) => {
+router.post("/artist/commit-session", async (req, res) => {
   try {
     const { artistData, surveyData, poemData, sessionId } = req.body;
 
@@ -101,7 +103,7 @@ router.post("/commit-session", async (req, res) => {
     const surveyRef = db.collection(ARTIST_SURVEY_COLLECTION).doc();
     const poemRef = db.collection(POEM_COLLECTION).doc();
     const incompleteRef = db
-      .collection(INCOMPLETE_SESSION_COLLECTION)
+      .collection(ARTIST_INCOMPLETE_SESSION_COLLECTION)
       .doc(sessionId);
 
     const artist = {
@@ -145,7 +147,8 @@ router.post("/commit-audience-session", async (req, res) => {
       .collection(AUDIENCE_INCOMPLETE_SESSION_COLLECTION)
       .doc(sessionId);
 
-    const { surveyResponse, ...audienceRest } = trimAudiencePoemRefs(audienceData);
+    const { surveyResponse, ...audienceRest } =
+      trimAudiencePoemRefs(audienceData);
 
     const audience = {
       ...audienceRest,
@@ -251,7 +254,7 @@ async function getStatementForArtist(artistId: string): Promise<string | null> {
 }
 
 async function getArtistStatement(
-  poemId: string
+  poemId: string,
 ): Promise<{ poemId: string; statement: string } | null> {
   const poemDoc = await db.collection(POEM_COLLECTION).doc(poemId).get();
   if (!poemDoc.exists) return null;
@@ -276,9 +279,7 @@ router.post("/audience/artist-statements", async (req, res) => {
 
     const poemStatements = (
       await Promise.all(poemIds.map((id: string) => getArtistStatement(id)))
-    ).filter(
-      (s): s is { poemId: string; statement: string } => s !== null
-    );
+    ).filter((s): s is { poemId: string; statement: string } => s !== null);
 
     // Shuffle so the option order doesn't reveal which poem a statement belongs to
     for (let i = poemStatements.length - 1; i > 0; i--) {
@@ -289,7 +290,10 @@ router.post("/audience/artist-statements", async (req, res) => {
       ];
     }
 
-    console.log("[artist-statements] real statements (from shown poems):", poemStatements);
+    console.log(
+      "[artist-statements] real statements (from shown poems):",
+      poemStatements,
+    );
 
     res.json({ poemStatements });
   } catch (error) {
@@ -333,7 +337,10 @@ router.post("/audience/distractor-statements", async (req, res) => {
       if (statement) distractors.push({ poemId: candidate.poemId, statement });
     }
 
-    console.log("[distractor-statements] decoy poems/statements (not shown to this participant):", distractors);
+    console.log(
+      "[distractor-statements] decoy poems/statements (not shown to this participant):",
+      distractors,
+    );
 
     res.json({ distractors });
   } catch (error) {

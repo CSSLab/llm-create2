@@ -31,7 +31,7 @@ const AudienceRanking = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { userData, addRoleSpecificData } = context;
+  const { userData, addRoleSpecificData, addRankSurvey } = context;
 
   const passageId = (userData as any)?.data?.passage || "1";
   const condition: AudienceCondition =
@@ -125,7 +125,8 @@ const AudienceRanking = () => {
   }, []);
 
   const handleSubmit = (answers: SurveyAnswers) => {
-    const surveyResponse = ((userData?.data as any)?.surveyResponse ?? {}) as any;
+    const surveyResponse = ((userData?.data as any)?.surveyResponse ??
+      {}) as any;
 
     addRoleSpecificData({
       surveyResponse: {
