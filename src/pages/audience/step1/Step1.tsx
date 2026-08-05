@@ -35,17 +35,21 @@ const AudiencePassage = () => {
       afterDuration={handleSubmit}
       buttonText="Begin Reading Poems"
     >
-      <div className="w-[400px] md:w-[500px] h-max flex-col space-y-6 pt-4 md:pt-8 self-center">
-        <p
-          className="text-main text-justify text-sm md:text-base select-none"
-          onCopy={(e) => e.preventDefault()}
-        >
-          {passage.text}
-        </p>
-        <p className="text-xs text-grey text-left pt-2">
-          <span className="italic">{'"' + passage.title + '"'}</span>
-          <span>{", " + passage.author + " from The New York Times"}</span>
-        </p>
+      <div className="w-full h-full flex flex-col items-center">
+        <div className="flex mx-auto flex-wrap select-none w-[350px] min-w-[350px] md:min-w-[400ox] md:w-[400px] h-max ">
+          {passage.text.split(" ").map((word, i) => (
+            <span
+              key={i}
+              className="text-main font-serif text-dark-grey tracking-[0] antialiased [font-optical-sizing:none] [font-variation-settings:'opsz'_0] [text-rendering:geometricPrecision] transition duration-200"
+            >
+              {word + "\u00A0"}
+            </span>
+          ))}
+          <p className="text-xs text-grey text-left pt-2 w-full">
+            <span className="italic">{'"' + passage.title + '"'}</span>
+            <span>{", " + passage.author}</span>
+          </p>
+        </div>
       </div>
     </PageTemplate>
   );

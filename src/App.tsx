@@ -29,6 +29,7 @@ import AudienceRanking from "./pages/audience/step2/Step2Rank";
 // import AudienceStep2 from "./pages/audience/step2/Step2";
 // import AudienceTransitionStep2 from "./pages/audience/step2/TransitionStep2";
 // import AudiencePostSurvey from "./pages/audience/PostSurvey";
+import AudienceAI from "./pages/audience/step2/Step2AIDisclousure";
 import LLMInstruction from "./pages/artist/instructions/llmInstructions";
 import { useState, createContext, useEffect, useRef } from "react";
 import type {
@@ -40,15 +41,14 @@ import type {
   SurveyAnswers,
   RankingData,
   ReRankingData,
+  ProlificMeta,
 } from "./types";
 import { Provider } from "./components/ui/provider";
 import { Toaster } from "./components/ui/toaster";
 import { globalSaveQueue } from "./utils/saveQueue";
 import AudienceInstructions from "./pages/audience/instructions/Instructions";
 import AudiencePassage from "./pages/audience/step1/Step1";
-import AudienceAI from "./pages/audience/step2/Step2AIDisclousure";
 import AudiencePostSurvey from "./pages/audience/PostSurvey";
-import AudienceReRanking from "./pages/audience/step2/Step2AI";
 import AudienceThankYou from "./pages/audience/ThankYou";
 
 interface DataContextValue {
@@ -56,20 +56,21 @@ interface DataContextValue {
   addUserData: (newData: Partial<UserData>) => void;
   addRoleSpecificData: (updates: Partial<Artist> | Partial<Audience>) => void;
   addPreSurvey: (
-    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>,
   ) => void;
   addPostSurvey: (
-    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>,
   ) => void;
   addPoemEvaluation: (
     poemId: string,
     answers: SurveyAnswers,
-    additionalData?: Partial<Audience>
+    additionalData?: Partial<Audience>,
   ) => void;
   addRankSurvey: (rankingData: RankingData) => void;
   addAISurvey: (answers: SurveyAnswers) => void;
   addReRankSurvey: (reRankingData: ReRankingData) => void;
   sessionId: string | null;
+  prolific: ProlificMeta | null;
   flushSaves: () => Promise<void>;
   isTestMode: boolean;
   setIsTestMode: (value: boolean) => void;
@@ -80,48 +81,77 @@ export const DataContext = createContext<DataContextValue | null>(null);
 function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isTestMode, setIsTestMode] = useState<boolean>(false);
+  const [prolific, setProlific] = useState<ProlificMeta | null>(null);
   const saveTimerRef = useRef<number | null>(null);
+  const pendingSaveRef = useRef<UserData | null>(null);
 
   usePreventRefresh(
-    "To make sure your session counts, please avoid refreshing the page. Do you still want to refresh?"
+    "To make sure your session counts, please avoid refreshing the page. Do you still want to refresh?",
   );
   usePreventBack(
-    "To make sure your session counts, please avoid pressing the back button."
+    "To make sure your session counts, please avoid pressing the back button.",
   );
 
   // clear session storage and set the session ID on first render
   useEffect(() => {
-    const id = nanoid();
-
     sessionStorage.clear();
+
+    const params = new URLSearchParams(window.location.search);
+    const prolificPid = params.get("PROLIFIC_PID");
+    const studyId = params.get("STUDY_ID");
+    const prolificSessionId = params.get("SESSION_ID");
+
+    const id = prolificSessionId ?? nanoid();
 
     sessionStorage.setItem("sessionId", id);
     setSessionId(id);
+
+    if (prolificPid && studyId && prolificSessionId) {
+      setProlific({ prolificPid, studyId, prolificSessionId });
+    }
   }, []);
 
-  const autoSave = (data: UserData | null) => {
+  // Runs whatever save is currently pending, right now, via the serial
+  // queue (so concurrent/rapid saves don't race each other in Firestore).
+  const runPendingSave = () => {
+    const data = pendingSaveRef.current;
+    pendingSaveRef.current = null;
+    if (!data || !sessionId) return Promise.resolve();
+
+    const endpoint =
+      data.role === "artist"
+        ? "/api/firebase/artist/autosave"
+        : "/api/firebase/audience/autosave";
+
+    return globalSaveQueue.enqueue(() =>
+      fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, data }),
+      }).then(() => undefined),
+    );
+  };
+
+  const enqueueAutosave = (data: UserData | null) => {
     if (!data || !sessionId) return;
+    pendingSaveRef.current = data;
 
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = window.setTimeout(async () => {
-      if (data.role === "artist") {
-        await fetch("/api/firebase/artist/autosave", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, data }),
-        });
-      } else {
-        await fetch("/api/firebase/audience/autosave", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, data }),
-        });
-      }
+    saveTimerRef.current = window.setTimeout(() => {
+      saveTimerRef.current = null;
+      runPendingSave();
     }, 500);
   };
 
-  const flushSaves = () => globalSaveQueue.flush();
+  // Cancels the debounce timer and saves immediately — used when the tab is
+  // being hidden/closed, so a save doesn't get lost waiting on the timeout.
+  const flushSaves = () => {
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    return runPendingSave().then(() => globalSaveQueue.flush());
+  };
 
   const addUserData = (newData: Partial<UserData>) => {
     setUserData((prev) => {
@@ -139,12 +169,12 @@ function App() {
   };
 
   const addRoleSpecificData = (
-    updates: Partial<Artist> | Partial<Audience>
+    updates: Partial<Artist> | Partial<Audience>,
   ) => {
     setUserData((prev: any) => {
       if (!prev || !prev.data) {
         throw new Error(
-          "Tried to update data when userData is null or incomplete."
+          "Tried to update data when userData is null or incomplete.",
         );
       }
 
@@ -155,13 +185,13 @@ function App() {
           ...updates,
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
 
   const addPreSurvey = (
-    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>,
   ) => {
     setUserData((prev: any) => {
       if (!prev || !prev.data) {
@@ -185,13 +215,13 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
 
   const addPostSurvey = (
-    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>
+    updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>,
   ) => {
     setUserData((prev: any) => {
       if (!prev || !prev.data) {
@@ -215,7 +245,7 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
@@ -223,12 +253,12 @@ function App() {
   const addPoemEvaluation = (
     poemId: string,
     answers: SurveyAnswers,
-    additionalData?: Partial<Audience>
+    additionalData?: Partial<Audience>,
   ) => {
     setUserData((prev: any) => {
       if (!prev || !prev.data) {
         throw new Error(
-          "Tried to update poem evaluation when userData is null."
+          "Tried to update poem evaluation when userData is null.",
         );
       }
 
@@ -246,7 +276,7 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
@@ -267,7 +297,7 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
@@ -288,7 +318,7 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
@@ -296,7 +326,9 @@ function App() {
   const addReRankSurvey = (reRankingData: ReRankingData) => {
     setUserData((prev: any) => {
       if (!prev || !prev.data) {
-        throw new Error("Tried to update re-rank survey when userData is null.");
+        throw new Error(
+          "Tried to update re-rank survey when userData is null.",
+        );
       }
 
       const next = {
@@ -309,7 +341,7 @@ function App() {
           },
         },
       };
-      autoSave(next as UserData);
+      enqueueAutosave(next as UserData);
       return next;
     });
   };
@@ -349,6 +381,7 @@ function App() {
         addAISurvey,
         addReRankSurvey,
         sessionId,
+        prolific,
         flushSaves,
         isTestMode,
         setIsTestMode,
@@ -373,6 +406,11 @@ function App() {
                     path="/audience/pre-survey"
                     element={<AudiencePreSurvey />}
                   />
+
+                  <Route
+                    path="/audience/rank-continued"
+                    element={<AudienceAI />}
+                  />
                   <Route
                     path="/audience/instructions"
                     element={<AudienceInstructions />}
@@ -386,11 +424,7 @@ function App() {
                     path="/audience/ranking"
                     element={<AudienceRanking />}
                   />
-                  <Route path="/audience/ai" element={<AudienceAI />} />
-                  <Route
-                    path="/audience/ai-disclosure"
-                    element={<AudienceReRanking />}
-                  />
+
                   <Route
                     path="/audience/post-survey"
                     element={<AudiencePostSurvey />}

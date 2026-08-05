@@ -63,12 +63,25 @@ export const Role = {
 export type Role = (typeof Role)[keyof typeof Role];
 
 // AUDIENCE TYPES
+export interface AudiencePoem {
+  id: string;
+  poemId: string;
+}
+
 export interface Audience {
+  condition: AudienceCondition;
   passageId: string;
   surveyResponse: AudienceSurvey;
-  poemsViewed: string[];
-  poemData: { poemId: string; text: number[]; statement: string }[];
+  poemsViewed: AudiencePoem[];
+  // The 4 poems (and their AI overviews, if applicable) chosen for this
+  // audience member at captcha time. Fixed for the rest of the study.
+  poems: (Poem & { id: string; artistId: string })[];
+  overviews: Record<string, string>;
   timeStamps: Date[];
+  // The decoy poems/statements (from other artists' poems) shown alongside
+  // the real ones in the "guess which statement matches which poem" question.
+  distractorStatements: { poemId: string; statement: string }[];
+  prolific?: ProlificMeta;
 }
 
 // TODO: Exact survey questions tbd
@@ -78,11 +91,12 @@ export interface AudienceSurvey {
   preAnswers: SurveyAnswers;
   poemSurvey: PoemSurveyDefinition[];
   poemAnswers: PoemSurveyAnswers[];
-  rankingData: RankingData;
-  AIAnswers: SurveyAnswers;
-  reRankingData: ReRankingData;
+  rankingSurvey: SurveyDefinition;
+  rankingAnswers: SurveyAnswers;
   postSurvey: SurveyDefinition;
   postAnswers: SurveyAnswers;
+  AISurvey: SurveyDefinition;
+  AIAnswers: SurveyAnswers;
 }
 
 // TODO: Exact poem feedback fields tbd
@@ -96,6 +110,13 @@ export interface Passage {
   id: string;
   text: string;
 }
+
+export const AudienceCondition = {
+  WITH_AI_OVERVIEW: "WITH_AI_OVERVIEW",
+  WITHOUT_AI_OVERVIEW: "WITHOUT_AI_OVERVIEW",
+} as const;
+export type AudienceCondition =
+  (typeof AudienceCondition)[keyof typeof AudienceCondition];
 
 export type QuestionType =
   | "multipleChoice"
@@ -247,8 +268,14 @@ export interface DragRankQuestion extends BaseQuestion {
   draggable?: boolean;
 }
 
+export interface ProlificMeta {
+  prolificPid: string;
+  studyId: string;
+  prolificSessionId: string;
+}
+
 export type UserData =
-  | { role: "artist"; data: Artist }
+  | { role: "artist"; data: Artist; prolific?: ProlificMeta }
   | { role: "audience"; data: Audience };
 
 export type PoemSnapshot = {

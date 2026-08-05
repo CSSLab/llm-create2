@@ -790,7 +790,7 @@ export const AudiencePoemQuestions: PoemSurveyDefinition = {
           id: "q4",
           type: "openEnded",
           question:
-            "Were there any other emotions you think he poet was trying to convey through the poem? If so, please share them here.",
+            "Were there any other emotions you think the poet was trying to convey through the poem? If so, please share them here.",
           placeholder: "Type your answer here...",
           required: false,
         },

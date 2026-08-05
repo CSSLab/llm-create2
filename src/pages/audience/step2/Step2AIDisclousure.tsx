@@ -5,24 +5,17 @@ import { DataContext } from "../../../App";
 import { Passages } from "../../../consts/passages";
 import SurveyScroll from "../../../components/survey/surveyScroll";
 import { AudienceAIQuestionSurvey } from "../../../consts/surveyQuestions";
-import type { SurveyDefinition, Section, SurveyAnswers } from "../../../types";
+import type {
+  Poem,
+  SurveyDefinition,
+  Section,
+  SurveyAnswers,
+} from "../../../types";
 
-// Dummy data for standalone rendering/testing
-// const defaultContextValue = {
-//   userData: {
-//     role: "audience" as const,
-//     data: {
-//       passage: "1",
-//       timeStamps: [] as Date[],
-//     },
-//   },
-//   addRoleSpecificData: (_updates: any) => {
-//     console.log("[Standalone Mode] addRoleSpecificData called:", _updates);
-//   },
-//   addAISurvey: (_answers: SurveyAnswers) => {
-//     console.log("[Standalone Mode] addAISurvey called:", _answers);
-//   },
-// };
+interface FirebasePoem extends Poem {
+  id: string;
+  artistId: string;
+}
 
 const AudienceAI = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -34,14 +27,16 @@ const AudienceAI = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { userData, addRoleSpecificData, addAISurvey } = context;
-  // const { userData, addRoleSpecificData, addAISurvey } = context ?? defaultContextValue;
+  const { userData, addRoleSpecificData } = context;
 
-  const passageId = (userData as any)?.data?.passageId || "1";
-  const poemData = (userData as any)?.data?.poemData || [];
-
+  const passageId = (userData as any)?.data?.passage || "1";
   const passage = Passages.find((p) => p.id === passageId) || Passages[0];
-  const words = passage.text.split(" ");
+
+  // Poems were fetched once at captcha time and stay fixed for the rest of
+  // the study, so this shows the same 4 poems as Step 2/ranking. Poem docs
+  // don't actually carry a nested `.passage` object (only `.passageId`), so
+  // per-poem rendering falls back to the shared passage, same as Step2Rank.
+  const poems: FirebasePoem[] = (userData as any)?.data?.poems ?? [];
 
   useEffect(() => {
     const container = document.querySelector(
@@ -68,15 +63,18 @@ const AudienceAI = () => {
   }, []);
 
   const handleSubmit = (answers: SurveyAnswers) => {
-    // Save AI survey answers
-    console.log(answers);
-    addAISurvey(answers);
+    const surveyResponse = ((userData?.data as any)?.surveyResponse ??
+      {}) as any;
 
-    // Update timestamps and navigate
     addRoleSpecificData({
+      surveyResponse: {
+        ...surveyResponse,
+        AISurvey: AudienceAIQuestionSurvey,
+        AIAnswers: answers,
+      },
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
-    });
-    navigate("/audience/ai-disclosure");
+    } as any);
+    navigate("/audience/post-survey");
   };
   const buildAudienceAISurvey = (): SurveyDefinition => {
     return {
@@ -91,49 +89,52 @@ const AudienceAI = () => {
             question:
               "Which poems do you believe were created with AI assistance?",
             required: true,
-            defaultExpanded: poemData.map(
-              (poem: { poemId: string }) => poem.poemId,
-            ),
+            // Show every poem's content by default, like Step2Rank, instead
+            // of collapsed behind a "View Poem" toggle.
+            defaultExpanded: poems.map((_, i) => `poem-${i}`),
             items: [
-              ...poemData.map(
-                (poem: { poemId: string; text: number[] }, i: number) => {
-                  return {
-                    id: poem.poemId,
-                    title: `Poem ${i + 1}`,
-                    content: (
-                      <div className="w-[50vh] h-max flex-col space-y-6 py-4 self-center">
-                        <div className="leading-none text-justify select-none h-max">
-                          {words.map((word, j) => {
-                            const isVisible = poem.text.includes(j);
-                            return (
-                              <span
-                                key={j}
-                                className={`text-sm transition duration-300 ${
-                                  isVisible
-                                    ? "text-black bg-white"
-                                    : "text-transparent bg-dark-grey"
-                                }`}
-                              >
-                                {word + " "}
-                              </span>
-                            );
-                          })}
-                          <p className="text-xs text-grey text-left pt-2">
-                            <span className="italic">
-                              {'"' + passage.title + '"'}
-                            </span>
-                            <span>
-                              {", " +
-                                passage.author +
-                                " from The New York Times"}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    ),
-                  };
-                },
-              ),
+              ...poems.map((poem, i) => {
+                const poemId = `poem-${i}`;
+                const poemWords =
+                  poem.passage?.text?.split(" ") ?? passage.text.split(" ");
+                const selectedIndexes: number[] = Array.isArray(poem.text)
+                  ? (poem.text as unknown as number[])
+                  : [];
+
+                return {
+                  id: poemId,
+                  title: `Poem ${i + 1}`,
+                  content: (
+                    <div
+                      className="order-2 md:order-1 flex mx-auto flex-wrap select-none w-[350px] min-w-[350px] h-max"
+                      onCopy={(e) => e.preventDefault()}
+                    >
+                      {poemWords.map((word, j) => {
+                        const isVisible = selectedIndexes.includes(j);
+
+                        return (
+                          <span
+                            key={j}
+                            className={`text-sm font-serif tracking-[0] antialiased [font-optical-sizing:none] [font-variation-settings:'opsz'_0] [text-rendering:geometricPrecision] transition duration-200 ${
+                              isVisible
+                                ? "text-black bg-white"
+                                : "text-transparent bg-dark-grey"
+                            }`}
+                          >
+                            {word + "\u00A0"}
+                          </span>
+                        );
+                      })}
+                      <p className="text-xs text-grey text-left pt-2 w-full">
+                        <span className="italic">
+                          {'"' + passage.title + '"'}
+                        </span>
+                        <span>{", " + passage.author}</span>
+                      </p>
+                    </div>
+                  ),
+                };
+              }),
               {
                 id: "none",
                 title: "None of the poems were created with AI",
@@ -157,29 +158,22 @@ const AudienceAI = () => {
     } as SurveyDefinition;
   };
 
+  if (poems.length === 0) {
+    return (
+      <PageTemplate title="No poems available" description="">
+        <p className="text-main">
+          No poems are available right now. Please contact the study
+          administrator.
+        </p>
+      </PageTemplate>
+    );
+  }
+
   return (
     <PageTemplate
       title={`Step 2: Which poems were created with AI?`}
       description="During the creation of the blackout poems, some artists had the option to create with the assistance of an AI tool. Please review each poem and indicate which poem(s) you believe were created with AI assistance."
     >
-      <div className="w-[300px] md:w-[600px] h-max flex-col space-y-6 py-4 md:py-8 self-center">
-        <div className="leading-none text-justify select-none h-max">
-          {words.map((word, i) => {
-            return (
-              <span
-                key={i}
-                className={`text-sm md:text-base transition duration-300 text-black bg-white`}
-              >
-                {word + " "}
-              </span>
-            );
-          })}
-          <p className="text-xs text-grey text-left pt-2">
-            <span className="italic">{'"' + passage.title + '"'}</span>
-            <span>{", " + passage.author + " from The New York Times"}</span>
-          </p>
-        </div>
-      </div>
       <SurveyScroll
         key={`survey-ai`}
         survey={buildAudienceAISurvey()}
