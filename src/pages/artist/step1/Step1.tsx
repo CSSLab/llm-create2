@@ -3,12 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import MultiPageTemplate from "../../../components/shared/pages/multiPage";
 import { ArtistCondition } from "../../../types";
 import { Stage } from "../../../types";
-import type {
-  ChatOpening,
-  LlmRequestLog,
-  Message,
-  Poem,
-} from "../../../types";
+import type { ChatOpening, LlmRequestLog, Message, Poem } from "../../../types";
 import { useContext } from "react";
 import { DataContext } from "../../../App";
 import type { Artist, Passage } from "../../../types";
@@ -45,9 +40,7 @@ const ArtistStep1 = () => {
   );
 
   const [sparkMessages, setSparkMessages] = useState<Message[]>(() =>
-    isLLM
-      ? [createAssistantMessage(STAGE_OPENING_MESSAGES[Stage.SPARK])]
-      : [],
+    isLLM ? [createAssistantMessage(STAGE_OPENING_MESSAGES[Stage.SPARK])] : [],
   );
   const [sparkNotes, setSparkNotes] = useState<string>("");
 
@@ -202,7 +195,7 @@ const ArtistStep1 = () => {
 
             <p className="text-xs text-grey text-left pt-2">
               <span className="italic">{'"' + passage.title + '"'}</span>
-              <span>{", " + passage.author + " from The New York Times"}</span>
+              <span>{", " + passage.author}</span>
             </p>
           </div>
         </div>
