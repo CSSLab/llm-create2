@@ -13,6 +13,9 @@ export interface ArtistAssignment {
     | "PASSAGE_STRATIFIED_1_TO_1"
     | "TEST_OVERRIDE";
   passageId: string;
+  tutorialPassageId: string;
+  taskPassageId: string;
+  passagePoolVersion: string;
   condition: ArtistCondition;
   assignedAt: Date;
 }
@@ -100,6 +103,7 @@ export interface Passage {
   text: string;
   title: string;
   author: string;
+  publication?: string;
 }
 
 export const Stage = {

@@ -4,7 +4,7 @@ import { DataContext } from "../../../App";
 import FullPageTemplate from "../../../components/shared/pages/fullScrollPage";
 import BlackoutPoetry from "../../../components/blackout/Blackout";
 import { Button } from "@chakra-ui/react";
-import type { PoemSnapshot } from "../../../types";
+import type { Artist, PoemSnapshot } from "../../../types";
 import { Passages } from "../../../consts/passages";
 
 const STEPS = [
@@ -33,8 +33,14 @@ const ArtistTutorial = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
   const { userData, addRoleSpecificData } = context;
+  const artistData = userData?.data as Artist;
+  const passage = Passages.find(
+    (candidate) => candidate.id === artistData.assignment?.tutorialPassageId,
+  );
 
-  const passage = Passages.find((p) => p.id === "2")!;
+  if (!passage) {
+    throw new Error("Tutorial passage assignment is missing or invalid");
+  }
 
   const [selectedWordIndexes, setSelectedWordIndexes] = useState<number[]>([]);
   const [, setPoemSnapshots] = useState<PoemSnapshot[]>([]);
@@ -54,7 +60,7 @@ const ArtistTutorial = () => {
     }
 
     prevCountRef.current = count;
-  }, [selectedWordIndexes]);
+  }, [selectedWordIndexes, step]);
 
   const handleContinue = () => {
     addRoleSpecificData({
@@ -102,7 +108,11 @@ const ArtistTutorial = () => {
 
         <p className="text-xs text-grey">
           <span className="italic">{'"' + passage.title + '"'}</span>
-          <span>{", " + passage.author}</span>
+          <span>
+            {", " +
+              passage.author +
+              (passage.publication ? `, ${passage.publication}` : "")}
+          </span>
         </p>
 
         {/* Continue — only shown on final step */}
