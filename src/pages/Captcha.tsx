@@ -6,6 +6,7 @@ import { toaster } from "../components/ui/toaster";
 import { DataContext } from "../App";
 import { ArtistCondition } from "../types";
 import type { ArtistAssignment, Poem } from "../types";
+import { ARTIST_DATA_LOGGING_VERSION } from "../consts/dataLogging";
 import {
   CREATOR_PASSAGE_POOL_VERSION,
   Passages,
@@ -89,6 +90,7 @@ const Captcha = () => {
   const makePoem = (passageId = "1"): Poem => {
     const passage = Passages.find((p) => p.id === passageId) ?? Passages[0];
     return {
+      loggingSchemaVersion: ARTIST_DATA_LOGGING_VERSION,
       passageId: passage.id,
       passage,
       text: [],
@@ -98,7 +100,11 @@ const Captcha = () => {
       writeNotes: "",
       poemSnapshot: [],
       taskTiming: { phases: {} },
-      llmUsage: { chatOpenings: [], requests: [] },
+      llmUsage: {
+        chatAvailability: [],
+        inputActivity: [],
+        requests: [],
+      },
     };
   };
 
