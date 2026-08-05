@@ -435,6 +435,7 @@ router.post("/audience-assignment", async (_req, res) => {
 
     if (eligiblePassages.length === 0) {
       return res.status(409).json({
+        code: "INSUFFICIENT_AUDIENCE_POOL",
         error:
           "No current source passage has four balanced focal poems and three same-source decoys",
       });

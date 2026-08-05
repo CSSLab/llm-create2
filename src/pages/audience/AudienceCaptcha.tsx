@@ -13,6 +13,7 @@ import {
 import type { AudienceAssignment } from "../../types";
 
 const TEST_CAPTCHA = "AUDIENCE_TEST";
+const INSUFFICIENT_AUDIENCE_POOL = "INSUFFICIENT_AUDIENCE_POOL";
 const AUDIENCE_PASSAGE_IDS = new Set(Passages.map((passage) => passage.id));
 
 const AudienceCaptcha = () => {
@@ -80,12 +81,23 @@ const AudienceCaptcha = () => {
     navigate("/consent");
   };
 
+  const startAudiencePreview = (description: string) => {
+    setIsTestMode(true);
+    toaster.create({
+      description,
+      type: "info",
+      duration: 8000,
+    });
+    startAudience(createAudienceTestAssignment());
+  };
+
   const handleSubmit = async () => {
     if (isAssigning) return;
 
     if (inputCaptcha === TEST_CAPTCHA) {
-      setIsTestMode(true);
-      startAudience(createAudienceTestAssignment());
+      startAudiencePreview(
+        "Audience preview started with dummy poems. Preview responses will not be saved.",
+      );
       return;
     }
 
@@ -106,6 +118,19 @@ const AudienceCaptcha = () => {
         method: "POST",
       });
       if (!response.ok) {
+        const errorBody: unknown = await response.json().catch(() => null);
+        if (
+          response.status === 409 &&
+          typeof errorBody === "object" &&
+          errorBody !== null &&
+          "code" in errorBody &&
+          errorBody.code === INSUFFICIENT_AUDIENCE_POOL
+        ) {
+          startAudiencePreview(
+            "Not enough completed artist responses are available yet, so this preview is using dummy poems. Preview responses will not be saved.",
+          );
+          return;
+        }
         throw new Error(`Assignment failed with status ${response.status}`);
       }
       const assignment = (await response.json()) as AudienceAssignment;
