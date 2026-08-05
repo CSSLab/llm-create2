@@ -6,7 +6,12 @@ import { toaster } from "../components/ui/toaster";
 import { DataContext } from "../App";
 import { ArtistCondition } from "../types";
 import type { ArtistAssignment, Poem } from "../types";
-import { Passages } from "../consts/passages";
+import {
+  CREATOR_PASSAGE_POOL_VERSION,
+  Passages,
+  sampleDistinctPassages,
+  type PassagePair,
+} from "../consts/passages";
 import type { ChangeEvent, KeyboardEvent } from "react";
 
 const TEST_CAPTCHA = "TEST";
@@ -99,16 +104,21 @@ const Captcha = () => {
 
   const startArtist = (
     condition: ArtistCondition,
-    passageId = "1",
+    passages: PassagePair = sampleDistinctPassages(),
     strategy: ArtistAssignment["strategy"] = "TEST_OVERRIDE",
+    passagePoolVersion = CREATOR_PASSAGE_POOL_VERSION,
   ) => {
+    const { tutorialPassage, taskPassage } = passages;
     addUserData({ role: "artist" });
     addRoleSpecificData({
       condition,
-      poem: makePoem(passageId),
+      poem: makePoem(taskPassage.id),
       assignment: {
         strategy,
-        passageId,
+        passageId: taskPassage.id,
+        tutorialPassageId: tutorialPassage.id,
+        taskPassageId: taskPassage.id,
+        passagePoolVersion,
         condition,
         assignedAt: new Date(),
       },
@@ -144,14 +154,15 @@ const Captcha = () => {
 
       setIsAssigning(true);
       try {
-        const proposedPassage =
-          Passages[Math.floor(Math.random() * Passages.length)];
+        const proposedPassages = sampleDistinctPassages();
         const response = await fetch("/api/firebase/artist-assignment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             sessionId,
-            passageId: proposedPassage.id,
+            passageId: proposedPassages.taskPassage.id,
+            tutorialPassageId: proposedPassages.tutorialPassage.id,
+            passagePoolVersion: CREATOR_PASSAGE_POOL_VERSION,
             prolificPid: prolific?.prolificPid ?? null,
           }),
         });
@@ -160,14 +171,27 @@ const Captcha = () => {
         }
         const assignment = (await response.json()) as {
           passageId: string;
+          tutorialPassageId: string;
+          taskPassageId: string;
+          passagePoolVersion: string;
           condition: ArtistCondition;
           strategy: ArtistAssignment["strategy"];
         };
         const hasValidStrategy =
           assignment.strategy === "INDEPENDENT_RANDOM_1_TO_1" ||
           assignment.strategy === "PASSAGE_STRATIFIED_1_TO_1";
+        const tutorialPassage = Passages.find(
+          (passage) => passage.id === assignment.tutorialPassageId,
+        );
+        const taskPassage = Passages.find(
+          (passage) => passage.id === assignment.taskPassageId,
+        );
         if (
-          !Passages.some((passage) => passage.id === assignment.passageId) ||
+          !tutorialPassage ||
+          !taskPassage ||
+          tutorialPassage.id === taskPassage.id ||
+          assignment.passageId !== taskPassage.id ||
+          !assignment.passagePoolVersion ||
           !Object.values(ArtistCondition).includes(assignment.condition) ||
           !hasValidStrategy
         ) {
@@ -176,8 +200,9 @@ const Captcha = () => {
 
         startArtist(
           assignment.condition,
-          assignment.passageId,
+          { tutorialPassage, taskPassage },
           assignment.strategy,
+          assignment.passagePoolVersion,
         );
         navigate("/consent");
       } catch (error) {
