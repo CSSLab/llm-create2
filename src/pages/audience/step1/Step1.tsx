@@ -14,13 +14,14 @@ const AudiencePassage = () => {
 
   const { userData, addRoleSpecificData } = context;
 
-  const passageId = (userData as any)?.data?.passageId || "1";
+  const assignment = (userData as any)?.data?.assignment;
+  const taskPassageId = assignment?.taskPassageId ?? "1";
 
-  const passage = Passages.find((p) => p.id === passageId) || Passages[0];
+  const passage =
+    Passages.find((p) => p.id === taskPassageId) || Passages[0];
 
   const handleSubmit = () => {
     addRoleSpecificData({
-      passageId: passageId,
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
     });
     navigate("/audience/poems");

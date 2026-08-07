@@ -15,7 +15,8 @@ const AudiencePostSurvey = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { userData, addPostSurvey, addRoleSpecificData, sessionId } = context;
+  const { userData, addPostSurvey, addRoleSpecificData, sessionId, prolific, isTestMode } =
+    context;
 
   const submitDb = async (answers: any) => {
     if (!userData || !userData.data) {
@@ -38,11 +39,20 @@ const AudiencePostSurvey = () => {
       },
     };
 
+    if (isTestMode) {
+      navigate("/audience/thank-you");
+      return;
+    }
+
     try {
       await fetch("/api/firebase/commit-audience-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audienceData: audiencePayload, sessionId }),
+        body: JSON.stringify({
+          audienceData: audiencePayload,
+          sessionId,
+          prolific: prolific ?? undefined,
+        }),
       });
 
       toaster.create({

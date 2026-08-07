@@ -39,6 +39,7 @@ export interface Passage {
   text: string;
   title: string;
   author: string;
+  publication?: string;
 }
 
 export const Stage = {
@@ -63,40 +64,70 @@ export const Role = {
 export type Role = (typeof Role)[keyof typeof Role];
 
 // AUDIENCE TYPES
+
+// One of the 4 poems chosen for an audience member's assignment.
 export interface AudiencePoem {
   id: string;
+  passageId: string;
+  passage: Passage;
+  selectedWordIndexes: number[];
+}
+
+export interface StatementOption {
+  id: string;
+  statement: string;
+}
+
+export interface StatementTrial {
+  poemId: string;
+  options: StatementOption[];
+}
+
+// The full set of poems/statement-match options assigned to an audience
+// member at captcha time, fixed for the rest of the study.
+export interface AudienceAssignment {
+  id: string;
+  passageId: string;
+  tutorialPassageId: string;
+  taskPassageId: string;
+  passagePoolVersion: string;
+  poems: AudiencePoem[];
+  statementTrials: StatementTrial[];
+}
+
+export interface AudiencePoemAnswers extends SurveyAnswers {
   poemId: string;
 }
 
+export interface AudienceStatementMatch {
+  poemId: string;
+  selectedStatementId: string;
+  isCorrect: boolean;
+}
+
+export interface AudienceRating {
+  poemId: string;
+  rating: number;
+}
+
 export interface Audience {
-  condition: AudienceCondition;
-  passageId: string;
+  assignment: AudienceAssignment;
   surveyResponse: AudienceSurvey;
-  poemsViewed: AudiencePoem[];
-  // The 4 poems (and their AI overviews, if applicable) chosen for this
-  // audience member at captcha time. Fixed for the rest of the study.
-  poems: (Poem & { id: string; artistId: string })[];
-  overviews: Record<string, string>;
   timeStamps: Date[];
-  // The decoy poems/statements (from other artists' poems) shown alongside
-  // the real ones in the "guess which statement matches which poem" question.
-  distractorStatements: { poemId: string; statement: string }[];
-  prolific?: ProlificMeta;
 }
 
 // TODO: Exact survey questions tbd
 export interface AudienceSurvey {
   id: string;
-  preSurvey: SurveyDefinition;
-  preAnswers: SurveyAnswers;
-  poemSurvey: PoemSurveyDefinition[];
-  poemAnswers: PoemSurveyAnswers[];
-  rankingSurvey: SurveyDefinition;
-  rankingAnswers: SurveyAnswers;
-  postSurvey: SurveyDefinition;
+  preSurvey?: SurveyDefinition;
+  preAnswers?: SurveyAnswers;
+  poemSurvey?: SurveyDefinition;
+  poemAnswers: AudiencePoemAnswers[];
+  statementMatches: AudienceStatementMatch[];
+  creativityRatings: AudienceRating[];
+  aiLikelihoodRatings: AudienceRating[];
+  postSurvey?: SurveyDefinition;
   postAnswers: SurveyAnswers;
-  AISurvey: SurveyDefinition;
-  AIAnswers: SurveyAnswers;
 }
 
 // TODO: Exact poem feedback fields tbd
@@ -106,18 +137,6 @@ export interface PoemFeedback {
   rating: number;
 }
 
-export interface Passage {
-  id: string;
-  text: string;
-}
-
-export const AudienceCondition = {
-  WITH_AI_OVERVIEW: "WITH_AI_OVERVIEW",
-  WITHOUT_AI_OVERVIEW: "WITHOUT_AI_OVERVIEW",
-} as const;
-export type AudienceCondition =
-  (typeof AudienceCondition)[keyof typeof AudienceCondition];
-
 export type QuestionType =
   | "multipleChoice"
   | "openEnded"
@@ -126,7 +145,9 @@ export type QuestionType =
   | "range"
   | "topXRanking"
   | "dragRank"
-  | "selectAll";
+  | "selectAll"
+  | "emotionWheel"
+  | "iosCloseness";
 
 export interface BaseQuestion {
   id: string;
@@ -145,6 +166,7 @@ export interface MultipleChoiceQuestion extends BaseQuestion {
 export interface OpenEndedQuestion extends BaseQuestion {
   type: "openEnded";
   placeholder?: string;
+  softWordTarget?: { min: number; max: number };
 }
 
 export interface LikertScaleQuestion extends BaseQuestion {
@@ -168,6 +190,26 @@ export interface CircularMultipleChoiceQuestion extends BaseQuestion {
   options: string[];
 }
 
+// Geneva Emotion Wheel: pick one of `options` plus an intensity ring.
+export interface EmotionWheelQuestion extends BaseQuestion {
+  type: "emotionWheel";
+  options: string[];
+  intensityLevels: 5;
+  includeNoEmotion: true;
+  intensityPrompt?: string;
+}
+
+export interface EmotionWheelAnswer {
+  emotion: string;
+  intensity: 0 | 1 | 2 | 3 | 4 | 5;
+}
+
+// Inclusion-of-Other-in-Self closeness scale (two overlapping circles).
+export interface IosClosenessQuestion extends BaseQuestion {
+  type: "iosCloseness";
+  labels: { self: string; other: string };
+}
+
 export type Question =
   | MultipleChoiceQuestion
   | OpenEndedQuestion
@@ -176,7 +218,9 @@ export type Question =
   | RangeQuestion
   | TopXRankingQuestion
   | DragRankQuestion
-  | SelectAllQuestion;
+  | SelectAllQuestion
+  | EmotionWheelQuestion
+  | IosClosenessQuestion;
 
 export interface Section {
   id: string;
@@ -223,7 +267,12 @@ export interface ReRankingData {
   poemRankings: PoemRankings;
 }
 
-export type AnswerValue = string | string[] | number | null;
+export type AnswerValue =
+  | string
+  | string[]
+  | number
+  | EmotionWheelAnswer
+  | null;
 
 export interface SurveyAnswers {
   [questionId: string]: AnswerValue;
@@ -276,7 +325,7 @@ export interface ProlificMeta {
 
 export type UserData =
   | { role: "artist"; data: Artist; prolific?: ProlificMeta }
-  | { role: "audience"; data: Audience };
+  | { role: "audience"; data: Audience; prolific?: ProlificMeta };
 
 export type PoemSnapshot = {
   action: "ADD" | "REMOVE";

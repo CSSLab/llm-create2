@@ -60,6 +60,10 @@ const SurveyScroll: React.FC<Props> = ({
           answer.length >= 1 &&
           answer.length <= q.maxSelectable
         );
+      case "emotionWheel":
+        return typeof answer === "object" && !!(answer as any).emotion;
+      case "iosCloseness":
+        return typeof answer === "number";
       default:
         return false;
     }
@@ -105,6 +109,11 @@ const SurveyScroll: React.FC<Props> = ({
       <div className="w-full h-100vh space-y-10 overflow-y-scroll">
         {survey.sections.map((section, index) => (
           <div key={index} className="space-y-6 border-b pb-8">
+            {section.title && (
+              <p className="text-h2 font-serif text-dark-grey">
+                {section.title}
+              </p>
+            )}
             {section.description && (
               <p className="text-sub text-dark-grey">{section.description}</p>
             )}

@@ -11,7 +11,6 @@ import type {
   Section,
   SurveyAnswers,
 } from "../../../types";
-import { AudienceCondition } from "../../../types";
 import { Spinner } from "@chakra-ui/react";
 
 interface FirebasePoem extends Poem {
@@ -34,9 +33,9 @@ const AudienceRanking = () => {
   const { userData, addRoleSpecificData } = context;
 
   const passageId = (userData as any)?.data?.passage || "1";
-  const condition: AudienceCondition =
-    (userData as any)?.data?.condition ?? AudienceCondition.WITHOUT_AI_OVERVIEW;
-  const withAIOverview = condition === AudienceCondition.WITH_AI_OVERVIEW;
+  const condition: string =
+    (userData as any)?.data?.condition ?? "WITHOUT_AI_OVERVIEW";
+  const withAIOverview = condition === "WITH_AI_OVERVIEW";
 
   // Poems and overviews were fetched once at captcha time and stay fixed
   // for the rest of the study, so this shows the same 4 poems as Step 2.
@@ -80,7 +79,6 @@ const AudienceRanking = () => {
         );
         const distractors: { poemId: string; statement: string }[] =
           decoyData.distractors ?? [];
-        addRoleSpecificData({ distractorStatements: distractors });
 
         const decoyStatements = distractors.map((d) => d.statement);
         const combined = [...realStatements, ...decoyStatements];

@@ -34,7 +34,7 @@ const LikertScale: React.FC<Props> = ({ question, value, onChange }) => {
           <div
             className={
               `
-            flex flex-col gap-3 mb-1
+            flex flex-col gap-3 mb-1 w-full min-w-0
             md:grid md:gap-6
           ` + (question.doNotCollapse ? " flex-row grid gap-6" : "")
             }
@@ -70,7 +70,7 @@ const LikertScale: React.FC<Props> = ({ question, value, onChange }) => {
                 /* mobile layout: horizontal row */
 
                 /* desktop layout: stacked column */
-                md:flex md:flex-col md:items-center md:text-center md:justify-center h-full
+                min-w-0 md:flex md:flex-col md:items-center md:text-center md:justify-center h-full
               ` +
                   (question.doNotCollapse
                     ? " items-center flex flex-col text-center md:justify-center"
@@ -90,7 +90,7 @@ const LikertScale: React.FC<Props> = ({ question, value, onChange }) => {
                 <span
                   className={
                     `
-                  text-sub break-words  overflow-hidden text-ellipsis
+                  text-sub break-words  overflow-hidden text-ellipsis min-w-0
                   /* desktop: label above */
                   md:max-w-24 md:order-first md:mb-1 md:h-10 md:flex md:items-start md:justify-center md:text-center
                 ` + (question.removeValues ? "block md:hidden " : "")

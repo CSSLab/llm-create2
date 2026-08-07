@@ -1,4 +1,5 @@
 import type { PoemSurveyDefinition, SurveyDefinition } from "../types";
+import { GENEVA_EMOTION_FAMILIES } from "./genevaEmotionWheel";
 
 export const ArtistPreSurveyQuestions: SurveyDefinition = {
   id: "survey1",
@@ -637,7 +638,7 @@ export const AudiencePreSurveyQuestions: SurveyDefinition = {
   sections: [
     {
       id: "section1",
-      title: "Demographic Survey",
+      title: "About you",
       questions: [
         {
           id: "q2",
@@ -656,7 +657,7 @@ export const AudiencePreSurveyQuestions: SurveyDefinition = {
     },
     {
       id: "section2",
-      title: "Poetry Familiarity",
+      title: "Poetry familiarity",
       description:
         "Please indicate your level of agreement with the following statements:",
       questions: [
@@ -724,128 +725,119 @@ export const AudiencePreSurveyQuestions: SurveyDefinition = {
   ],
 };
 
+const agreement7 = [
+  { label: "1 · Strongly disagree", value: 1 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+  { label: "4 · Neither agree nor disagree", value: 4 },
+  { label: "5", value: 5 },
+  { label: "6", value: 6 },
+  { label: "7 · Strongly agree", value: 7 },
+];
+
+const audienceLiking7 = [
+  { label: "1 · Not at all", value: 1 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+  { label: "4", value: 4 },
+  { label: "5", value: 5 },
+  { label: "6", value: 6 },
+  { label: "7 · Very much", value: 7 },
+];
+
 export const AudiencePoemQuestions: PoemSurveyDefinition = {
-  id: "survey1",
-  title: "Audience Pre-Survey",
+  id: "audience-poem-reception-v1",
+  title: "Your response to this poem",
   sections: [
     {
-      id: "section1",
-      title: "Demographic Survey",
+      id: "interpretation",
+      title: "Your interpretation",
       questions: [
         {
-          id: "q1",
-          type: "circularChoice",
-          question:
-            "Select the emotion that best describes what you felt while reading the poem. ",
-          options: [
-            "Pride",
-            "Joy",
-            "Amusement",
-            "Pleasure",
-            "Relief",
-            "Interest",
-            "Surprise",
-            "Anger",
-            "Irritation",
-            "Disgust",
-            "Sadness",
-            "Despair",
-            "Fear",
-            "Anxiety",
-          ],
-          required: true,
-        },
-        {
-          id: "q2",
+          id: "open_interpretation",
           type: "openEnded",
           question:
-            "Were there any other emotions you felt while reading the poem? If so, please share them here.",
-          placeholder: "Type your answer here...",
-          required: false,
-        },
-        {
-          id: "q3",
-          type: "circularChoice",
-          question:
-            "Select the emotion that best describes what you think the poet was trying to convey through the poem.",
-          options: [
-            "Pride",
-            "Joy",
-            "Amusement",
-            "Pleasure",
-            "Relief",
-            "Interest",
-            "Surprise",
-            "Anger",
-            "Irritation",
-            "Disgust",
-            "Sadness",
-            "Despair",
-            "Fear",
-            "Anxiety",
-          ],
+            "In one or two sentences, what do you think this poem is expressing or about?",
+          placeholder: "Share your interpretation in one or two sentences...",
+          softWordTarget: { min: 8, max: 60 },
           required: true,
-        },
-        {
-          id: "q4",
-          type: "openEnded",
-          question:
-            "Were there any other emotions you think the poet was trying to convey through the poem? If so, please share them here.",
-          placeholder: "Type your answer here...",
-          required: false,
         },
       ],
     },
     {
-      id: "section2",
-      title: "Poetry Vibes",
-      description:
-        "Please indicate your level of agreement with the following statements:",
+      id: "felt-emotion",
+      title: "What you felt",
       questions: [
         {
-          id: "q5",
-          type: "likertScale",
-          question: "The poem evoked an emotional response in me.",
-          options: [
-            { label: "Strongly Disagree", value: 1 },
-            { label: "Disagree", value: 2 },
-            { label: "Neutral", value: 3 },
-            { label: "Agree", value: 4 },
-            { label: "Strongly Agree", value: 5 },
-          ],
+          id: "felt_emotion",
+          type: "emotionWheel",
+          question:
+            "Which emotion, if any, did you feel most strongly while reading this poem?",
+          options: [...GENEVA_EMOTION_FAMILIES],
+          intensityLevels: 5,
+          includeNoEmotion: true,
           required: true,
-          sideTitle: true,
         },
+      ],
+    },
+    {
+      id: "communicated-emotion",
+      title: "What the creator communicated",
+      questions: [
         {
-          id: "q6",
-          type: "likertScale",
-          question: "I felt connected to the poet.",
-          options: [
-            { label: "Strongly Disagree", value: 1 },
-            { label: "Disagree", value: 2 },
-            { label: "Neutral", value: 3 },
-            { label: "Agree", value: 4 },
-            { label: "Strongly Agree", value: 5 },
-          ],
+          id: "perceived_emotion",
+          type: "emotionWheel",
+          question:
+            "Which emotion, if any, do you think the creator most wanted this poem to convey?",
+          intensityPrompt:
+            "How strongly did the poem convey this emotion? Choose an intensity from 1 near the centre to 5 at the outside.",
+          options: [...GENEVA_EMOTION_FAMILIES],
+          intensityLevels: 5,
+          includeNoEmotion: true,
           required: true,
-          sideTitle: true,
-          removeValues: true,
         },
+      ],
+    },
+    {
+      id: "understanding-and-connection",
+      title: "Understanding and connection",
+      questions: [
         {
-          id: "q7",
+          id: "subjective_understanding",
           type: "likertScale",
           question:
-            "I would be interested in reading more work from this poet.",
-          options: [
-            { label: "Strongly Disagree", value: 1 },
-            { label: "Disagree", value: 2 },
-            { label: "Neutral", value: 3 },
-            { label: "Agree", value: 4 },
-            { label: "Strongly Agree", value: 5 },
-          ],
+            "I felt that I understood what the creator wanted this poem to express.",
+          options: agreement7,
           required: true,
-          sideTitle: true,
-          removeValues: true,
+        },
+        {
+          id: "creator_connection",
+          type: "iosCloseness",
+          question:
+            "Select the pair of circles that best represents how connected you felt to the person who created this poem while reading it.",
+          labels: { self: "You", other: "Creator" },
+          required: true,
+        },
+      ],
+    },
+    {
+      id: "evaluation",
+      title: "Your overall response",
+      questions: [
+        {
+          id: "liking",
+          type: "likertScale",
+          question: "How much did you like this poem?",
+          options: audienceLiking7,
+          required: true,
+        },
+        {
+          id: "continued_interest",
+          type: "likertScale",
+          question:
+            "I would be interested in reading another poem by this creator.",
+          options: agreement7,
+          required: true,
         },
       ],
     },
@@ -916,19 +908,34 @@ export const AudienceAIQuestionSurvey: SurveyDefinition = {
   ],
 };
 
+const frequency5 = [
+  { label: "Never", value: 1 },
+  { label: "Rarely", value: 2 },
+  { label: "Sometimes", value: 3 },
+  { label: "Often", value: 4 },
+  { label: "Very often", value: 5 },
+];
+
 export const AudiencePostSurveyQuestions: SurveyDefinition = {
-  id: "survey3",
-  title: "Audience Post-Survey",
+  id: "audience-background-v1",
+  title: "About you",
   sections: [
     {
-      id: "section1",
-      title: "Opinion on AI in Creative Spaces",
+      id: "ai-background",
+      title: "Your experience with AI",
       questions: [
         {
-          id: "q1",
+          id: "creative_writing_ai_frequency",
+          type: "likertScale",
+          question: "How often do you use generative AI for creative writing?",
+          options: frequency5,
+          required: true,
+        },
+        {
+          id: "ai_attitude",
           type: "multipleChoice",
           question:
-            "Increased use of AI computer programs in creative tasks makes you feel",
+            "Increased use of AI computer programs in creative tasks makes you feel:",
           options: [
             "Equally concerned and excited",
             "More concerned than excited",
@@ -937,23 +944,26 @@ export const AudiencePostSurveyQuestions: SurveyDefinition = {
           required: true,
         },
         {
-          id: "q2",
-          type: "openEnded",
-          question: "How do you feel about the use of AI in creative work?",
-          placeholder: "Type your answer here...",
-          required: true,
-        },
-        {
-          id: "q3",
+          id: "optional_comments",
           type: "openEnded",
           question: "Is there anything else you would like to share with us?",
-          placeholder: "Type your answer here...",
+          placeholder: "Optional comments...",
           required: false,
         },
       ],
     },
   ],
 };
+
+export const AUDIENCE_CREATIVITY_OPTIONS = [
+  { label: "1 · Not at all creative", value: 1 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+  { label: "4", value: 4 },
+  { label: "5", value: 5 },
+  { label: "6", value: 6 },
+  { label: "7 · Extremely creative", value: 7 },
+];
 
 export const AudienceReRankingQuestions: SurveyDefinition = {
   id: "survey2",

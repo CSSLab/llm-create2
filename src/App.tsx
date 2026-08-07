@@ -19,7 +19,6 @@ import { nanoid } from "nanoid";
 import AudiencePreSurvey from "./pages/audience/PreSurvey";
 import AudienceCaptcha from "./pages/audience/AudienceCaptcha";
 import AudiencePoems from "./pages/audience/step2/Step2";
-import AudienceRanking from "./pages/audience/step2/Step2Rank";
 // import AudienceInstructions from "./pages/audience/instructions/Instructions";
 // ================= AUDIENCE PAGES =================
 // import ChooseYourCharacter from "./pages/ChooseYourCharacter";
@@ -29,7 +28,6 @@ import AudienceRanking from "./pages/audience/step2/Step2Rank";
 // import AudienceStep2 from "./pages/audience/step2/Step2";
 // import AudienceTransitionStep2 from "./pages/audience/step2/TransitionStep2";
 // import AudiencePostSurvey from "./pages/audience/PostSurvey";
-import AudienceAI from "./pages/audience/step2/Step2AIDisclousure";
 import LLMInstruction from "./pages/artist/instructions/llmInstructions";
 import { useState, createContext, useEffect, useRef } from "react";
 import type {
@@ -47,9 +45,12 @@ import { Provider } from "./components/ui/provider";
 import { Toaster } from "./components/ui/toaster";
 import { globalSaveQueue } from "./utils/saveQueue";
 import AudienceInstructions from "./pages/audience/instructions/Instructions";
-import AudiencePassage from "./pages/audience/step1/Step1";
 import AudiencePostSurvey from "./pages/audience/PostSurvey";
 import AudienceThankYou from "./pages/audience/ThankYou";
+import AudienceStatementMatch from "./pages/audience/step2/StatementMatch";
+import AudienceCreativity from "./pages/audience/step2/Creativity";
+import AudienceAIDetection from "./pages/audience/step2/AIDetection";
+
 
 interface DataContextValue {
   userData: UserData | null;
@@ -72,6 +73,8 @@ interface DataContextValue {
   sessionId: string | null;
   prolific: ProlificMeta | null;
   flushSaves: () => Promise<void>;
+  isTestMode: boolean;
+  setIsTestMode: (value: boolean) => void;
 }
 
 export const DataContext = createContext<DataContextValue | null>(null);
@@ -80,6 +83,7 @@ function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [prolific, setProlific] = useState<ProlificMeta | null>(null);
+  const [isTestMode, setIsTestMode] = useState(false);
   const saveTimerRef = useRef<number | null>(null);
   const pendingSaveRef = useRef<UserData | null>(null);
 
@@ -379,6 +383,8 @@ function App() {
         sessionId,
         prolific,
         flushSaves,
+        isTestMode,
+        setIsTestMode,
       }}
     >
       <Provider>
@@ -402,21 +408,21 @@ function App() {
                   />
 
                   <Route
-                    path="/audience/rank-continued"
-                    element={<AudienceAI />}
-                  />
-                  <Route
                     path="/audience/instructions"
                     element={<AudienceInstructions />}
                   />
-                  <Route
-                    path="/audience/passage"
-                    element={<AudiencePassage />}
-                  />
                   <Route path="/audience/poems" element={<AudiencePoems />} />
                   <Route
-                    path="/audience/ranking"
-                    element={<AudienceRanking />}
+                    path="/audience/statements"
+                    element={<AudienceStatementMatch />}
+                  />
+                  <Route
+                    path="/audience/creativity"
+                    element={<AudienceCreativity />}
+                  />
+                  <Route
+                    path="/audience/ai-detection"
+                    element={<AudienceAIDetection />}
                   />
 
                   <Route
