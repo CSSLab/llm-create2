@@ -21,7 +21,7 @@ const AudienceInstructions = () => {
     addRoleSpecificData({
       timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
     });
-    navigate("/audience/passage");
+    navigate("/audience/poems");
   };
 
   return (
@@ -34,7 +34,8 @@ const AudienceInstructions = () => {
         <p className="text-main">
           In this study you will read <strong>blackout poems</strong> written by
           participants in a previous study. A blackout poem is made by selecting
-          words from an existing passage of text to create a new poem.
+          words from an existing passage of text to create a new poem. Read only
+          the words that remain visible.
         </p>
 
         <Image
@@ -42,26 +43,40 @@ const AudienceInstructions = () => {
           src={BlackoutExample}
           className="w-full lg:w-4/5 self-center"
         />
+        <p className="text-xs text-grey text-center italic">
+          In the example above, the poem can be read as: "Pale picture once
+          filled visions of possible future."
+        </p>
 
         <p className="text-main">
-          Your job is to read each poem carefully and share your thoughts. Don't
-          worry about having a background in poetry — we're just interested in
-          your honest reaction!
+          Your job is to read each poem carefully and share your thoughts.{" "}
+          <strong> Don't worry about having a background in poetry </strong> —
+          we're just interested in your honest reaction!
         </p>
 
         {/* Steps */}
         <div className="space-y-3">
-          <p className="text-main">The task has two steps:</p>
+          <p className="text-main">The task has four steps:</p>
           {[
             {
-              label: "Read the passage",
-              timing: "~4 min",
-              desc: "Familiarize yourself with the source text that participants used to write their poems.",
-            },
-            {
-              label: "Share your thoughts",
+              label: "Read the poems & share your thoughts",
               timing: "~4 min per poem",
               desc: "Read several blackout poems one at a time and answer a few questions about each one.",
+            },
+            {
+              label: "Match each poem to its statement",
+              timing: "~1 min per poem",
+              desc: "For each poem, choose which of a few short statements you think the creator actually wrote about it.",
+            },
+            {
+              label: "Rate each poem's creativity",
+              timing: "~1 min per poem",
+              desc: "See the original passage each poem was created from and rate how creative you think it is.",
+            },
+            {
+              label: "Share your impression",
+              timing: "~1 min per poem",
+              desc: "For each poem, share your impression of how it might have been created.",
             },
           ].map((step, i) => (
             <div
