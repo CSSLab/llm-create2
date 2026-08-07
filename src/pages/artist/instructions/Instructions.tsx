@@ -38,6 +38,8 @@ const ArtistInstructions = () => {
           existing passage of text.
         </p>
 
+        <p className="text-main font-semibold">Your final poem will be read by others.</p>
+
         <Image
           alt="Blackout Example"
           src={BlackoutExample}

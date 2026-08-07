@@ -20,35 +20,36 @@ function PoemPageTemplate({
   const words = poem ? poem.passage.text.split(" ") : [];
   const visibleIndexes = poem ? poem.text : [];
   return (
-    <div
-      className="h-full w-full overflow-hidden bg-white p-6 sm:p-10 md:p-20"
-    >
+    <div className="h-full w-full overflow-hidden bg-white p-6 sm:p-10 md:p-20">
       <div className="grid h-full w-full grid-cols-1 gap-y-10 overflow-auto md:grid-cols-2 md:gap-x-16 md:gap-y-0 md:overflow-hidden">
         {poem ? (
           <div className="flex h-max flex-wrap content-center justify-center rounded-xl bg-white pb-4 text-center leading-relaxed md:h-[70vh]">
-            <div className="flex h-max w-full max-w-lg flex-wrap justify-center overflow-auto rounded-xl border bg-white p-5 text-center leading-relaxed sm:p-8">
-              <div className="w-full text-h2 mb-4 flex flex-row items-center justify-items-center">
-                <div className="w-6 h-6 mr-2">
-                  <svg viewBox="0 0 92 106" className="w-full h-full">
-                    <path
-                      fill="#2F2F2F"
-                      d="M46 0L56.1221 35.468L91.8993 26.5L66.2442 53L91.8993 79.5L56.1221 70.532L46 106L35.8779 70.532L0.100655 79.5L25.7558 53L0.100655 26.5L35.8779 35.468L46 0Z"
-                    />
-                  </svg>
+            <div className="flex h-max w-full max-w-lg flex-wrap justify-center overflow-auto bg-white text-center leading-relaxed">
+              <div
+                className="flex mx-auto flex-wrap select-none w-[350px] min-w-[350px] h-max "
+                onCopy={(e) => e.preventDefault()}
+              >
+                <div className="w-full text-h2 mb-4 flex flex-row items-center justify-items-center">
+                  <div className="w-6 h-6 mr-2">
+                    <svg viewBox="0 0 92 106" className="w-full h-full">
+                      <path
+                        fill="#2F2F2F"
+                        d="M46 0L56.1221 35.468L91.8993 26.5L66.2442 53L91.8993 79.5L56.1221 70.532L46 106L35.8779 70.532L0.100655 79.5L25.7558 53L0.100655 26.5L35.8779 35.468L46 0Z"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-h2"> Your Final Poem</p>
                 </div>
-                <p className="text-h2"> Your Final Poem</p>
-              </div>
-              <div className="flex h-max w-full min-w-0 select-none flex-wrap leading-relaxed">
                 {words.map((word, i) => {
                   const isVisible = visibleIndexes.includes(i);
+                  const blackoutStyle = isVisible
+                    ? "text-main text-sm font-serif text-dark-grey"
+                    : "text-main text-sm font-serif text-dark-grey bg-dark-grey";
+
                   return (
                     <span
                       key={i}
-                      className={`text-sm font-serif transition duration-300 tracking-[0] antialiased [font-optical-sizing:none] [font-variation-settings:'opsz'_0] [text-rendering:geometricPrecision] ${
-                        isVisible
-                          ? "text-black bg-white"
-                          : "text-transparent bg-dark-grey"
-                      }`}
+                      className={`tracking-[0] antialiased [font-optical-sizing:none] [font-variation-settings:'opsz'_0] [text-rendering:geometricPrecision] transition duration-200 ${blackoutStyle}`}
                     >
                       {word + "\u00A0"}
                     </span>
