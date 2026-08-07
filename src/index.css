@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Chakra's preflight resets `font: inherit` on `*`, which as a side effect
+   wipes out the browser's native `em`/`i` italics. Restore it explicitly so
+   markdown-rendered emphasis (e.g. the chatbot's ReactMarkdown output)
+   actually renders italic. */
+em,
+i {
+  font-style: italic;
+}
+
 @layer components {
   .btn-primary {
     @apply bg-grey text-white w-full md:w-48 py-6 uppercase hover:opacity-70;

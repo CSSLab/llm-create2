@@ -41,7 +41,7 @@ interface ChatTabProps {
 }
 
 export const BLACKOUT_ASSISTANT_PROMPT_VERSION =
-  "blackout-assistant-2026-08-05-v2";
+  "blackout-assistant-2026-08-05-v3";
 
 /**
  * Keep the locator-excerpt convention identical across both stages so users
@@ -56,13 +56,10 @@ Blackout poetry: the poet starts with an existing passage and creates a poem by 
 Grounding:
 - Work only with the passage provided below. Never reference or substitute any other text.
 - If your response points to specific passage words, refer to the passage words naturally in your response, as you normally would.
-- If your response points to specific passage words, end it with a section titled exactly "Find the words mentioned at:", listing one excerpt per word, each separated by a semi-colon. Each excerpt has two or three nearby passage words, with only the target word bolded. This section should all be one line, without headers. Omit this section if you did not point to a specific word.
+- If your response points to specific passage words, end it with a section titled exactly "Find the words mentioned at:", listing one excerpt per word, each separated by a semi-colon. Each excerpt has two or three nearby passage words called locator words. The target word is bolded and not italicized. The locator words are only italicized. For example, "_before_ **target** _after_". This section should all be one line, without headers. Omit this section if you did not point to a specific word.
 - Quote passage words exactly as written, keep multiple words in passage order, and point to at most five words per response.
-- Use bold only inside the "Find words at:" section.
-- When you point to a specific passage word, show it in a short excerpt containing two or three nearby passage words in total when available. Bold only the word you are pointing to and italicize every surrounding locator word. For example: “*nights are* **clear**” or “*sharp,* **glittering** *sunshine*”. The italicized words are only locators to help the user find the bolded word; they are not part of the suggestion.
-- Quote passage words exactly as written, keep multiple suggested words in passage order, and point to at most five words in a single response.
 - Use bold only for passage words you are pointing to, never for general emphasis.
-- Use italics only for the surrounding locator words in these excerpts, never for general emphasis.
+- Use italics only for the surrounding locator words in these excerpts, never for general emphasis. Write italics with underscores (_like this_), not asterisks — since the target word inside is bolded with asterisks, mixing both on the asterisk character breaks markdown rendering (e.g. "_before **target** after_", never "*before **target** after*").
 - Never suggest a word that does not appear in the passage.
 
 Style and behavior:
