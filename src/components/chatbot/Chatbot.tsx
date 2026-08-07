@@ -10,18 +10,21 @@ import { FiSend } from "react-icons/fi";
 import { Button, Textarea } from "@chakra-ui/react";
 import { nanoid } from "nanoid";
 import type {
-  ChatOpening,
+  ChatAvailability,
+  ChatInputActivity,
+  ChatInputSource as ChatInputSourceType,
   LlmRequestLog,
   Message,
   Stage,
 } from "../../types";
-import { Role } from "../../types";
+import { ChatInputSource, MessageKind, Role } from "../../types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DataContext } from "../../App";
 import {
   createAssistantMessage,
   IDLE_NUDGE_MESSAGES,
+  STAGE_OPENING_MESSAGES,
 } from "../../consts/chatMessages";
 
 interface ChatTabProps {
@@ -31,12 +34,14 @@ interface ChatTabProps {
   selectedWordIndexes?: number[];
   passage: string;
   chatReady?: boolean;
-  onChatOpened?: (opening: ChatOpening) => void;
+  initialInputActivity?: ChatInputActivity;
+  onChatAvailable?: (availability: ChatAvailability) => void;
+  onInputActivityUpdate?: (activity: ChatInputActivity) => void;
   onRequestUpdate?: (request: LlmRequestLog) => void;
 }
 
 export const BLACKOUT_ASSISTANT_PROMPT_VERSION =
-  "blackout-assistant-2026-08-04-v1";
+  "blackout-assistant-2026-08-05-v2";
 
 /**
  * Keep the locator-excerpt convention identical across both stages so users
@@ -50,9 +55,10 @@ Blackout poetry: the poet starts with an existing passage and creates a poem by 
 
 Grounding:
 - Work only with the passage provided below. Never reference or substitute any other text.
-- When you point to a specific passage word, show it in a short excerpt containing two or three nearby passage words in total when available. Bold only the word you are pointing to. The unbolded words are only a locator to help the user find it; they are not part of the suggestion.
+- When you point to a specific passage word, show it in a short excerpt containing two or three nearby passage words in total when available. Bold only the word you are pointing to and italicize every surrounding locator word. For example: “*nights are* **clear**” or “*sharp,* **glittering** *sunshine*”. The italicized words are only locators to help the user find the bolded word; they are not part of the suggestion.
 - Quote passage words exactly as written, keep multiple suggested words in passage order, and point to at most five words in a single response.
 - Use bold only for passage words you are pointing to, never for general emphasis.
+- Use italics only for the surrounding locator words in these excerpts, never for general emphasis.
 - Never suggest a word that does not appear in the passage.
 
 Style and behavior:
@@ -161,7 +167,9 @@ export default function ChatTab({
   stage,
   passage,
   chatReady = true,
-  onChatOpened,
+  initialInputActivity,
+  onChatAvailable,
+  onInputActivityUpdate,
   onRequestUpdate,
 }: ChatTabProps) {
   const context = useContext(DataContext);
@@ -171,7 +179,18 @@ export default function ChatTab({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stageStartMessageCountRef = useRef(messages.length);
-  const hasLoggedOpeningRef = useRef(false);
+  const hasLoggedAvailabilityRef = useRef(false);
+  const inputRef = useRef("");
+  const hasDraftRef = useRef(false);
+  const inputActivityRef = useRef<ChatInputActivity>(
+    initialInputActivity ?? {
+      stage,
+      focusCount: 0,
+      draftStartCount: 0,
+      abandonedDraftCount: 0,
+      hasUnsentDraft: false,
+    },
+  );
 
   const [isLLMLoading, setIsLLMLoading] = useState(false);
   const [input, setInput] = useState("");
@@ -205,10 +224,29 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
   }, [passage, selectedWordIndexes, stage]);
 
   useEffect(() => {
-    if (!chatReady || hasLoggedOpeningRef.current) return;
-    hasLoggedOpeningRef.current = true;
-    onChatOpened?.({ stage, timestamp: new Date() });
-  }, [chatReady, onChatOpened, stage]);
+    if (!chatReady || hasLoggedAvailabilityRef.current) return;
+    hasLoggedAvailabilityRef.current = true;
+
+    const availableAt = new Date();
+    setMessages((previousMessages) => {
+      const alreadyHasOpening = previousMessages.some(
+        (message) =>
+          message.stage === stage &&
+          message.kind === MessageKind.STAGE_OPENING,
+      );
+      return alreadyHasOpening
+        ? previousMessages
+        : [
+            ...previousMessages,
+            createAssistantMessage(
+              STAGE_OPENING_MESSAGES[stage],
+              stage,
+              MessageKind.STAGE_OPENING,
+            ),
+          ];
+    });
+    onChatAvailable?.({ stage, availableAt });
+  }, [chatReady, onChatAvailable, setMessages, stage]);
 
   useEffect(() => {
     const element = chatContainerRef.current;
@@ -226,7 +264,11 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
     timeoutRef.current = setTimeout(() => {
       setMessages((previousMessages) => [
         ...previousMessages,
-        createAssistantMessage(IDLE_NUDGE_MESSAGES[stage]),
+        createAssistantMessage(
+          IDLE_NUDGE_MESSAGES[stage],
+          stage,
+          MessageKind.IDLE_NUDGE,
+        ),
       ]);
       setHasShownIdleNudge(true);
     }, 40000);
@@ -245,8 +287,66 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
     stage,
   ]);
 
-  const sendMessage = async (messageContent?: string) => {
-    const content = messageContent || input;
+  const publishInputActivity = (activity: ChatInputActivity) => {
+    inputActivityRef.current = activity;
+    onInputActivityUpdate?.(activity);
+  };
+
+  const handleInputFocus = () => {
+    const activity = inputActivityRef.current;
+    publishInputActivity({
+      ...activity,
+      firstFocusedAt: activity.firstFocusedAt ?? new Date(),
+      focusCount: activity.focusCount + 1,
+    });
+  };
+
+  const handleInputChange = (value: string) => {
+    const hadDraft = hasDraftRef.current;
+    const hasDraft = Boolean(value.trim());
+    inputRef.current = value;
+    hasDraftRef.current = hasDraft;
+    setInput(value);
+
+    if (!hadDraft && hasDraft) {
+      const activity = inputActivityRef.current;
+      publishInputActivity({
+        ...activity,
+        firstTypedAt: activity.firstTypedAt ?? new Date(),
+        draftStartCount: activity.draftStartCount + 1,
+        hasUnsentDraft: true,
+      });
+    } else if (hadDraft && !hasDraft) {
+      const activity = inputActivityRef.current;
+      publishInputActivity({
+        ...activity,
+        abandonedDraftCount: activity.abandonedDraftCount + 1,
+        hasUnsentDraft: false,
+      });
+    }
+  };
+
+  const markDraftSubmittedOrReplaced = (
+    inputSource: ChatInputSourceType,
+  ) => {
+    if (!hasDraftRef.current) return;
+
+    hasDraftRef.current = false;
+    const activity = inputActivityRef.current;
+    publishInputActivity({
+      ...activity,
+      abandonedDraftCount:
+        activity.abandonedDraftCount +
+        (inputSource === ChatInputSource.SUGGESTION ? 1 : 0),
+      hasUnsentDraft: false,
+    });
+  };
+
+  const sendMessage = async (
+    messageContent?: string,
+    inputSource: ChatInputSourceType = ChatInputSource.TYPED,
+  ) => {
+    const content = messageContent ?? inputRef.current;
     if (!content.trim() || isLLMLoading) return;
 
     if (timeoutRef.current) {
@@ -259,6 +359,9 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
       role: Role.ARTIST,
       content,
       timestamp: new Date(),
+      stage,
+      kind: MessageKind.USER_MESSAGE,
+      inputSource,
     };
     const requestId = nanoid();
     let requestLog: LlmRequestLog = {
@@ -268,6 +371,7 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
       userMessageContent: content,
       requestedAt: new Date(),
       status: "STARTED",
+      inputSource,
       systemPrompt: systemMessage.content,
       promptVersion: BLACKOUT_ASSISTANT_PROMPT_VERSION,
     };
@@ -281,6 +385,8 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
     setMarkdownOutput("");
     setSendError(null);
     setMessages((prev) => [...prev, artistMessage]);
+    markDraftSubmittedOrReplaced(inputSource);
+    inputRef.current = "";
     setInput("");
     setIsLLMLoading(true);
 
@@ -320,6 +426,8 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
         role: Role.LLM,
         content: fullText,
         timestamp: new Date(),
+        stage,
+        kind: MessageKind.LLM_RESPONSE,
       };
       requestLog = {
         ...requestLog,
@@ -347,9 +455,15 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
       setMessages((previousMessages) =>
         previousMessages.filter((message) => message.id !== artistMessage.id),
       );
-      setInput((currentInput) =>
-        currentInput.trim() ? currentInput : content,
-      );
+      if (!inputRef.current.trim()) {
+        inputRef.current = content;
+        hasDraftRef.current = true;
+        setInput(content);
+        publishInputActivity({
+          ...inputActivityRef.current,
+          hasUnsentDraft: true,
+        });
+      }
     } finally {
       setIsLLMLoading(false);
     }
@@ -363,7 +477,7 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
   };
 
   const handlePromptSelection = (prompt: string) => {
-    sendMessage(prompt);
+    sendMessage(prompt, ChatInputSource.SUGGESTION);
   };
 
   return (
@@ -447,7 +561,8 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
           >
             <Textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onFocus={handleInputFocus}
+              onChange={(e) => handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type a message..."
               className="text-main bg-white flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-grey"

@@ -13,6 +13,9 @@ export interface ArtistAssignment {
     | "PASSAGE_STRATIFIED_1_TO_1"
     | "TEST_OVERRIDE";
   passageId: string;
+  tutorialPassageId: string;
+  taskPassageId: string;
+  passagePoolVersion: string;
   condition: ArtistCondition;
   assignedAt: Date;
 }
@@ -32,6 +35,7 @@ export interface ArtistSurvey {
 // }
 
 export interface Poem {
+  loggingSchemaVersion: string;
   passageId: string; // passageId in Passage.id
   passage: Passage;
   text: number[]; // this array holds the indexes of each word chosen from the passage
@@ -49,6 +53,9 @@ export interface Message {
   role: Role;
   content: string;
   timestamp: Date;
+  stage: Stage;
+  kind: MessageKind;
+  inputSource?: ChatInputSource;
 }
 
 export interface PhaseTiming {
@@ -67,10 +74,40 @@ export interface TaskTiming {
   };
 }
 
-export interface ChatOpening {
+export interface ChatAvailability {
+  stage: Stage;
+  availableAt: Date;
+}
+
+export interface LegacyChatOpening {
   stage: Stage;
   timestamp: Date;
 }
+
+export interface ChatInputActivity {
+  stage: Stage;
+  firstFocusedAt?: Date;
+  focusCount: number;
+  firstTypedAt?: Date;
+  draftStartCount: number;
+  abandonedDraftCount: number;
+  hasUnsentDraft: boolean;
+}
+
+export const ChatInputSource = {
+  TYPED: "TYPED",
+  SUGGESTION: "SUGGESTION",
+} as const;
+export type ChatInputSource =
+  (typeof ChatInputSource)[keyof typeof ChatInputSource];
+
+export const MessageKind = {
+  USER_MESSAGE: "USER_MESSAGE",
+  LLM_RESPONSE: "LLM_RESPONSE",
+  STAGE_OPENING: "STAGE_OPENING",
+  IDLE_NUDGE: "IDLE_NUDGE",
+} as const;
+export type MessageKind = (typeof MessageKind)[keyof typeof MessageKind];
 
 export interface LlmRequestLog {
   id: string;
@@ -82,6 +119,7 @@ export interface LlmRequestLog {
   completedAt?: Date;
   failedAt?: Date;
   status: "STARTED" | "COMPLETED" | "FAILED";
+  inputSource: ChatInputSource;
   systemPrompt: string;
   promptVersion: string;
   model?: string;
@@ -91,8 +129,11 @@ export interface LlmRequestLog {
 }
 
 export interface LlmUsage {
-  chatOpenings: ChatOpening[];
+  chatAvailability: ChatAvailability[];
+  inputActivity: ChatInputActivity[];
   requests: LlmRequestLog[];
+  /** @deprecated Kept only so older saved records remain readable. */
+  chatOpenings?: LegacyChatOpening[];
 }
 
 export interface Passage {
@@ -100,6 +141,7 @@ export interface Passage {
   text: string;
   title: string;
   author: string;
+  publication?: string;
 }
 
 export const Stage = {

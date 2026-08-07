@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Textarea, Button } from "@chakra-ui/react";
 import ChatTab from "../../chatbot/Chatbot";
 import type {
-  ChatOpening,
+  ChatAvailability,
+  ChatInputActivity,
   LlmRequestLog,
   Message,
   Stage,
@@ -29,7 +30,9 @@ interface PageTemplateProps {
   setNotes: React.Dispatch<React.SetStateAction<string>>;
   passage: string;
   selectedWordIndexes?: number[];
-  onChatOpened?: (opening: ChatOpening) => void;
+  initialInputActivity?: ChatInputActivity;
+  onChatAvailable?: (availability: ChatAvailability) => void;
+  onInputActivityUpdate?: (activity: ChatInputActivity) => void;
   onRequestUpdate?: (request: LlmRequestLog) => void;
 }
 
@@ -55,7 +58,9 @@ function MultiPageTemplate({
   setNotes,
   selectedWordIndexes,
   passage,
-  onChatOpened,
+  initialInputActivity,
+  onChatAvailable,
+  onInputActivityUpdate,
   onRequestUpdate,
 }: PageTemplateProps) {
   const [leftWidth, setLeftWidth] = useState(70); // %
@@ -299,7 +304,9 @@ function MultiPageTemplate({
                 passage={passage}
                 selectedWordIndexes={selectedWordIndexes}
                 chatReady={chatReady}
-                onChatOpened={onChatOpened}
+                initialInputActivity={initialInputActivity}
+                onChatAvailable={onChatAvailable}
+                onInputActivityUpdate={onInputActivityUpdate}
                 onRequestUpdate={onRequestUpdate}
               />
             </div>

@@ -11,9 +11,23 @@ const ASSIGNMENT_COLLECTION = "artistAssignment";
 
 router.post("/artist-assignment", async (req, res) => {
   try {
-    const { sessionId, passageId, prolificPid } = req.body;
-    if (!sessionId || !passageId) {
-      return res.status(400).json({ error: "Missing sessionId or passageId" });
+    const {
+      sessionId,
+      passageId,
+      tutorialPassageId,
+      passagePoolVersion,
+      prolificPid,
+    } = req.body;
+    if (
+      !sessionId ||
+      !passageId ||
+      !tutorialPassageId ||
+      !passagePoolVersion
+    ) {
+      return res.status(400).json({
+        error:
+          "Missing sessionId, passageId, tutorialPassageId, or passagePoolVersion",
+      });
     }
 
     const assignmentRef = db.collection(ASSIGNMENT_COLLECTION).doc(sessionId);
@@ -21,8 +35,40 @@ router.post("/artist-assignment", async (req, res) => {
       const existingAssignment = await transaction.get(assignmentRef);
       if (existingAssignment.exists) {
         const existing = existingAssignment.data()!;
+        const taskPassageId = String(
+          existing.taskPassageId ?? existing.passageId,
+        );
+        const resolvedTutorialPassageId = String(
+          existing.tutorialPassageId ??
+            (tutorialPassageId === taskPassageId
+              ? passageId
+              : tutorialPassageId),
+        );
+        const resolvedPassagePoolVersion = String(
+          existing.passagePoolVersion ?? "legacy-creator-passages",
+        );
+
+        if (
+          !existing.taskPassageId ||
+          !existing.tutorialPassageId ||
+          !existing.passagePoolVersion
+        ) {
+          transaction.set(
+            assignmentRef,
+            {
+              taskPassageId,
+              tutorialPassageId: resolvedTutorialPassageId,
+              passagePoolVersion: resolvedPassagePoolVersion,
+            },
+            { merge: true },
+          );
+        }
+
         return {
-          passageId: existing.passageId as string,
+          passageId: taskPassageId,
+          taskPassageId,
+          tutorialPassageId: resolvedTutorialPassageId,
+          passagePoolVersion: resolvedPassagePoolVersion,
           condition: existing.condition as "LLM" | "NO_AI",
           strategy: existing.strategy as string,
         };
@@ -36,12 +82,22 @@ router.post("/artist-assignment", async (req, res) => {
         sessionId,
         prolificPid: prolificPid || null,
         passageId: String(passageId),
+        taskPassageId: String(passageId),
+        tutorialPassageId: String(tutorialPassageId),
+        passagePoolVersion: String(passagePoolVersion),
         condition,
         strategy,
         assignedAt: FieldValue.serverTimestamp(),
       });
 
-      return { passageId: String(passageId), condition, strategy };
+      return {
+        passageId: String(passageId),
+        taskPassageId: String(passageId),
+        tutorialPassageId: String(tutorialPassageId),
+        passagePoolVersion: String(passagePoolVersion),
+        condition,
+        strategy,
+      };
     });
 
     res.json(assignment);
