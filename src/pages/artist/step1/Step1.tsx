@@ -218,7 +218,7 @@ const ArtistStep1 = () => {
               );
             })}
 
-            <p className="text-xs text-grey text-left pt-2">
+            <p className="text-xs text-grey text-left pt-2 w-full">
               <span className="italic">{'"' + passage.title + '"'}</span>
               <span>
                 {", " +
