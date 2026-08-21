@@ -181,7 +181,7 @@ const ArtistStep1 = () => {
         <div
           className={`w-full h-full flex flex-col items-center transition-all duration-300 ${showingPopup ? "blur-sm pointer-events-none select-none" : ""}`}
         >
-          <div className="flex mx-auto flex-wrap select-none w-[350px] min-w-[350px] md:min-w-[400ox] md:w-[400px] h-max ">
+          <div className="flex mx-auto flex-wrap select-none w-[350px] min-w-[350px] md:min-w-[400px] md:w-[400px] h-max ">
             {words.map((word, i) => {
               return (
                 <span

@@ -95,15 +95,12 @@ const ArtistTutorial = () => {
         {/* Blackout interface */}
         <BlackoutPoetry
           passageText={passage.text}
+          passageTitle={passage.title}
+          passageAuthor={passage.author}
           selectedWordIndexes={selectedWordIndexes}
           setSelectedWordIndexes={setSelectedWordIndexes}
           setPoemSnapshots={setPoemSnapshots}
         />
-
-        <p className="text-xs text-grey">
-          <span className="italic">{'"' + passage.title + '"'}</span>
-          <span>{", " + passage.author}</span>
-        </p>
 
         {/* Continue — only shown on final step */}
         {step === 3 && (

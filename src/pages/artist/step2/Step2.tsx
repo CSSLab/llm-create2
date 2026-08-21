@@ -176,6 +176,8 @@ const ArtistStep2 = () => {
         <div className="h-max w-full flex flex-col justify-between">
           <BlackoutPoetry
             passageText={artistPoem?.passage.text || ""}
+            passageTitle={artistPoem?.passage.title}
+            passageAuthor={artistPoem?.passage.author}
             selectedWordIndexes={selectedWordIndexes}
             setSelectedWordIndexes={setSelectedWordIndexes}
             setPoemSnapshots={setPoemSnapshots}

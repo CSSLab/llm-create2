@@ -6,6 +6,8 @@ import { MdOutlineRedo } from "react-icons/md";
 
 interface BlackoutProps {
   passageText: string;
+  passageTitle?: string;
+  passageAuthor?: string;
   selectedWordIndexes: number[];
   setSelectedWordIndexes: React.Dispatch<React.SetStateAction<number[]>>;
   setPoemSnapshots: React.Dispatch<React.SetStateAction<PoemSnapshot[]>>;
@@ -13,6 +15,8 @@ interface BlackoutProps {
 
 const BlackoutPoetry: React.FC<BlackoutProps> = ({
   passageText,
+  passageTitle,
+  passageAuthor,
   selectedWordIndexes,
   setSelectedWordIndexes,
   setPoemSnapshots,
@@ -159,6 +163,14 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
                 </span>
               );
             })}
+            {(passageTitle || passageAuthor) && (
+              <p className="text-xs text-grey text-left pt-2 w-full">
+                {passageTitle && (
+                  <span className="italic">{'"' + passageTitle + '"'}</span>
+                )}
+                {passageAuthor && <span>{", " + passageAuthor}</span>}
+              </p>
+            )}
           </div>
 
           {/* Blackout Preview Side */}
