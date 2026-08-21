@@ -90,9 +90,9 @@ const LikertScale: React.FC<Props> = ({ question, value, onChange }) => {
                 <span
                   className={
                     `
-                  text-sub break-words  overflow-hidden text-ellipsis min-w-0
+                  text-sub break-words min-w-0
                   /* desktop: label above */
-                  md:max-w-24 md:order-first md:mb-1 md:h-10 md:flex md:items-start md:justify-center md:text-center
+                  md:max-w-24 md:order-first md:mb-1 md:min-h-10 md:flex md:items-start md:justify-center md:text-center
                 ` + (question.removeValues ? "block md:hidden " : "")
                   }
                 >
