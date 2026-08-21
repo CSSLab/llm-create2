@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import type { Message, Stage } from "../types";
+import type { Message, MessageKind, Stage } from "../types";
 import { Role } from "../types";
 
 export const STAGE_OPENING_MESSAGES: Record<Stage, string> = {
@@ -16,9 +16,15 @@ export const IDLE_NUDGE_MESSAGES: Record<Stage, string> = {
     "If you're stuck, tell me the feeling you're going for, or ask me to point out a few usable words.",
 };
 
-export const createAssistantMessage = (content: string): Message => ({
+export const createAssistantMessage = (
+  content: string,
+  stage: Stage,
+  kind: MessageKind,
+): Message => ({
   id: nanoid(),
   role: Role.LLM,
   content,
   timestamp: new Date(),
+  stage,
+  kind,
 });

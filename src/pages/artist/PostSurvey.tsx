@@ -47,7 +47,11 @@ const ArtistPostSurvey = () => {
     };
 
     const poemData = {
+      loggingSchemaVersion: poem.loggingSchemaVersion,
       passageId: poem.passageId,
+      tutorialPassageId: artistData.assignment?.tutorialPassageId,
+      taskPassageId:
+        artistData.assignment?.taskPassageId ?? poem.passageId,
       passage: poem.passage,
       text: poem.text,
       selectedWordIndexes: poem.text,

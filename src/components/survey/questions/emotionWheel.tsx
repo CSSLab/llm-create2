@@ -143,7 +143,7 @@ const EmotionWheel = ({ question, value, onChange }: Props) => {
       {value ? (
         <p className="text-center text-sm text-dark-grey" aria-live="polite">
           Selected: {value.emotion}
-          {value.intensity > 0 ? ` · intensity ${value.intensity} of 5` : ""}
+          {value.intensity > 0 ? ` · Intensity ${value.intensity} of 5` : ""}
         </p>
       ) : null}
     </fieldset>
