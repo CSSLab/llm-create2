@@ -1,7 +1,4 @@
-import type {
-  EmotionWheelAnswer,
-  EmotionWheelQuestion,
-} from "../../../types";
+import type { EmotionWheelAnswer, EmotionWheelQuestion } from "../../../types";
 import { NO_EMOTION } from "../../../consts/genevaEmotionWheel";
 
 interface Props {
@@ -74,7 +71,7 @@ const EmotionWheel = ({ question, value, onChange }: Props) => {
                       type="button"
                       role="radio"
                       aria-checked={selected}
-                      aria-label={`${emotion}, intensity ${intensity} of 5`}
+                      aria-label={`${emotion}, Intensity ${intensity} of 5`}
                       className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-grey ${
                         selected
                           ? "scale-125 border-dark-grey bg-dark-grey"
@@ -146,7 +143,7 @@ const EmotionWheel = ({ question, value, onChange }: Props) => {
       {value ? (
         <p className="text-center text-sm text-dark-grey" aria-live="polite">
           Selected: {value.emotion}
-          {value.intensity > 0 ? ` · intensity ${value.intensity} of 5` : ""}
+          {value.intensity > 0 ? ` · Intensity ${value.intensity} of 5` : ""}
         </p>
       ) : null}
     </fieldset>

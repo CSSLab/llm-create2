@@ -101,6 +101,8 @@ const ArtistTutorial = () => {
         {/* Blackout interface */}
         <BlackoutPoetry
           passageText={passage.text}
+          passageTitle={passage.title}
+          passageAuthor={passage.author}
           selectedWordIndexes={selectedWordIndexes}
           setSelectedWordIndexes={setSelectedWordIndexes}
           setPoemSnapshots={setPoemSnapshots}
