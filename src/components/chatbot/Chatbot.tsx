@@ -9,12 +9,7 @@ import {
 import { FiSend } from "react-icons/fi";
 import { Button, Textarea } from "@chakra-ui/react";
 import { nanoid } from "nanoid";
-import type {
-  ChatOpening,
-  LlmRequestLog,
-  Message,
-  Stage,
-} from "../../types";
+import type { ChatOpening, LlmRequestLog, Message, Stage } from "../../types";
 import { Role } from "../../types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -50,19 +45,21 @@ Blackout poetry: the poet starts with an existing passage and creates a poem by 
 
 Grounding:
 - Work only with the passage provided below. Never reference or substitute any other text.
-- Treat consecutive suggested words as one selectable run. Show the run once, bolding every word to select, with one nearby unselected locator word italicized on each side when available. For example: “*she* **floats off the page,** *but*”. The italicized words are only locators to help the user find the bolded selection; they are not part of the suggestion.
+- If your response points to specific passage words, refer to the passage words naturally in your response, as you normally would.
+- If your response points to specific passage words, end it with a section titled exactly "Find the words mentioned at:", listing one excerpt per word (unless the words are consecutive), each separated by a semi-colon. Each excerpt has two or three nearby passage words called locator words. The target word is bolded and not italicized. The locator words are only italicized. Each excerpt should be surrounded by quotes. For example, "_before_ **target** _after_". This section should all be one line, without headers. Omit this section if you did not point to a specific word.
+- If you suggest consecutive words, treat them as one selectable run. Show the run once, bolding every word to select, with one nearby unselected locator word italicized on each side when available in the "Find the words mentioned at:" section. For example: “*she* **floats off the page,** *but*”. The italicized words are only locators to help the user find the bolded selection; they are not part of the suggestion.
 - Do not split a consecutive phrase into overlapping excerpts. Use separate excerpts only for nonconsecutive selections.
-- Quote passage words and punctuation exactly as written, keep multiple suggested selections in passage order, and point to at most five words in a single response.
+- Quote passage words exactly as written, keep multiple words in passage order, punctuation exactly as written, and point to at most five words per respons
 - Preserve source punctuation, and do not add punctuation immediately after an excerpt if that would duplicate its punctuation.
 - Use bold only for passage words you are pointing to, never for general emphasis.
-- Use italics only for the surrounding locator words in these excerpts, never for general emphasis.
+- Use italics only for the surrounding locator words in these excerpts, never for general emphasis. Write italics with underscores (_like this_), not asterisks — since the target word inside is bolded with asterisks, mixing both on the asterisk character breaks markdown rendering (e.g. "_before **target** after_", never "*before **target** after*").
 - Never suggest a word that does not appear in the passage.
 
 Style and behavior:
 - Be warm, natural, and conversational, like a capable writing partner. Avoid ungrounded or sycophantic flattery.
 - Write in complete, everyday sentences. Never compress responses into fragments, labels, or note-style phrasing. If a response is running long, cut options rather than grammar.
 - Use plain language a casual reader can understand on the first pass: prefer feelings and concrete images over literary-analysis terminology unless the user uses that terminology first.
-- The user is working under time pressure. Keep responses under 80 words unless the user explicitly asks for more; most turns should be two to four short sentences.
+- The user is working under time pressure. Keep responses under 80 words, not counting the "Find words at:" section, unless the user explicitly asks for more; most turns should be two to four short sentences, unless the user asks for more.
 - When offering creative directions, give two, or at most three, distinct options. Make each option a complete sentence grounded in something concrete from the passage. A short bulleted list is fine, but do not use headers or tables.
 - End with at most one easy question or next step that the user can answer with a quick choice or reaction.
 - If the user's direction is unclear, ask one brief clarifying question instead of guessing.
@@ -242,13 +239,7 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
         timeoutRef.current = null;
       }
     };
-  }, [
-    chatReady,
-    hasShownIdleNudge,
-    hasUserMessageInStage,
-    setMessages,
-    stage,
-  ]);
+  }, [chatReady, hasShownIdleNudge, hasUserMessageInStage, setMessages, stage]);
 
   const sendMessage = async (messageContent?: string) => {
     const content = messageContent || input;
@@ -392,24 +383,22 @@ CURRENT SELECTED WORDS (in passage order): ${selectedWords || "none yet"}`,
           </div>
         ))}
 
-        {chatReady &&
-          !hasUserMessageInStage &&
-          !isLLMLoading && (
-            <div className="mt-4 space-y-2">
-              <p className="text-sm text-gray-600 mb-3">Try asking me:</p>
-              <div className="flex flex-wrap gap-2">
-                {promptSuggestions[stage].map((prompt, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handlePromptSelection(prompt)}
-                    className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300 transition-colors duration-200 text-left"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
+        {chatReady && !hasUserMessageInStage && !isLLMLoading && (
+          <div className="mt-4 space-y-2">
+            <p className="text-sm text-gray-600 mb-3">Try asking me:</p>
+            <div className="flex flex-wrap gap-2">
+              {promptSuggestions[stage].map((prompt, index) => (
+                <button
+                  key={index}
+                  onClick={() => handlePromptSelection(prompt)}
+                  className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300 transition-colors duration-200 text-left"
+                >
+                  {prompt}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
         {isLLMLoading && (
           <div>
