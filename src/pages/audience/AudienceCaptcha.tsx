@@ -5,22 +5,9 @@ import { Button, Input } from "@chakra-ui/react";
 import { toaster } from "../../components/ui/toaster";
 import { DataContext } from "../../App";
 import { createAudienceTestAssignment } from "../../consts/audienceTestAssignment";
-import { CREATOR_PASSAGE_POOL_VERSION, Passages } from "../../consts/passages";
 import type { AudienceAssignment } from "../../types";
 
 const TEST_CAPTCHA = "AUDIENCE_TEST";
-const INSUFFICIENT_AUDIENCE_POOL = "INSUFFICIENT_AUDIENCE_POOL";
-const AUDIENCE_PASSAGE_IDS = new Set(Passages.map((passage) => passage.id));
-
-const isValidAssignment = (assignment: AudienceAssignment) =>
-  assignment.poems.length === 4 &&
-  assignment.statementTrials.length === 4 &&
-  assignment.passagePoolVersion === CREATOR_PASSAGE_POOL_VERSION &&
-  assignment.passageId === assignment.taskPassageId &&
-  assignment.tutorialPassageId !== assignment.taskPassageId &&
-  AUDIENCE_PASSAGE_IDS.has(assignment.tutorialPassageId) &&
-  AUDIENCE_PASSAGE_IDS.has(assignment.taskPassageId) &&
-  assignment.poems.every((poem) => poem.passageId === assignment.taskPassageId);
 
 const Captcha = () => {
   const navigate = useNavigate();
@@ -31,7 +18,6 @@ const Captcha = () => {
   const { addUserData, prolific, setIsTestMode } = context;
   const [captchaMessage, setCaptchaMessage] = useState("");
   const [inputCaptcha, setInputCaptcha] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -104,73 +90,35 @@ const Captcha = () => {
     navigate("/consent");
   };
 
-  const startAudiencePreview = (description: string) => {
+  const startAudienceDemo = () => {
     setIsTestMode(true);
     toaster.create({
-      description,
+      description: "Demo poems loaded for this walkthrough.",
       type: "info",
-      duration: 8000,
+      duration: 5000,
     });
     startAudience(createAudienceTestAssignment());
   };
 
-  const handleSubmit = async () => {
-    if (isSubmitting) return;
-
-    if (inputCaptcha === TEST_CAPTCHA) {
-      startAudiencePreview(
-        "Audience preview started with dummy poems. Preview responses will not be saved.",
-      );
+  // Demo build: the captcha screen stays in the flow for realism, but every
+  // successful submission (the real code, or the AUDIENCE_TEST shortcut)
+  // loads the hardcoded demo assignment directly rather than depending on
+  // the live `/api/firebase/audience-assignment` pool-eligibility endpoint,
+  // so the walkthrough is reliable without a network round trip or real
+  // artist submissions seeded in Firestore.
+  const handleSubmit = () => {
+    if (inputCaptcha === TEST_CAPTCHA || inputCaptcha === captchaMessage) {
+      startAudienceDemo();
       return;
     }
 
-    if (inputCaptcha !== captchaMessage) {
-      toaster.create({
-        description: "Captcha does not match! Try again.",
-        type: "error",
-        duration: 5000,
-      });
-      generateCaptchaCheck();
-      setInputCaptcha("");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const response = await fetch("/api/firebase/audience-assignment", {
-        method: "POST",
-      });
-      if (!response.ok) {
-        const errorBody: unknown = await response.json().catch(() => null);
-        if (
-          response.status === 409 &&
-          typeof errorBody === "object" &&
-          errorBody !== null &&
-          "code" in errorBody &&
-          errorBody.code === INSUFFICIENT_AUDIENCE_POOL
-        ) {
-          startAudiencePreview(
-            "Not enough completed artist responses are available yet, so this preview is using dummy poems. Preview responses will not be saved.",
-          );
-          return;
-        }
-        throw new Error(`Assignment failed with status ${response.status}`);
-      }
-      const assignment = (await response.json()) as AudienceAssignment;
-      if (!isValidAssignment(assignment)) {
-        throw new Error("Audience assignment response was invalid");
-      }
-      startAudience(assignment);
-    } catch (err) {
-      console.error("Failed to prepare poems for study:", err);
-      toaster.create({
-        description:
-          "Something went wrong setting up the study. Please try again.",
-        type: "error",
-        duration: 5000,
-      });
-      setIsSubmitting(false);
-    }
+    toaster.create({
+      description: "Captcha does not match! Try again.",
+      type: "error",
+      duration: 5000,
+    });
+    generateCaptchaCheck();
+    setInputCaptcha("");
   };
 
   return (
@@ -190,12 +138,7 @@ const Captcha = () => {
           onKeyDown={handleKeyDown}
           placeholder="Type code here"
         />
-        <Button
-          className="btn-primary"
-          onClick={handleSubmit}
-          loading={isSubmitting}
-          disabled={isSubmitting}
-        >
+        <Button className="btn-primary" onClick={handleSubmit}>
           Continue
         </Button>
       </div>
