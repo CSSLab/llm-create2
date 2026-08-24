@@ -134,13 +134,16 @@ router.post("/autosave", async (req, res) => {
       : "started";
 
     const ref = db.collection(INCOMPLETE_SESSION_COLLECTION).doc(sessionId);
-    const payload = {
+    const payload: Record<string, unknown> = {
       sessionId,
       role: data.role,
       partialData: data.data,
       lastUpdated: FieldValue.serverTimestamp(),
       completionStatus: status,
     };
+    if (data.prolific) {
+      payload.prolific = data.prolific;
+    }
 
     await ref.set(payload, { merge: true });
     res.json({ success: true });
