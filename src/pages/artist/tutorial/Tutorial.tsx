@@ -103,19 +103,11 @@ const ArtistTutorial = () => {
           passageText={passage.text}
           passageTitle={passage.title}
           passageAuthor={passage.author}
+          passagePublication={passage.publication}
           selectedWordIndexes={selectedWordIndexes}
           setSelectedWordIndexes={setSelectedWordIndexes}
           setPoemSnapshots={setPoemSnapshots}
         />
-
-        <p className="text-xs text-grey">
-          <span className="italic">{'"' + passage.title + '"'}</span>
-          <span>
-            {", " +
-              passage.author +
-              (passage.publication ? `, ${passage.publication}` : "")}
-          </span>
-        </p>
 
         {/* Continue — only shown on final step */}
         {step === 3 && (

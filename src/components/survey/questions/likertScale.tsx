@@ -9,9 +9,17 @@ interface Props {
 }
 
 const LikertScale: React.FC<Props> = ({ question, value, onChange }) => {
-  const colCount = question.options.length + (question.sideTitle ? 1 : 0);
+  // The sideTitle column is a fixed width (not a fraction) so it renders
+  // identically across every stacked LikertScale instance — each row is its
+  // own independent grid, so a `1fr` label column can't be trusted to come
+  // out the same width row to row, which is what threw the circles out of
+  // alignment. The option columns stay `1fr` and divide the *remaining*
+  // width, which is identical row to row as long as the container width and
+  // option count match, so the circles line up.
   const gridStyle = {
-    gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
+    gridTemplateColumns: question.sideTitle
+      ? `8rem repeat(${question.options.length}, minmax(0, 1fr))`
+      : `repeat(${question.options.length}, minmax(0, 1fr))`,
   };
 
   // horizontal layout: always shown (doNotCollapse) or only on md+

@@ -146,15 +146,28 @@ function FullPageTemplate({
                       {buttonText}
                     </Button>
 
-                    <div className="h-4 mt-2 pt-2 flex items-center justify-center">
-                      {isTimeUp && countdown !== null && (
-                        <p
-                          className={`text-xs text-gray-500 text-center transition-opacity duration-700 ease-out
-                        ${showCountdownVisible ? "opacity-100" : "opacity-0"}`}
-                        >
-                          Tap "{buttonText}" or <br /> continue in{" "}
-                          {formatTime(countdown)}
+                    <div className="min-h-4 mt-2 pt-2 flex items-center justify-center">
+                      {!isTimeUp && duration ? (
+                        <p className="text-xs text-gray-500 text-center">
+                          You can continue to <br /> the next step in
+                          {formatTime(
+                            Math.max(
+                              0,
+                              Math.ceil(duration - (progress / 100) * duration),
+                            ),
+                          )}
                         </p>
+                      ) : (
+                        isTimeUp &&
+                        countdown !== null && (
+                          <p
+                            className={`text-xs text-gray-500 text-center transition-opacity duration-700 ease-out
+                        ${showCountdownVisible ? "opacity-100" : "opacity-0"}`}
+                          >
+                            Tap "{buttonText}" or <br /> continue in{" "}
+                            {formatTime(countdown)}
+                          </p>
+                        )
                       )}
                     </div>
                   </div>
@@ -172,6 +185,17 @@ function FullPageTemplate({
                     >
                       {"Next"}
                     </Button>
+                    {!isTimeUp && duration && (
+                      <p className="text-xs text-gray-500 text-center mt-1">
+                        Continue in{" "}
+                        {formatTime(
+                          Math.max(
+                            0,
+                            Math.ceil(duration - (progress / 100) * duration),
+                          ),
+                        )}
+                      </p>
+                    )}
                   </div>
                 </>
               )}

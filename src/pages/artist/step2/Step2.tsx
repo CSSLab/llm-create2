@@ -197,6 +197,7 @@ const ArtistStep2 = () => {
             passageText={artistPoem?.passage.text || ""}
             passageTitle={artistPoem?.passage.title}
             passageAuthor={artistPoem?.passage.author}
+            passagePublication={artistPoem?.passage.publication}
             selectedWordIndexes={selectedWordIndexes}
             setSelectedWordIndexes={setSelectedWordIndexes}
             setPoemSnapshots={setPoemSnapshots}
