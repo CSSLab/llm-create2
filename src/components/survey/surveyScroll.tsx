@@ -134,7 +134,7 @@ const SurveyScroll: React.FC<Props> = ({
             {section.description && (
               <p className="text-sub text-dark-grey">{section.description}</p>
             )}
-            <div className="space-y-4">
+            <div className="space-y-6">
               {section.questions.map((q) =>
                 isQuestionVisible(q) ? (
                   <QuestionRenderer

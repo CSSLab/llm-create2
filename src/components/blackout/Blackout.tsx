@@ -8,6 +8,7 @@ interface BlackoutProps {
   passageText: string;
   passageTitle?: string;
   passageAuthor?: string;
+  passagePublication?: string;
   selectedWordIndexes: number[];
   setSelectedWordIndexes: React.Dispatch<React.SetStateAction<number[]>>;
   setPoemSnapshots: React.Dispatch<React.SetStateAction<PoemSnapshot[]>>;
@@ -17,6 +18,7 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
   passageText,
   passageTitle,
   passageAuthor,
+  passagePublication,
   selectedWordIndexes,
   setSelectedWordIndexes,
   setPoemSnapshots,
@@ -163,12 +165,13 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
                 </span>
               );
             })}
-            {(passageTitle || passageAuthor) && (
+            {(passageTitle || passageAuthor || passagePublication) && (
               <p className="text-xs text-grey text-left pt-2 w-full">
                 {passageTitle && (
                   <span className="italic">{'"' + passageTitle + '"'}</span>
                 )}
                 {passageAuthor && <span>{", " + passageAuthor}</span>}
+                {passagePublication && <span>{", " + passagePublication}</span>}
               </p>
             )}
           </div>
