@@ -115,7 +115,7 @@ const Captcha = () => {
     passagePoolVersion = CREATOR_PASSAGE_POOL_VERSION,
   ) => {
     const { tutorialPassage, taskPassage } = passages;
-    addUserData({ role: "artist" });
+    addUserData({ role: "artist", prolific: prolific ?? undefined });
     addRoleSpecificData({
       condition,
       poem: makePoem(taskPassage.id),
