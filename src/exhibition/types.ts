@@ -54,7 +54,6 @@ export interface ExhibitionDataset {
   studyId: string;
   generatedAt: string;
   participants: ExhibitionParticipant[];
-  isPreview?: boolean;
 }
 
 export type TimelineEventKind =

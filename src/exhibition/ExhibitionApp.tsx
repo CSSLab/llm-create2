@@ -62,11 +62,6 @@ export default function ExhibitionApp() {
         setDataset(payload);
       } catch (loadError) {
         if (controller.signal.aborted) return;
-        if (import.meta.env.DEV) {
-          const { previewDataset } = await import("./data/preview");
-          setDataset(previewDataset);
-          return;
-        }
         setError(
           loadError instanceof Error
             ? loadError.message

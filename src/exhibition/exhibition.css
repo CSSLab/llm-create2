@@ -134,13 +134,6 @@ a {
   margin: 17px 0 0;
 }
 
-.ex-preview-flag {
-  border-left: 1px solid var(--ex-line);
-  color: var(--ex-muted);
-  padding-left: 14px;
-  text-transform: uppercase;
-}
-
 .ex-gallery__filters {
   align-items: flex-end;
   display: flex;

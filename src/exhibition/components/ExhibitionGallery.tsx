@@ -143,7 +143,6 @@ export default function ExhibitionGallery({ dataset }: { dataset: ExhibitionData
             </p>
             <p className="ex-gallery__cohort">
               {dataset.participants.length} poems in view · {noAiCount} without AI · {llmCount} with AI
-              {dataset.isPreview ? <span className="ex-preview-flag">Preview data</span> : null}
             </p>
           </div>
           <div className="ex-gallery__filters">
