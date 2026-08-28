@@ -13,8 +13,9 @@ import "./exhibition.css";
 const DEFAULT_STUDY_ID = "6a8cbdb524cc2e2b32049b00";
 const STUDY_ID =
   import.meta.env.VITE_EXHIBITION_STUDY_ID?.trim() || DEFAULT_STUDY_ID;
-const USE_LIVE_DATA =
-  import.meta.env.VITE_EXHIBITION_USE_LIVE_DATA?.trim().toLowerCase() === "true";
+const DATA_URL =
+  import.meta.env.VITE_EXHIBITION_DATA_URL?.trim() ||
+  `/api/firebase/exhibition?studyId=${encodeURIComponent(STUDY_ID)}`;
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -55,15 +56,7 @@ export default function ExhibitionApp() {
     const controller = new AbortController();
     const load = async () => {
       try {
-        if (!USE_LIVE_DATA) {
-          const { previewDataset } = await import("./data/preview");
-          setDataset(previewDataset);
-          return;
-        }
-        const response = await fetch(
-          `/api/firebase/exhibition?studyId=${encodeURIComponent(STUDY_ID)}`,
-          { signal: controller.signal },
-        );
+        const response = await fetch(DATA_URL, { signal: controller.signal });
         if (!response.ok) throw new Error(`Data request failed (${response.status})`);
         const payload = (await response.json()) as ExhibitionDataset;
         setDataset(payload);
