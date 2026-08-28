@@ -11,6 +11,7 @@ export interface ArtistAssignment {
   strategy:
     | "INDEPENDENT_RANDOM_1_TO_1"
     | "PASSAGE_STRATIFIED_1_TO_1"
+    | "LLM_ONLY"
     | "TEST_OVERRIDE";
   passageId: string;
   condition: ArtistCondition;

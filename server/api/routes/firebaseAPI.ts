@@ -21,16 +21,19 @@ router.post("/artist-assignment", async (req, res) => {
       const existingAssignment = await transaction.get(assignmentRef);
       if (existingAssignment.exists) {
         const existing = existingAssignment.data()!;
+        transaction.update(assignmentRef, {
+          condition: "LLM",
+          strategy: "LLM_ONLY",
+        });
         return {
           passageId: existing.passageId as string,
-          condition: existing.condition as "LLM" | "NO_AI",
-          strategy: existing.strategy as string,
+          condition: "LLM" as const,
+          strategy: "LLM_ONLY",
         };
       }
 
-      const condition: "LLM" | "NO_AI" =
-        Math.random() < 0.5 ? "LLM" : "NO_AI";
-      const strategy = "INDEPENDENT_RANDOM_1_TO_1";
+      const condition = "LLM" as const;
+      const strategy = "LLM_ONLY";
 
       transaction.set(assignmentRef, {
         sessionId,
