@@ -183,9 +183,6 @@ const Captcha = () => {
           condition: ArtistCondition;
           strategy: ArtistAssignment["strategy"];
         };
-        const hasValidStrategy =
-          assignment.strategy === "INDEPENDENT_RANDOM_1_TO_1" ||
-          assignment.strategy === "PASSAGE_STRATIFIED_1_TO_1";
         const tutorialPassage = Passages.find(
           (passage) => passage.id === assignment.tutorialPassageId,
         );
@@ -198,8 +195,8 @@ const Captcha = () => {
           tutorialPassage.id === taskPassage.id ||
           assignment.passageId !== taskPassage.id ||
           !assignment.passagePoolVersion ||
-          !Object.values(ArtistCondition).includes(assignment.condition) ||
-          !hasValidStrategy
+          assignment.condition !== ArtistCondition.LLM ||
+          assignment.strategy !== "LLM_ONLY"
         ) {
           throw new Error("Assignment response was invalid");
         }

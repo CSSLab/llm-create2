@@ -48,35 +48,30 @@ router.post("/artist-assignment", async (req, res) => {
           existing.passagePoolVersion ?? "legacy-creator-passages",
         );
 
-        if (
-          !existing.taskPassageId ||
-          !existing.tutorialPassageId ||
-          !existing.passagePoolVersion
-        ) {
-          transaction.set(
-            assignmentRef,
-            {
-              taskPassageId,
-              tutorialPassageId: resolvedTutorialPassageId,
-              passagePoolVersion: resolvedPassagePoolVersion,
-            },
-            { merge: true },
-          );
-        }
+        transaction.set(
+          assignmentRef,
+          {
+            taskPassageId,
+            tutorialPassageId: resolvedTutorialPassageId,
+            passagePoolVersion: resolvedPassagePoolVersion,
+            condition: "LLM",
+            strategy: "LLM_ONLY",
+          },
+          { merge: true },
+        );
 
         return {
           passageId: taskPassageId,
           taskPassageId,
           tutorialPassageId: resolvedTutorialPassageId,
           passagePoolVersion: resolvedPassagePoolVersion,
-          condition: existing.condition as "LLM" | "NO_AI",
-          strategy: existing.strategy as string,
+          condition: "LLM" as const,
+          strategy: "LLM_ONLY",
         };
       }
 
-      const condition: "LLM" | "NO_AI" =
-        Math.random() < 0.5 ? "LLM" : "NO_AI";
-      const strategy = "INDEPENDENT_RANDOM_1_TO_1";
+      const condition = "LLM" as const;
+      const strategy = "LLM_ONLY";
 
       transaction.set(assignmentRef, {
         sessionId,
