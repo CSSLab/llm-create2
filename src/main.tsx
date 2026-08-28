@@ -1,12 +1,16 @@
-import { StrictMode } from 'react'
+import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
+
+const isExhibition = window.location.pathname.startsWith('/exhibition')
+const Application = lazy(() =>
+  isExhibition ? import('./exhibition/ExhibitionApp.tsx') : import('./App.tsx'),
+)
 
 createRoot(document.getElementById('root')!).render(
- 
-    <StrictMode>
-      <App />
-    </StrictMode>,
-
+  <StrictMode>
+    <Suspense fallback={null}>
+      <Application />
+    </Suspense>
+  </StrictMode>,
 )
