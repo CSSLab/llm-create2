@@ -1,32 +1,6 @@
 import PageTemplate from "../components/shared/pages/page";
-import { useContext, useEffect, useState } from "react";
-import { DataContext } from "../App";
 
 const ThankYou = () => {
-  const [passageText, setPassageText] = useState("");
-  const [words, setWords] = useState<string[]>([]);
-  const [visibleIndexes, setVisibleIndexes] = useState<number[]>(
-    Array.from({ length: words.length }, (_, i) => i),
-  );
-
-  const context = useContext(DataContext);
-  if (!context) {
-    throw new Error("Component must be used within a DataContext.Provider");
-  }
-  const { userData } = context;
-  useEffect(() => {
-    if (userData?.role === "artist") {
-      setPassageText(userData?.data.poem.passage?.text);
-    }
-  }, [userData]);
-
-  useEffect(() => {
-    setWords(passageText.split(" "));
-    if (userData?.role === "artist") {
-      setVisibleIndexes(userData?.data.poem?.text || []);
-    }
-  }, [passageText]);
-
   return (
     <PageTemplate background="bg4" title="">
       <div className="w-full h-full flex-col justify-items-center grid overflow-scroll">

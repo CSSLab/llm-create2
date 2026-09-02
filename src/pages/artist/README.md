@@ -1,6 +1,6 @@
 # Artist-side data logging
 
-This document is the source of truth for data collected during the artist/creator flow. The current schema version is `artist-data-2026-08-05-v2`, stored as `poem.loggingSchemaVersion` and copied to the final `poem` document.
+This document is the source of truth for data collected during the artist/creator flow. The current schema version is `artist-data-2026-09-02-v3`, stored as `poem.loggingSchemaVersion` and copied to the final `poem` document.
 
 ## Storage flow
 
@@ -8,7 +8,7 @@ This document is the source of truth for data collected during the artist/creato
 2. Page transitions append to `artistData.timeStamps`. The SPARK and WRITE pages additionally store structured `taskTiming` records.
 3. SPARK and WRITE interaction data is accumulated in React refs so high-frequency interaction logging does not cause UI rerenders. It is copied into the poem when that stage completes.
 4. `addRoleSpecificData` updates the in-memory record and schedules a 500 ms autosave to `artistIncompleteSession/{sessionId}`.
-5. Post-survey submission commits one atomic batch containing linked `artist`, `artistSurvey`, and `poem` documents, then deletes the incomplete-session document.
+5. Post-survey submission sends a compact payload and commits one atomic batch containing linked `artist`, `artistSurvey`, and `poem` documents. The server restores compatibility aliases before writing, so the stored schema remains stable. The incomplete-session document is retained between poems and deleted after poem 3.
 
 Consequently, the final dataset contains complete stage data for submitted sessions. If someone closes the page before a stage completes, interactions that occurred during that unfinished stage may not be present in the last autosave. `sessionStorage.userDataSnapshot` is only a best-effort local backup on unload; it is not part of the analysis dataset.
 
@@ -79,6 +79,10 @@ The explicit `kind` and `stage` fields are authoritative for determining whether
 
 ## `llmUsage`
 
+### `promptDefinition`
+
+The exact shared prompt material is stored once per poem instead of being repeated in every request. It contains `promptVersion`, `systemPromptTemplate`, the SPARK/WRITE `stageInstructions`, and the `contextTemplate`. Combine that definition with the poem passage, each request's `stage`, and its `selectedWordIndexes` to reconstruct the exact system prompt. Older records may instead contain the full `systemPrompt` on every request.
+
 ### `chatAvailability`
 
 One record per reached LLM-enabled stage:
@@ -120,7 +124,7 @@ One record per attempted LLM request. The same `id` is updated as the request mo
 | `userMessageContent` | Submitted content only; never an abandoned draft. |
 | `requestedAt`, `completedAt`, `failedAt` | Request lifecycle timestamps. |
 | `status` | `STARTED`, `COMPLETED`, or `FAILED`. |
-| `systemPrompt`, `promptVersion` | Exact prompt and version used for reproducibility. |
+| `promptVersion`, `selectedWordIndexes` | Prompt version and the dynamic word-selection state for exact prompt reconstruction with `llmUsage.promptDefinition`. Legacy records may contain a full `systemPrompt` here instead. |
 | `model`, `modelVersion`, `generationParameters` | Server-returned generation metadata when available. |
 | `error` | Failure text when the request fails. |
 
@@ -179,9 +183,9 @@ For the `NO_AI` condition, current-schema chat measures are false or zero becaus
 
 Records should be grouped or filtered using `loggingSchemaVersion` before comparing logging-dependent metrics.
 
-- Current records use `artist-data-2026-08-05-v2`.
+- Current records use `artist-data-2026-09-02-v3`; detailed v2 records remain supported.
 - Older `chatOpenings` records are read as `chatAvailability` so the exposure timestamp remains usable.
-- Older messages do not have `stage`/`kind`, and older requests do not have `inputSource`. The new provenance, input-activity, and automated-message derived metrics are therefore emitted as `null` for records without the current schema version; `null` means unmeasured, not zero.
+- Older messages do not have `stage`/`kind`, and older requests do not have `inputSource`. The new provenance, input-activity, and automated-message derived metrics are therefore emitted as `null` when those detailed fields are absent; `null` means unmeasured, not zero.
 
 ## Analysis guidance
 
@@ -196,10 +200,11 @@ Records should be grouped or filtered using `loggingSchemaVersion` before compar
 
 - Types and schema: `src/types.ts`
 - Schema-version constant: `src/consts/dataLogging.ts`
+- Prompt definition and reconstruction: `src/consts/blackoutAssistantPrompt.ts`
 - Automated message creation: `src/consts/chatMessages.ts`
 - Chat collection logic: `src/components/chatbot/Chatbot.tsx`
 - SPARK/WRITE stage aggregation: `src/pages/artist/step1/Step1.tsx` and `src/pages/artist/step2/Step2.tsx`
-- Final export: `src/pages/artist/PostSurvey.tsx`
+- Compact final export: `src/utils/artistPayload.ts` and `src/pages/artist/PostSurvey.tsx`
 - Derived measures: `src/utils/artistMetrics.ts`
 - Legacy `chatOpenings` conversion: `src/utils/llmUsage.ts`
-- Firestore autosave/commit: `src/App.tsx` and `server/api/routes/firebaseAPI.ts`
+- Firestore autosave/commit: `src/App.tsx`, `server/api/utils/artistPayload.ts`, and `server/api/routes/firebaseAPI.ts`
