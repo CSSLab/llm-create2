@@ -1,5 +1,11 @@
 import express from "express";
 import { db, FieldValue } from "../firebase/firebase";
+import {
+  createArtistRoundIdentifiers,
+  normalizePassageIds,
+  resolveArtistRoundMetadata,
+  TOTAL_ARTIST_POEMS,
+} from "../utils/artistRounds";
 
 const router = express.Router();
 
@@ -14,6 +20,7 @@ router.post("/artist-assignment", async (req, res) => {
     const {
       sessionId,
       passageId,
+      passageIds,
       tutorialPassageId,
       passagePoolVersion,
       prolificPid,
@@ -27,6 +34,13 @@ router.post("/artist-assignment", async (req, res) => {
       return res.status(400).json({
         error:
           "Missing sessionId, passageId, tutorialPassageId, or passagePoolVersion",
+      });
+    }
+
+    const proposedPassageIds = normalizePassageIds(passageId, passageIds);
+    if (proposedPassageIds.includes(String(tutorialPassageId))) {
+      return res.status(400).json({
+        error: "Tutorial passage must differ from poem passages",
       });
     }
 
@@ -47,6 +61,15 @@ router.post("/artist-assignment", async (req, res) => {
         const resolvedPassagePoolVersion = String(
           existing.passagePoolVersion ?? "legacy-creator-passages",
         );
+        const existingPassageIds = Array.isArray(existing.passageIds)
+          ? existing.passageIds
+          : proposedPassageIds;
+        const assignedPassageIds = normalizePassageIds(
+          taskPassageId,
+          existingPassageIds.filter(
+            (id: unknown) => String(id) !== resolvedTutorialPassageId,
+          ),
+        );
 
         transaction.set(
           assignmentRef,
@@ -54,6 +77,8 @@ router.post("/artist-assignment", async (req, res) => {
             taskPassageId,
             tutorialPassageId: resolvedTutorialPassageId,
             passagePoolVersion: resolvedPassagePoolVersion,
+            passageIds: assignedPassageIds,
+            totalPoems: TOTAL_ARTIST_POEMS,
             condition: "LLM",
             strategy: "LLM_ONLY",
           },
@@ -65,6 +90,8 @@ router.post("/artist-assignment", async (req, res) => {
           taskPassageId,
           tutorialPassageId: resolvedTutorialPassageId,
           passagePoolVersion: resolvedPassagePoolVersion,
+          passageIds: assignedPassageIds,
+          totalPoems: TOTAL_ARTIST_POEMS,
           condition: "LLM" as const,
           strategy: "LLM_ONLY",
         };
@@ -76,20 +103,24 @@ router.post("/artist-assignment", async (req, res) => {
       transaction.set(assignmentRef, {
         sessionId,
         prolificPid: prolificPid || null,
-        passageId: String(passageId),
-        taskPassageId: String(passageId),
+        passageId: proposedPassageIds[0],
+        taskPassageId: proposedPassageIds[0],
         tutorialPassageId: String(tutorialPassageId),
         passagePoolVersion: String(passagePoolVersion),
+        passageIds: proposedPassageIds,
+        totalPoems: TOTAL_ARTIST_POEMS,
         condition,
         strategy,
         assignedAt: FieldValue.serverTimestamp(),
       });
 
       return {
-        passageId: String(passageId),
-        taskPassageId: String(passageId),
+        passageId: proposedPassageIds[0],
+        taskPassageId: proposedPassageIds[0],
         tutorialPassageId: String(tutorialPassageId),
         passagePoolVersion: String(passagePoolVersion),
+        passageIds: proposedPassageIds,
+        totalPoems: TOTAL_ARTIST_POEMS,
         condition,
         strategy,
       };
@@ -124,9 +155,28 @@ router.post("/autosave", async (req, res) => {
       9: "thank-you",
     };
 
-    const status = data.data?.timeStamps
-      ? statusMap[data.data.timeStamps.length] || "started"
+    const timestampsLength = Array.isArray(data.data?.timeStamps)
+      ? data.data.timeStamps.length
+      : 0;
+    const poemNumber = Number(data.data?.poemNumber);
+    let status = timestampsLength
+      ? statusMap[timestampsLength] || "started"
       : "started";
+
+    if (
+      Number.isInteger(poemNumber) &&
+      poemNumber >= 1 &&
+      timestampsLength >= 5
+    ) {
+      const roundStartTimestampCount = 5 + (poemNumber - 1) * 2;
+      const completedRoundSteps = timestampsLength - roundStartTimestampCount;
+      status =
+        completedRoundSteps <= 0
+          ? `poem-${poemNumber}-ready`
+          : completedRoundSteps === 1
+            ? `poem-${poemNumber}-brainstorm-complete`
+            : `poem-${poemNumber}-write-complete`;
+    }
 
     const ref = db.collection(INCOMPLETE_SESSION_COLLECTION).doc(sessionId);
     const payload: Record<string, unknown> = {
@@ -135,6 +185,7 @@ router.post("/autosave", async (req, res) => {
       partialData: data.data,
       lastUpdated: FieldValue.serverTimestamp(),
       completionStatus: status,
+      poemNumber: Number.isInteger(poemNumber) ? poemNumber : null,
     };
     if (data.prolific) {
       payload.prolific = data.prolific;
@@ -150,7 +201,16 @@ router.post("/autosave", async (req, res) => {
 
 router.post("/commit-session", async (req, res) => {
   try {
-    const { artistData, surveyData, poemData, sessionId, prolific } = req.body;
+    const {
+      artistData,
+      surveyData,
+      poemData,
+      sessionId,
+      prolific,
+      poemNumber: requestedPoemNumber,
+      totalPoems: requestedTotalPoems,
+      isFinalPoem: requestedIsFinalPoem,
+    } = req.body;
 
     if (!artistData) {
       return res.status(400).json({ error: "Missing artistData" });
@@ -168,11 +228,27 @@ router.post("/commit-session", async (req, res) => {
       return res.status(400).json({ error: "Missing sessionId" });
     }
 
-    const batch = db.batch();
+    const roundMetadata = resolveArtistRoundMetadata(
+      requestedPoemNumber,
+      requestedTotalPoems,
+      requestedIsFinalPoem,
+      artistData,
+    );
+    if (!roundMetadata) {
+      return res.status(400).json({ error: "Invalid poem round metadata" });
+    }
+    const { poemNumber, totalPoems, isFinalPoem } = roundMetadata;
 
-    const artistRef = db.collection(ARTIST_COLLECTION).doc();
-    const surveyRef = db.collection(ARTIST_SURVEY_COLLECTION).doc();
-    const poemRef = db.collection(POEM_COLLECTION).doc();
+    const batch = db.batch();
+    const { roundId, roundDocumentId } = createArtistRoundIdentifiers(
+      String(sessionId),
+      poemNumber,
+    );
+    const artistRef = db.collection(ARTIST_COLLECTION).doc(roundDocumentId);
+    const surveyRef = db
+      .collection(ARTIST_SURVEY_COLLECTION)
+      .doc(roundDocumentId);
+    const poemRef = db.collection(POEM_COLLECTION).doc(roundDocumentId);
     const incompleteRef = db
       .collection(INCOMPLETE_SESSION_COLLECTION)
       .doc(sessionId);
@@ -183,6 +259,11 @@ router.post("/commit-session", async (req, res) => {
       surveyResponse: surveyRef,
       poem: poemRef,
       timestamps: [...(artistData.timeStamps ?? []), new Date()],
+      participantSessionId: String(sessionId),
+      roundId,
+      poemNumber,
+      totalPoems,
+      isFinalPoem,
     };
 
     if (prolific) {
@@ -190,17 +271,47 @@ router.post("/commit-session", async (req, res) => {
     }
 
     batch.set(artistRef, artist);
-    batch.set(surveyRef, { artistId: artistRef.id, ...surveyData });
+    batch.set(surveyRef, {
+      artistId: artistRef.id,
+      participantSessionId: String(sessionId),
+      roundId,
+      poemNumber,
+      totalPoems,
+      ...surveyData,
+    });
     batch.set(poemRef, {
       artistId: artistRef.id,
+      participantSessionId: String(sessionId),
+      roundId,
+      poemNumber,
+      totalPoems,
       ...poemData,
       random: Math.random(),
     });
-    batch.delete(incompleteRef);
+    if (isFinalPoem) {
+      batch.delete(incompleteRef);
+    } else {
+      batch.set(
+        incompleteRef,
+        {
+          completedPoems: FieldValue.arrayUnion(poemNumber),
+          completionStatus: `poem-${poemNumber}-complete`,
+          lastUpdated: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
 
     await batch.commit();
 
-    res.json({ success: true, artistId: artistRef.id });
+    res.json({
+      success: true,
+      artistId: artistRef.id,
+      roundId,
+      poemNumber,
+      totalPoems,
+      isFinalPoem,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Batch commit failed" });

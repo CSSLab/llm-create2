@@ -34,9 +34,8 @@ const ThankYou = () => {
           <p className="text-h1-dark text-center mb-2">Thank you!</p>
           <p className="text-main-dark text-sm text-center mb-4">
             We are grateful for your time and we hope you found this enjoyable!
-            Here is your final poem:
           </p>
-          <div className="text-center self-center leading-relaxed flex flex-wrap p-4 bg-white rounded-xl w-max">
+          {/* <div className="text-center self-center leading-relaxed flex flex-wrap p-4 bg-white rounded-xl w-max">
             <div className="leading-relaxed flex flex-wrap select-none h-max min-w-[350px] w-[350px]">
               {words.map((word, i) => {
                 const isVisible = visibleIndexes.includes(i);
@@ -54,7 +53,7 @@ const ThankYou = () => {
                 );
               })}
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </PageTemplate>

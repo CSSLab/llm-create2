@@ -3,6 +3,8 @@ export interface Artist {
   condition: ArtistCondition;
   surveyResponse: ArtistSurvey;
   poem: Poem;
+  poemNumber: number;
+  totalPoems: number;
   timeStamps: Date[];
   assignment?: ArtistAssignment;
 }
@@ -17,6 +19,7 @@ export interface ArtistAssignment {
   tutorialPassageId: string;
   taskPassageId: string;
   passagePoolVersion: string;
+  passageIds: string[];
   condition: ArtistCondition;
   assignedAt: Date;
 }
