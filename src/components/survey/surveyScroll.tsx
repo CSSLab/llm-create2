@@ -12,7 +12,7 @@ import { toaster } from "../../components/ui/toaster";
 
 interface Props {
   survey: SurveyDefinition;
-  onSubmit: (answers: SurveyAnswers) => void;
+  onSubmit: (answers: SurveyAnswers) => void | boolean | Promise<void | boolean>;
   isSubmitting?: boolean;
 }
 
@@ -86,7 +86,7 @@ const SurveyScroll: React.FC<Props> = ({
 
   const isSurveyComplete = answeredCount === requiredQuestions.length;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (isSubmitting || submitCalledRef.current) return;
     submitCalledRef.current = true;
     if (isSurveyComplete) {
@@ -98,7 +98,13 @@ const SurveyScroll: React.FC<Props> = ({
         },
         {},
       );
-      onSubmit(visibleAnswers);
+      try {
+        const submitted = await onSubmit(visibleAnswers);
+        if (submitted === false) submitCalledRef.current = false;
+      } catch (error) {
+        submitCalledRef.current = false;
+        throw error;
+      }
     } else {
       submitCalledRef.current = false;
       toaster.create({

@@ -33,7 +33,8 @@ const ArtistInstructions = () => {
       <div className="w-full flex flex-col space-y-6">
         {/* Intro */}
         <p className="text-main">
-          In this study you will create a <strong>blackout poem</strong>. A
+          In this study you will create <strong>three blackout poems</strong>,
+          one at a time. A
           blackout poem is a type of poem made by selecting words from an
           existing passage of text.
         </p>
@@ -64,22 +65,25 @@ const ArtistInstructions = () => {
 
         {/* Steps */}
         <div className="space-y-3">
-          <p className="text-main ">The task has three steps:</p>
+          <p className="text-main ">
+            You will complete the tutorial once, then follow the same flow for
+            each of your three poems:
+          </p>
           {[
             {
-              label: "Tutorial",
+              label: "Tutorial (once)",
               timing: null,
               desc: "Practice using the interface with a sample passage. Take as long as you like.",
             },
             {
-              label: "Brainstorm",
+              label: "Brainstorm each poem",
               timing: "1–3 min",
               desc: "Read the passage and let ideas form. No need to choose words yet.",
             },
             {
-              label: "Write your poem",
+              label: "Write and reflect",
               timing: "3–5 min",
-              desc: "Click words in the passage to select them and build your poem.",
+              desc: "Build the poem, then answer a short survey about it before continuing.",
             },
           ].map((step, i) => (
             <div

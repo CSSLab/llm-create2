@@ -48,7 +48,7 @@ const ConsentForm = () => {
           </p>
           {/* Try not to make it scary  */}
           <p className="text-main mb-2">
-            As a participant, you will be asked to write a (blackout) poem. You
+            As a participant, you will be asked to write three blackout poems. You
             will also be asked to provide some demographic information and
             general thoughts on this survey. By taking part, you will help us
             better understand how we can guide responsible AI development and

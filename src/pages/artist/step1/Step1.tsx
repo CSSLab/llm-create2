@@ -24,7 +24,7 @@ const ArtistStep1 = () => {
   if (!context) {
     throw new Error("Component must be used within a DataContext.Provider");
   }
-  const { userData, addRoleSpecificData } = context;
+  const { userData, addRoleSpecificData, isTestMode } = context;
 
   const sparkMessagesRef = useRef<Message[]>([]);
   const sparkNotesRef = useRef<string>("");
@@ -32,6 +32,8 @@ const ArtistStep1 = () => {
 
   const artistData = userData?.data as Artist;
   const existingPoem = artistData?.poem;
+  const poemNumber = artistData?.poemNumber ?? 1;
+  const totalPoems = artistData?.totalPoems ?? 3;
   const passage = existingPoem?.passage as Passage;
   const userType = userData?.data.condition as ArtistCondition;
   const isLLM = userType === "LLM";
@@ -138,7 +140,9 @@ const ArtistStep1 = () => {
             {popupStep === 0 ? (
               <>
                 <div className="flex items-center gap-2">
-                  <p className="text-h3">Brainstorm</p>
+                  <p className="text-h3">
+                    Poem {poemNumber} of {totalPoems} · Brainstorm
+                  </p>
                   <span className="text-sub">· 1–3 min</span>
                 </div>
                 <p className="text-sub">
@@ -180,10 +184,10 @@ const ArtistStep1 = () => {
         </div>
       )}
       <MultiPageTemplate
-        title="Familiarize yourself with the text"
+        title={`Poem ${poemNumber} of ${totalPoems}: Familiarize yourself with the text`}
         description="This is your time to familiarize yourself with the text and brainstorm for your poem. What is the passage about? What themes appear? Do any words or ideas stand out? Feel free to take any notes in the text box below. Your notes will be accessible during the writing portion."
-        duration={showingPopup ? undefined : 60}
-        autoRedirectDuration={showingPopup ? undefined : 240}
+        duration={showingPopup ? undefined : isTestMode ? 0.1 : 60}
+        autoRedirectDuration={showingPopup ? undefined : isTestMode ? 3600 : 240}
         afterDuration={onComplete}
         buttonText="Begin Writing"
         llmAccess={isLLM}
