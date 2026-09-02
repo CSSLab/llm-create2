@@ -6,6 +6,7 @@ import {
   resolveArtistRoundMetadata,
   TOTAL_ARTIST_POEMS,
 } from "../utils/artistRounds";
+import { normalizePoemDataForStorage } from "../utils/artistPayload";
 
 const router = express.Router();
 
@@ -285,7 +286,7 @@ router.post("/commit-session", async (req, res) => {
       roundId,
       poemNumber,
       totalPoems,
-      ...poemData,
+      ...normalizePoemDataForStorage(poemData),
       random: Math.random(),
     });
     if (isFinalPoem) {

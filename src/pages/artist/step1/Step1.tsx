@@ -107,6 +107,7 @@ const ArtistStep1 = () => {
         },
       },
       llmUsage: {
+        ...(existingPoem.llmUsage ?? {}),
         chatAvailability: chatAvailabilityRef.current,
         inputActivity: inputActivityRef.current,
         requests: llmRequestsRef.current,

@@ -47,6 +47,9 @@ describe("artist poem rounds", () => {
     expect(second.poemSnapshot).toEqual([]);
     expect(second.sparkConversation).toEqual([]);
     expect(second.writeConversation).toEqual([]);
+    expect(second.llmUsage.promptDefinition?.promptVersion).toBe(
+      "blackout-assistant-2026-08-21-v3",
+    );
   });
 
   it("repeats poem-specific measures and reserves general questions for poem 3", () => {

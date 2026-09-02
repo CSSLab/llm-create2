@@ -124,7 +124,10 @@ export interface LlmRequestLog {
   failedAt?: Date;
   status: "STARTED" | "COMPLETED" | "FAILED";
   inputSource: ChatInputSource;
-  systemPrompt: string;
+  /** Word-selection state used to build the request's exact dynamic prompt. */
+  selectedWordIndexes?: number[];
+  /** @deprecated New records store the shared definition once on LlmUsage. */
+  systemPrompt?: string;
   promptVersion: string;
   model?: string;
   modelVersion?: string;
@@ -132,7 +135,15 @@ export interface LlmRequestLog {
   error?: string;
 }
 
+export interface LlmPromptDefinition {
+  promptVersion: string;
+  systemPromptTemplate: string;
+  stageInstructions: Record<Stage, string>;
+  contextTemplate: string;
+}
+
 export interface LlmUsage {
+  promptDefinition?: LlmPromptDefinition;
   chatAvailability: ChatAvailability[];
   inputActivity: ChatInputActivity[];
   requests: LlmRequestLog[];

@@ -5,6 +5,7 @@ import type {
   SurveyDefinition,
 } from "../types";
 import { ARTIST_DATA_LOGGING_VERSION } from "../consts/dataLogging";
+import { BLACKOUT_ASSISTANT_PROMPT_DEFINITION } from "../consts/blackoutAssistantPrompt";
 
 export const TOTAL_ARTIST_POEMS = 3;
 
@@ -25,6 +26,12 @@ export const createEmptyPoem = (passage: Passage): Poem => ({
   poemSnapshot: [],
   taskTiming: { phases: {} },
   llmUsage: {
+    promptDefinition: {
+      ...BLACKOUT_ASSISTANT_PROMPT_DEFINITION,
+      stageInstructions: {
+        ...BLACKOUT_ASSISTANT_PROMPT_DEFINITION.stageInstructions,
+      },
+    },
     chatAvailability: [],
     inputActivity: [],
     requests: [],
