@@ -6,10 +6,7 @@ import { ArtistPostSurveyQuestions } from "../../consts/surveyQuestions";
 import type { Artist, SurveyAnswers } from "../../types";
 import { toaster } from "../../components/ui/toaster";
 import PoemPageTemplate from "../../components/shared/pages/poemPage";
-import {
-  deriveArtistMetrics,
-  getFinalPoemText,
-} from "../../utils/artistMetrics";
+import { createArtistCommitRequest } from "../../utils/artistPayload";
 import { Passages } from "../../consts/passages";
 import {
   createEmptyPoem,
@@ -52,7 +49,7 @@ const ArtistPostSurvey = () => {
   );
 
   const saveProductionPoem = async (answers: SurveyAnswers) => {
-    if (!userData || !artistData || !poemData) {
+    if (!userData || !artistData || !poemData || !sessionId) {
       console.error("userData not loaded yet!");
       return false;
     }
@@ -67,43 +64,20 @@ const ArtistPostSurvey = () => {
       totalPoems,
     };
 
-    const savedPoemData = {
-      loggingSchemaVersion: poemData.loggingSchemaVersion,
-      passageId: poemData.passageId,
-      tutorialPassageId: artistData.assignment?.tutorialPassageId,
-      taskPassageId:
-        artistData.assignment?.taskPassageId ?? poemData.passageId,
-      passage: poemData.passage,
-      text: poemData.text,
-      selectedWordIndexes: poemData.text,
-      finalPoem: getFinalPoemText(poemData),
-      snapshot: poemData.poemSnapshot,
-      editHistory: poemData.poemSnapshot,
-      sparkConversation: poemData.sparkConversation,
-      sparkNotes: poemData.sparkNotes,
-      writeConversation: poemData.writeConversation,
-      writeNotes: poemData.writeNotes,
-      taskTiming: poemData.taskTiming,
-      llmUsage: poemData.llmUsage,
-      derivedMetrics: deriveArtistMetrics(poemData),
-      poemNumber,
-      totalPoems,
-    };
-
     try {
+      const commitRequest = createArtistCommitRequest({
+        artistData,
+        surveyData,
+        sessionId,
+        prolific: prolific ?? null,
+        poemNumber,
+        totalPoems,
+        isFinalPoem,
+      });
       const response = await fetch("/api/firebase/commit-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          artistData,
-          surveyData,
-          poemData: savedPoemData,
-          sessionId,
-          prolific: prolific ?? null,
-          poemNumber,
-          totalPoems,
-          isFinalPoem,
-        }),
+        body: JSON.stringify(commitRequest),
       });
       if (!response.ok) {
         throw new Error(`Session commit failed with status ${response.status}`);

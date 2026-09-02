@@ -1,6 +1,5 @@
 import type { ChatInputActivity, Message, Poem, Stage } from "../types";
 import { ChatInputSource, MessageKind, Stage as StageValue } from "../types";
-import { ARTIST_DATA_LOGGING_VERSION } from "../consts/dataLogging";
 import { getChatAvailability } from "./llmUsage";
 
 const toMillis = (value: Date | string | undefined) =>
@@ -85,8 +84,7 @@ export const deriveArtistMetrics = (poem: Poem) => {
     (request) => request.status === "COMPLETED",
   );
   const requests = poem.llmUsage?.requests ?? [];
-  const hasDetailedChatLogging =
-    poem.loggingSchemaVersion === ARTIST_DATA_LOGGING_VERSION;
+  const hasDetailedChatLogging = Array.isArray(poem.llmUsage?.inputActivity);
   const chatAvailability = getChatAvailability(poem.llmUsage);
   const inputActivity = poem.llmUsage?.inputActivity ?? [];
   const conversationMessages = getUniqueConversationMessages(poem);
