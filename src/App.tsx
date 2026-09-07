@@ -16,7 +16,6 @@ import PoemViewer from "./pages/PoemViewer";
 import usePreventRefresh from "./components/shared/preventRefresh";
 import usePreventBack from "./components/shared/preventBackBttn";
 import { nanoid } from "nanoid";
-import AudiencePreSurvey from "./pages/audience/PreSurvey";
 import AudienceCaptcha from "./pages/audience/AudienceCaptcha";
 import AudiencePoems from "./pages/audience/step2/Step2";
 // import AudienceInstructions from "./pages/audience/instructions/Instructions";
@@ -402,11 +401,6 @@ function App() {
                     path="/artist/pre-survey"
                     element={<AristPreSurvey />}
                   /> */}
-                  <Route
-                    path="/audience/pre-survey"
-                    element={<AudiencePreSurvey />}
-                  />
-
                   <Route
                     path="/audience/instructions"
                     element={<AudienceInstructions />}

@@ -3,6 +3,7 @@ import {
   CREATOR_PASSAGE_POOL_VERSION,
   sampleDistinctPassages,
 } from "./passages";
+import { PASSAGE_DISTRACTOR_STATEMENTS } from "./audienceDistractors";
 
 const TEST_SELECTIONS = [
   [0, 1, 4, 8, 12, 18, 24],
@@ -11,7 +12,9 @@ const TEST_SELECTIONS = [
   [1, 10, 14, 19, 22, 27, 34],
 ];
 
-const TEST_STATEMENTS = [
+// Generic fallback if a passage ever lands here without a hand-written set
+// in PASSAGE_DISTRACTOR_STATEMENTS (shouldn't happen - every passage has one).
+const FALLBACK_STATEMENTS = [
   "The poem reflects the tension between anticipation and the unknown.",
   "The poem is about finding moments of beauty inside an unsettled world.",
   "The poem explores how a place can hold memories that feel alive.",
@@ -32,6 +35,8 @@ const rotate = <T,>(items: T[], offset: number) => [
 export const createAudienceTestAssignment = (): AudienceAssignment => {
   const { tutorialPassage, taskPassage } = sampleDistinctPassages();
   const wordCount = taskPassage.text.split(" ").length;
+  const statements =
+    PASSAGE_DISTRACTOR_STATEMENTS[taskPassage.id] ?? FALLBACK_STATEMENTS;
   const poems: AudiencePoem[] = TEST_SELECTIONS.map((selection, index) => ({
     id: `test-poem-${index + 1}`,
     passageId: taskPassage.id,
@@ -49,10 +54,10 @@ export const createAudienceTestAssignment = (): AudienceAssignment => {
     statementTrials: poems.map((poem, index) => {
       const decoyIndexes = [4, 5, 6];
       const options = [
-        { id: poem.id, statement: TEST_STATEMENTS[index] },
+        { id: poem.id, statement: statements[index] },
         ...decoyIndexes.map((statementIndex) => ({
           id: `test-decoy-${statementIndex}`,
-          statement: TEST_STATEMENTS[statementIndex],
+          statement: statements[statementIndex],
         })),
       ];
       return { poemId: poem.id, options: rotate(options, index % 4) };

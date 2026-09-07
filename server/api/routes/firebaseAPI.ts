@@ -13,6 +13,12 @@ const AUDIENCE_SURVEY_COLLECTION = "audienceSurvey";
 const AUDIENCE_INCOMPLETE_SESSION_COLLECTION = "audienceIncompleteSession";
 
 const AUDIENCE_PASSAGE_POOL_VERSION = "creator-passages-2026-08-05-v1";
+// Tags audience records with which pilot round produced them, so different
+// rounds (different assignment logic, decoy pools, etc.) can be told apart
+// later in Firestore. Set via server/.env - bump it there and restart the
+// server when starting a new pilot round.
+const AUDIENCE_PILOT_VERSION =
+  process.env.AUDIENCE_PILOT_VERSION ?? "unset-audience-pilot-version";
 const AUDIENCE_PASSAGE_ID_LIST = [
   "1",
   "2",
@@ -25,6 +31,106 @@ const AUDIENCE_PASSAGE_ID_LIST = [
   "nyt-4",
 ] as const;
 const AUDIENCE_PASSAGE_IDS = new Set<string>(AUDIENCE_PASSAGE_ID_LIST);
+
+// TEMPORARY (for the time being): hand-written decoy statements, kept in
+// sync with src/consts/audienceDistractors.ts (server can't import from
+// src/ - its tsconfig roots at ./api). While the real submission pool is
+// thin, every statement-match trial draws its 3 wrong options from here
+// instead of from other real candidates on the same passage, so a passage
+// only needs 2 LLM + 2 NO_AI real submissions to be eligible, not a further
+// 3 same-passage decoys on top. Revert by deleting this block and restoring
+// the same-passage decoyCandidates logic in POST /audience-assignment below.
+const PASSAGE_DISTRACTOR_STATEMENTS: Record<string, string[]> = {
+  "3": [
+    "Mostly, this poem is about senses waking up all at once after being shut off for a long time.",
+    "I wanted to express the hush that comes right before something wonderful happens.",
+    "This is about a fragile body finally catching up to a world it's only just starting to notice.",
+    "A private thrill, kept quiet on purpose.",
+    "My goal was to capture the difference between looking and truly listening, without spelling it out.",
+    "I wanted the poem to feel like a held breath, even if it never says so directly.",
+    "I kept coming back to the idea of tiptoeing somewhere you're not sure you're allowed to be.",
+  ],
+  "4": [
+    "I was trying to convey how ordinary routines can turn into the best part of a day.",
+    "You can feel the comfort of shared chores and simple mornings underneath all of it.",
+    "The poem explores contentment that sneaks up on you when you weren't expecting a good time at all.",
+    "Small rituals, happily repeated. That's the whole poem, really.",
+    "There's a kind of ease I wanted the reader to sit with, the sense that a place can start to feel like home almost by accident.",
+    "What does it mean when the people around you turn into easy companions without either of you noticing?",
+    "A lazy, satisfied morning - that's what I was chasing.",
+  ],
+  "2": [
+    "I kept thinking about the pull of imagining a future bigger than the room you're sitting in while choosing these words.",
+    "This is about drifting into hope while everyone around you is talking about small things.",
+    "I wanted to express the gap between practical chatter and a private, sweeping sense of possibility.",
+    "My goal was to capture daydreams that feel like certainty, without spelling it out.",
+    "Youth as permission to imagine.",
+    "Mostly, this poem is quiet ambition dressed up as idle conversation.",
+    "I wanted the poem to feel like watching a sunset and mistaking it for a promise, even if it never says so directly.",
+  ],
+  "1": [
+    "The poem explores what it feels like to return to a place that has changed without you.",
+    "I kept coming back to the idea of weather rewriting a landscape almost overnight.",
+    "You can feel a house aging right along with the people who left it underneath all of it.",
+    "Old walls, still holding on. That's the whole poem, really.",
+    "I wanted to express how memory clings to a place the way dampness clings to stone.",
+    "What does an uneasy homecoming actually feel like, once you're standing back inside it?",
+    "There's a kind of familiar-but-wrong feeling I wanted the reader to sit with.",
+  ],
+  "5": [
+    "This is about a love too large for the small life it was given.",
+    "I was trying to convey how someone can be capable of enormous feeling and still end up isolated.",
+    "My goal was to capture the mismatch between what a person is capable of and the life circumstance hands them, without spelling it out.",
+    "Too much feeling, too little room.",
+    "I kept thinking about the difference between grand emotion and everyday warmth while choosing these words.",
+    "I wanted the poem to feel like a fire kept banked instead of let out, even if it never says so directly.",
+    "Mostly, this poem is quiet devotion with nowhere left to go.",
+  ],
+  "nyt-1": [
+    "I wanted to express how close we all are, constantly, to an ending we never see.",
+    "What if every possible outcome actually happened, and we only remember the one we survived?",
+    "Luck, treated like a math problem instead of a personal story. That's the whole poem, really.",
+    "I kept coming back to the idea of every version of the story happening at once.",
+    "There's a kind of vertigo I wanted the reader to sit with, the feeling of many futures collapsing into one.",
+    "The poem explores how much of survival really just comes down to timing.",
+    "You can feel a near-miss replaying itself underneath all of it.",
+  ],
+  "nyt-2": [
+    "Mostly, this poem is about how much effort goes into looking like you're not trying.",
+    "I kept thinking about the performance underneath a crowd that thinks it's just having fun while choosing these words.",
+    "This is about the gap between how a moment looks and how it actually feels the morning after.",
+    "Curated carelessness.",
+    "I was trying to convey how identity gets assembled out of borrowed pieces.",
+    "My goal was to capture a restless kind of self-consciousness without spelling it out.",
+    "I wanted the poem to feel like a party photographed a beat too late, even if it never says so directly.",
+  ],
+  "nyt-3": [
+    "How does something small from childhood end up quietly deciding who we become?",
+    "The poem explores loyalty as something we inherit more than choose.",
+    "You can feel an old pattern, set young and followed for decades, underneath all of it.",
+    "A habit formed early, never questioned since. That's the whole poem, really.",
+    "I wanted to express how data can explain something as personal as devotion.",
+    "I kept coming back to the idea of inherited attachment as I worked on this.",
+    "There's a kind of grown-up habit I wanted the reader to sit with, one that traces straight back to a much younger version of yourself.",
+  ],
+  "nyt-4": [
+    "I was trying to convey how being looked at constantly can start to feel like a kind of erasure.",
+    "This is about the pressure of being ranked and measured against everyone else in the room.",
+    "My goal was to capture what it costs to keep reinventing yourself for an audience that's always watching, without spelling it out.",
+    "Famous for a moment, judged forever.",
+    "I wanted to express the difference between being seen and being truly known.",
+    "I wanted the poem to feel like flipping through a magazine and forgetting the face on the cover by the next page, even if it never says so directly.",
+    "Mostly, this poem is restless ambition dressed up as confidence.",
+  ],
+};
+
+// Real Prolific PIDs are a random string of letters/digits; anything with
+// "test" in it (case-insensitive) was typed in by hand during development
+// and shouldn't be treated as a real participant submission.
+const isRealProlificId = (value: unknown): value is string =>
+  typeof value === "string" &&
+  value.trim().length > 0 &&
+  !value.toLowerCase().includes("test");
 
 interface AudienceCandidate {
   id: string;
@@ -166,7 +272,8 @@ const loadAudienceCandidates = async (): Promise<AudienceCandidate[]> => {
       if (
         passagePoolVersion !== AUDIENCE_PASSAGE_POOL_VERSION ||
         !poemRef ||
-        !surveyRef
+        !surveyRef ||
+        !isRealProlificId(artistData.prolific?.prolificPid)
       ) {
         return null;
       }
@@ -178,10 +285,13 @@ const loadAudienceCandidates = async (): Promise<AudienceCandidate[]> => {
       if (!poemDoc.exists || !surveyDoc.exists) return null;
 
       const poemData = poemDoc.data();
-      const passageId = String(
-        poemData?.taskPassageId ?? poemData?.passageId ?? "",
-      );
       const passage = poemData?.passage;
+      // Group/validate by the passage actually embedded on the poem, not by
+      // the separate passageId/taskPassageId field - some docs have those
+      // two disagree (stale field vs. the passage that's actually stored
+      // and rendered), which let poems from two different passages end up
+      // in the same participant's assignment.
+      const passageId = String(passage?.id ?? "");
       const statement = getStatement(surveyDoc.data());
       const selectedWordIndexes =
         poemData?.selectedWordIndexes ?? poemData?.text;
@@ -262,13 +372,16 @@ const autosaveHandler: express.RequestHandler = async (req, res) => {
         : INCOMPLETE_SESSION_COLLECTION;
 
     const ref = db.collection(incompleteCollection).doc(sessionId);
-    const payload = {
+    const payload: Record<string, unknown> = {
       sessionId,
       role: data.role,
       partialData,
       lastUpdated: FieldValue.serverTimestamp(),
       completionStatus: status,
     };
+    if (data.role === "audience") {
+      payload.audiencePilotVersion = AUDIENCE_PILOT_VERSION;
+    }
 
     await ref.set(payload, { merge: true });
     res.json({ success: true });
@@ -331,9 +444,19 @@ router.post("/artist/commit-session", async (req, res) => {
   }
 });
 
-// Build a fresh audience assignment: a passage with a balanced pool of real
-// artist submissions, 4 focal poems (2 LLM + 2 NO_AI), and for each one a
-// set of difficulty-matched decoy statements alongside the real one.
+// Build a fresh audience assignment: a passage with a pool of real artist
+// submissions, 4 focal poems all drawn from that same passage, blinded
+// (condition is never sent to the client) and randomized (both which real
+// submissions are picked and the on-screen order), and for each one a set of
+// decoy statements alongside the real one.
+//
+// TEMPORARY (for the time being): decoys come from the fixed
+// PASSAGE_DISTRACTOR_STATEMENTS pool above instead of other real submissions
+// on the same passage, so eligibility only needs 4 real candidates total
+// (not a further 3 same-passage decoys on top). Also TEMPORARY: the 4 poems
+// can be any mix of LLM/NO_AI - no 2/2 balance is enforced. To restore a
+// balanced split, filter passageCandidates by condition before sampling,
+// as before.
 router.post("/audience-assignment", async (_req, res) => {
   try {
     const candidates = await loadAudienceCandidates();
@@ -345,14 +468,11 @@ router.post("/audience-assignment", async (_req, res) => {
     });
 
     const eligiblePassages = shuffle(
-      [...candidatesByPassage.entries()].filter(([, passageCandidates]) => {
-        const llmCount = passageCandidates.filter(
-          (candidate) => candidate.condition === "LLM",
-        ).length;
-        const noAiCount = passageCandidates.filter(
-          (candidate) => candidate.condition === "NO_AI",
-        ).length;
-        return llmCount >= 2 && noAiCount >= 2 && passageCandidates.length >= 7;
+      [...candidatesByPassage.entries()].filter(([passageId, passageCandidates]) => {
+        return (
+          passageCandidates.length >= 4 &&
+          (PASSAGE_DISTRACTOR_STATEMENTS[passageId]?.length ?? 0) >= 3
+        );
       }),
     );
 
@@ -360,7 +480,7 @@ router.post("/audience-assignment", async (_req, res) => {
       return res.status(409).json({
         code: "INSUFFICIENT_AUDIENCE_POOL",
         error:
-          "No current source passage has four balanced focal poems and three same-source decoys",
+          "No current source passage has four focal poems from real, non-test Prolific submissions",
       });
     }
 
@@ -370,17 +490,12 @@ router.post("/audience-assignment", async (_req, res) => {
         (candidatePassageId) => candidatePassageId !== passageId,
       ),
     )[0];
-    const focalCandidates = shuffle([
-      ...shuffle(
-        passageCandidates.filter((candidate) => candidate.condition === "LLM"),
-      ).slice(0, 2),
-      ...shuffle(
-        passageCandidates.filter((candidate) => candidate.condition === "NO_AI"),
-      ).slice(0, 2),
-    ]);
-    const focalIds = new Set(focalCandidates.map((candidate) => candidate.id));
-    const decoyCandidates = passageCandidates.filter(
-      (candidate) => !focalIds.has(candidate.id),
+    const focalCandidates = shuffle(passageCandidates).slice(0, 4);
+    const staticDecoyCandidates = PASSAGE_DISTRACTOR_STATEMENTS[passageId].map(
+      (statement, index) => ({
+        id: `static-decoy-${passageId}-${index + 1}`,
+        statement,
+      }),
     );
 
     const statementTrials = focalCandidates.map((focal) => {
@@ -388,7 +503,7 @@ router.post("/audience-assignment", async (_req, res) => {
         .map((index) => focal.passage.text.split(" ")[index])
         .filter(Boolean)
         .join(" ");
-      const decoys = [...decoyCandidates]
+      const decoys = [...staticDecoyCandidates]
         .sort(
           (left, right) =>
             decoyMatchScore(focal.statement, left.statement, poemText) -
@@ -477,6 +592,7 @@ router.post("/commit-audience-session", async (req, res) => {
       surveyResponse: surveyRef,
       timestamps: audienceData.timeStamps ?? [],
       completedAt: FieldValue.serverTimestamp(),
+      audiencePilotVersion: AUDIENCE_PILOT_VERSION,
     };
     if (prolific) audienceRecord.prolific = prolific;
 
