@@ -5,8 +5,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const openai = new OpenAI({ apiKey: process.env.LLM_KEY || "" });
-const LLM_MODEL = "gpt-5.6-sol";
+const LLM_MODEL = "gpt-6-astra";
 const GENERATION_PARAMETERS = {
+  reasoning: { effort: "low" as const },
   text: { verbosity: "low" as const },
   stream: true as const,
 };
