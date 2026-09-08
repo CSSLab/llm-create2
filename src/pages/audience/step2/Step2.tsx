@@ -124,11 +124,7 @@ const AudiencePoems = () => {
         >
           <div className="mx-auto flex max-h-[calc(35dvh-2.25rem)] w-full min-w-0 max-w-[400px] flex-col overflow-hidden md:max-h-[calc(55dvh-2rem)]" role="region" aria-label={`Blackout poem ${currPoem + 1}`}>
             <div className="min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-light-grey-2">
-              <AudiencePoemDisplay
-                poem={currentPoem}
-                smallOnMedium
-                fluid
-              />
+              <AudiencePoemDisplay poem={currentPoem} smallOnMedium />
             </div>
           </div>
           <AudienceInterpretationPanel

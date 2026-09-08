@@ -4,25 +4,27 @@ interface Props {
   poem: AudiencePoem;
   label?: string;
   smallOnMedium?: boolean;
-  fluid?: boolean;
 }
 
 // Shared blackout-poem renderer for the audience flow (poem reading,
 // statement match, AI detection). Word styling matches the
-// rest of this app's blackout poems exactly.
+// rest of this app's blackout poems exactly. Width is fixed (not fluid),
+// same as the artist side's blackout poem (src/components/shared/pages/poemPage.tsx
+// on main) - it should render at the same size regardless of its container.
 const AudiencePoemDisplay: React.FC<Props> = ({
   poem,
   label,
   smallOnMedium,
-  fluid = false,
 }) => {
   const words = poem.passage.text.split(" ");
   const selectedIndexes = new Set(poem.selectedWordIndexes);
 
   return (
     <figure
-      className={`flex flex-wrap select-none h-max w-full min-w-0 ${
-        fluid ? "max-w-none" : smallOnMedium ? "max-w-[350px] lg:max-w-[400px]" : "max-w-[400px]"
+      className={`flex mx-auto flex-wrap select-none h-max w-[350px] min-w-[350px]  ${
+        smallOnMedium
+          ? "md:w-[350px] md:min-w-[350px]"
+          : "md:w-[400px] md:min-w-[400px]"
       }`}
       onCopy={(e) => e.preventDefault()}
     >
@@ -43,7 +45,7 @@ const AudiencePoemDisplay: React.FC<Props> = ({
               isVisible
                 ? "text-black bg-white"
                 : "text-transparent bg-dark-grey [forced-color-adjust:none]"
-            } ${smallOnMedium ? "md:text-sm xl:text-base" : ""}`}
+            } ${smallOnMedium ? "md:text-sm" : ""}`}
           >
             {word + " "}
           </span>
