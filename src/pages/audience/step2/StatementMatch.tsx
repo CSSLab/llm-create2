@@ -79,11 +79,17 @@ const StatementMatch = () => {
           <AudiencePoemDisplay poem={poem} label={`Poem ${trialIndex + 1}`} />
         </div>
         <div className="space-y-6 rounded-lg p-6">
+          <p id="creator-statement-context" className="text-sm leading-relaxed text-grey">
+            The creator was asked to describe, in their own words, what they
+            wanted their poem to express or mean. The options below are possible
+            responses.
+          </p>
           <RadioGroup.Root
             value={selectedStatementId}
             onValueChange={({ value }) => setSelectedStatementId(value ?? "")}
             className="space-y-4"
             aria-label="Creator statement options"
+            aria-describedby="creator-statement-context"
           >
             {trial.options.map((option) => {
               const selected = selectedStatementId === option.id;
