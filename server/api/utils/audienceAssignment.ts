@@ -52,6 +52,9 @@ export const isValidAudienceAssignment = (value: unknown): boolean => {
       !passageIds.has(assignment.tutorialPassageId) ||
       !Array.isArray(assignment.poems) || assignment.poems.length !== 4 ||
       !Array.isArray(assignment.statementTrials) || assignment.statementTrials.length !== 4) return false;
+  if (assignment.pilotId !== undefined && (typeof assignment.pilotId !== "string" || !assignment.pilotId ||
+      typeof assignment.poolHash !== "string" || !/^[a-f0-9]{64}$/.test(assignment.poolHash))) return false;
+  if (assignment.preview !== undefined && typeof assignment.preview !== "boolean") return false;
 
   const poems = assignment.poems.map(asRecord);
   const poemIds = new Set(poems.map((poem) => poem?.id));

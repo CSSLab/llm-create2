@@ -183,6 +183,7 @@ test('assignment API samples 2+2 across sources, blinds conditions, and matches 
 
 test('assignment API fails when either condition is short and excludes test submissions', async () => {
   artistDocs = candidates.map(c => artistDoc(c, c.condition === 'LLM'));
+  await prepareCache();
   const response = await invoke('/audience-assignment');
   assert.equal(response.statusCode, 409);
   assert.equal(response.payload.code, 'INSUFFICIENT_AUDIENCE_POOL');
@@ -232,8 +233,11 @@ const { loadAudienceCandidates } = require('../api/utils/audienceCandidates');
 const { interpretationIdentity, sha256, INTERPRETATION_COLLECTION } = require('../api/utils/audienceInterpretations');
 const { INTERPRETATION_DISPLAY, assignInterpretationCondition } = require('../api/utils/audienceInterpretationProtocol');
 const { hasCompleteInterpretationExposure } = require('../api/utils/audienceAssignment');
+const { createAudiencePilot, AUDIENCE_PILOT_COLLECTION, AUDIENCE_PILOT_ID } = require('../api/utils/audiencePilot');
 async function prepareCache() {
-  for (const poem of await loadAudienceCandidates()) {
+  const poems = await loadAudienceCandidates();
+  documents.set(`${AUDIENCE_PILOT_COLLECTION}/${AUDIENCE_PILOT_ID}`, createAudiencePilot(poems));
+  for (const poem of poems) {
     const { id } = interpretationIdentity(poem);
     const text = 'The poem may express a quiet moment of hope.';
     documents.set(`${INTERPRETATION_COLLECTION}/${id}`, { id, text, textHash: sha256(text), status: 'ready' });
@@ -277,6 +281,8 @@ test('interpretation assignment is 50/50 at participant level; both arms use the
     const saved = writes.find(w => w.collection === 'audience').payload.assignment;
     assert.equal(saved.interpretationCondition, condition);
     assert.equal(saved.presentationVersion, AUDIENCE_PRESENTATION);
+    assert.equal(saved.pilotId, AUDIENCE_PILOT_ID);
+    assert.equal(saved.poolHash, assignment.poolHash);
     assert.deepEqual(saved.rounds.map(r => r.interpretationId), assignment.poems.map(p => p.interpretationId));
     assert.deepEqual(writes.find(w => w.collection === 'audienceSurvey').payload.interpretationExposures, surveyResponse.interpretationExposures);
     const changed = structuredClone(assignment);
@@ -311,10 +317,50 @@ test('poem-only assignments require their presentation marker; legacy v3 session
 test('missing or stale interpretations block all new assignments, without silently changing eligibility', async () => {
   artistDocs = candidates.map(c => artistDoc(c));
   documents.clear();
+  documents.set(`${AUDIENCE_PILOT_COLLECTION}/${AUDIENCE_PILOT_ID}`, createAudiencePilot(await loadAudienceCandidates()));
   assert.equal((await invoke('/audience-assignment')).payload.code, 'AUDIENCE_INTERPRETATIONS_NOT_READY');
   await prepareCache();
   const first = (await loadAudienceCandidates())[0];
   const key = `${INTERPRETATION_COLLECTION}/${interpretationIdentity(first).id}`;
   documents.get(key).text = 'An edited, no longer matching stimulus.';
   assert.equal((await invoke('/audience-assignment')).payload.code, 'AUDIENCE_INTERPRETATIONS_NOT_READY');
+});
+
+test('pilot keeps its prepared poems when new creators arrive or creator records change', async () => {
+  artistDocs = candidates.map(c => artistDoc(c));
+  await prepareCache();
+  artistDocs = [artistDoc({ id: 'new-poem', condition: 'LLM', passageId: '1' })];
+  const response = await invoke('/audience-assignment');
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.payload.pilotId, AUDIENCE_PILOT_ID);
+  assert.ok(response.payload.poems.every(p => candidates.some(c => c.id === p.id)));
+  const pilot = documents.get(`${AUDIENCE_PILOT_COLLECTION}/${AUDIENCE_PILOT_ID}`);
+  pilot.poems[0].statement = 'Changed after the pilot was frozen';
+  assert.equal((await invoke('/audience-assignment')).payload.code, 'AUDIENCE_PILOT_NOT_READY');
+});
+
+test('real previews honor either condition and cannot write participant data', async () => {
+  artistDocs = candidates.map(c => artistDoc(c));
+  await prepareCache();
+  for (const interpretationCondition of ['AI', 'NO_AI']) {
+    const previousDocuments = new Map(documents);
+    const response = await invoke('/audience-preview-assignment', { interpretationCondition });
+    assert.equal(response.statusCode, 200);
+    const assignment = response.payload;
+    assert.ok(isValidAudienceAssignment(assignment));
+    assert.equal(assignment.preview, true);
+    assert.equal(assignment.interpretationCondition, interpretationCondition);
+    assert.deepEqual(documents, previousDocuments);
+    assert.equal((await invoke('/audience/autosave', { sessionId: 'preview-session', data: { role: 'audience', data: { assignment } } })).statusCode, 400);
+    assert.equal(writes.length, 0);
+    assert.equal((await invoke('/commit-audience-session', { sessionId: 'preview-session', audienceData: { assignment } })).statusCode, 400);
+    assert.equal(committed, false);
+  }
+  assert.equal((await invoke('/audience-preview-assignment', { interpretationCondition: 'invalid' })).statusCode, 400);
+  // Forcing a condition is reserved for previews, never the live study route.
+  const original = Math.random;
+  try {
+    Math.random = () => 0.75;
+    assert.equal((await invoke('/audience-assignment', { interpretationCondition: 'AI' })).payload.interpretationCondition, 'NO_AI');
+  } finally { Math.random = original; }
 });

@@ -8,7 +8,11 @@
     "dev": "nodemon --watch 'api/**/*.ts' --exec \"ts-node\" api/index.ts",
     "build": "tsc",
     "test": "node --test -r ts-node/register tests/*.test.cjs",
-    "interpretations:prepare": "ts-node api/scripts/precompileAudienceInterpretations.ts"
+    "interpretations:prepare": "ts-node api/scripts/precompileAudienceInterpretations.ts",
+    "interpretations:prepare:cli": "node -r ./api/scripts/firebaseCliAuth.cjs -r ts-node/register api/scripts/precompileAudienceInterpretations.ts",
+    "audience:pilot:prepare": "ts-node api/scripts/activateAudiencePilot.ts",
+    "audience:pilot:prepare:cli": "node -r ./api/scripts/firebaseCliAuth.cjs -r ts-node/register api/scripts/activateAudiencePilot.ts",
+    "dev:audience:cli": "node -r ./api/scripts/firebaseCliAuth.cjs -r ts-node/register api/audience.ts"
   },
   "keywords": [],
   "author": "",

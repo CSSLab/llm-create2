@@ -48,25 +48,29 @@ export async function prepareAudienceInterpretations(args = process.argv.slice(2
       runId, interpretationId: identity.id, input: identity.input,
       poemTextOrigin: poem.poemTextOrigin, request, requestedAt,
       endpoint: `${API}/chat/completions`, catalogAccessedAt, modelCatalog: model,
-      parameterPolicy: "OpenRouter/model defaults; only model and messages explicitly supplied",
+      parameterPolicy: "reasoning.effort=low; provider.require_parameters=true; verbosity omitted because current Astra providers do not support it; other parameters use OpenRouter/model defaults",
+      lengthPolicy: "Prompt asks for one short paragraph; no numeric word limit or output truncation",
       clientRuntime: process.version,
     };
     await attemptRef.create({ ...audit, status: "requested" });
+    let httpFailure = false;
     try {
       const response = await fetch(`${API}/chat/completions`, {
         method: "POST", headers, body: JSON.stringify(request), signal: AbortSignal.timeout(300000),
       });
       const receivedAt = new Date().toISOString();
+      httpFailure = !response.ok;
       const completion = await response.json() as OpenRouterCompletion;
       // Store the complete completion response, including usage, provider,
       // returned model, fingerprint and router metadata when disclosed.
       await attemptRef.update({ receivedAt, httpStatus: response.status, response: completion, status: "received" });
+      if (!response.ok) throw new Error(`OpenRouter request failed (HTTP ${response.status}); see the saved response for details`);
       const choice = completion.choices?.[0];
       const rawText = choice?.message?.content;
       const text = typeof rawText === "string" ? rawText.trim() : rawText;
-      if (!response.ok || completion.error || choice?.finish_reason !== "stop" ||
+      if (completion.error || choice?.finish_reason !== "stop" ||
           !isInterpretationText(text) || choice?.message?.refusal) {
-        throw new Error(`Unusable completion (HTTP ${response.status}; requires one paragraph of 1–100 words and finish_reason=stop)`);
+        throw new Error(`Unusable completion (HTTP ${response.status}; requires one nonempty paragraph and finish_reason=stop)`);
       }
       // Never overwrite a cached stimulus. Re-running resumes missing poems.
       await db.collection(INTERPRETATION_COLLECTION).doc(identity.id).create({
@@ -87,6 +91,9 @@ export async function prepareAudienceInterpretations(args = process.argv.slice(2
       const message = error instanceof Error ? error.message : "Generation failed";
       await attemptRef.update({ status: "failed", failedAt: new Date().toISOString(), failure: message });
       console.error(JSON.stringify({ poemId: poem.id, status: "failed", message }));
+      // An authentication, credit, routing, or service error affects the batch.
+      // Preserve this attempt and stop instead of repeating it for every poem.
+      if (httpFailure) break;
     }
   }
   if (failures) throw new Error(`${failures} interpretations failed; review audienceInterpretationAttempt before retrying`);

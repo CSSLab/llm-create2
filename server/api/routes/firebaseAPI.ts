@@ -1,4 +1,4 @@
-import { loadAudienceCandidates } from "../utils/audienceCandidates";
+import { loadAudiencePilot, AUDIENCE_PILOT_ID } from "../utils/audiencePilot";
 import { isDeepStrictEqual } from "node:util";
 import { INTERPRETATION_COLLECTION, interpretationIdentity, isReadyInterpretation } from "../utils/audienceInterpretations";
 import { assignInterpretationCondition, INTERPRETATION_DISPLAY } from "../utils/audienceInterpretationProtocol";
@@ -35,7 +35,7 @@ const AUDIENCE_INCOMPLETE_SESSION_COLLECTION = "audienceIncompleteSession";
 // later in Firestore. Set via server/.env - bump it there and restart the
 // server when starting a new pilot round.
 const AUDIENCE_PILOT_VERSION =
-  process.env.AUDIENCE_PILOT_VERSION ?? "unset-audience-pilot-version";
+  process.env.AUDIENCE_PILOT_VERSION ?? AUDIENCE_PILOT_ID;
 
 // Temporary hand-written decoys, kept in sync with the client preview.
 // Each trial uses decoys for its own source passage.
@@ -228,6 +228,9 @@ const autosaveHandler: express.RequestHandler = async (req, res) => {
         .status(400)
         .json({ error: "Missing sessionId or data objects" });
     }
+    if (data.role === "audience" && data.data?.assignment?.preview) {
+      return res.status(400).json({ error: "Preview responses are not study data" });
+    }
 
     const statusMap: Record<number, string> = {
       1: "captcha",
@@ -334,10 +337,18 @@ router.post("/artist/commit-session", async (req, res) => {
 // Sample two distinct poems per condition across all eligible passages, then
 // randomize their presentation order. Source passages may repeat; poems do not.
 // Creator condition remains server-side and can be joined by poem ID in analysis.
-router.post("/audience-assignment", async (_req, res) => {
+async function audienceAssignmentHandler(req: express.Request, res: express.Response, preview = false) {
   try {
-    const candidates = (await loadAudienceCandidates()).filter((candidate) =>
-      (PASSAGE_DISTRACTOR_STATEMENTS[candidate.passageId]?.length ?? 0) >= 3);
+    if (preview && req.body?.interpretationCondition !== undefined &&
+        !["AI", "NO_AI"].includes(req.body.interpretationCondition)) {
+      return res.status(400).json({ error: "Invalid preview condition" });
+    }
+    const pilot = await loadAudiencePilot();
+    if (!pilot || pilot.poems.some(candidate =>
+      (PASSAGE_DISTRACTOR_STATEMENTS[candidate.passageId]?.length ?? 0) < 3)) {
+      return res.status(409).json({ code: "AUDIENCE_PILOT_NOT_READY", error: "The audience pilot has not been prepared" });
+    }
+    const candidates = pilot.poems;
     const focalCandidates = sampleAudienceCandidates(candidates);
     if (!focalCandidates) {
       return res.status(409).json({
@@ -357,7 +368,8 @@ router.post("/audience-assignment", async (_req, res) => {
       return res.status(409).json({ code: "AUDIENCE_INTERPRETATIONS_NOT_READY",
         error: "Poem preparation is not complete. Please contact the study administrator." });
     }
-    const interpretationCondition = assignInterpretationCondition();
+    const interpretationCondition = preview && req.body?.interpretationCondition
+      ? req.body.interpretationCondition : assignInterpretationCondition();
     const roundPassageIds = focalCandidates.map((candidate) => candidate.passageId);
     const tutorialPassageId = shuffle(
       AUDIENCE_PASSAGE_ID_LIST.filter((id) => !roundPassageIds.includes(id)),
@@ -394,9 +406,12 @@ router.post("/audience-assignment", async (_req, res) => {
       };
     });
 
-    const assignmentId = db.collection(AUDIENCE_COLLECTION).doc().id;
+    const assignmentId = `${preview ? "preview-" : ""}${db.collection(AUDIENCE_COLLECTION).doc().id}`;
     const assignment = {
       id: assignmentId,
+      pilotId: pilot.id,
+      poolHash: pilot.poolHash,
+      ...(preview && { preview: true }),
       protocolVersion: AUDIENCE_PROTOCOL_VERSION,
       presentationVersion: AUDIENCE_PRESENTATION,
       samplingStrategy: AUDIENCE_SAMPLING_STRATEGY,
@@ -418,14 +433,19 @@ router.post("/audience-assignment", async (_req, res) => {
       statementTrials,
     };
     // Fix the randomization and stimuli server-side before the participant starts.
-    await db.collection("audienceAssignment").doc(assignmentId).create({ assignment,
-      createdAt: FieldValue.serverTimestamp(), audiencePilotVersion: AUDIENCE_PILOT_VERSION });
+    if (!preview) {
+      await db.collection("audienceAssignment").doc(assignmentId).create({ assignment,
+        createdAt: FieldValue.serverTimestamp(), audiencePilotVersion: AUDIENCE_PILOT_VERSION });
+    }
     res.json(assignment);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to create audience assignment" });
   }
-});
+}
+
+router.post("/audience-assignment", (req, res) => audienceAssignmentHandler(req, res));
+router.post("/audience-preview-assignment", (req, res) => audienceAssignmentHandler(req, res, true));
 
 router.post("/commit-audience-session", async (req, res) => {
   try {
@@ -437,7 +457,7 @@ router.post("/commit-audience-session", async (req, res) => {
     }
 
     const assignment = audienceData.assignment;
-    if (!isValidAudienceAssignment(assignment)) {
+    if (assignment?.preview || !isValidAudienceAssignment(assignment)) {
       return res.status(400).json({ error: "Invalid audience assignment" });
     }
     if (assignment.protocolVersion &&
@@ -461,6 +481,7 @@ router.post("/commit-audience-session", async (req, res) => {
       .doc(sessionId);
     const assignmentSummary = {
       id: assignment.id,
+      ...(assignment.pilotId && { pilotId: assignment.pilotId, poolHash: assignment.poolHash }),
       ...(assignment.protocolVersion ? {
         protocolVersion: assignment.protocolVersion,
         samplingStrategy: assignment.samplingStrategy,

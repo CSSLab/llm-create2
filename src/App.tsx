@@ -118,7 +118,7 @@ function App() {
   const runPendingSave = () => {
     const data = pendingSaveRef.current;
     pendingSaveRef.current = null;
-    if (!data || !sessionId || (isTestMode && data.role === "audience")) return Promise.resolve();
+    if (!data || !sessionId || (data.role === "audience" && (isTestMode || data.data.assignment?.preview))) return Promise.resolve();
 
     const endpoint =
       data.role === "artist"

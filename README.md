@@ -37,8 +37,8 @@ completed poem, rather than source-to-poem transformation. Reading all four
 poems leads to statement matching, creator-AI estimates, and the post-survey.
 
 Assignments sample two distinct `LLM` poems and two distinct `NO_AI` poems from
-eligible completed, non-test Prolific submissions across the current passage
-pool, then shuffle all four. Every eligible poem has an equal chance within its
+the pilot's fixed snapshot of eligible completed, non-test Prolific submissions
+across the passage pool, then shuffle all four. Every included poem has an equal chance within its
 condition; sources may repeat. The assignment and order remain fixed throughout
 the session. Each statement trial uses decoys for that poem's actual embedded
 source passage. Creator conditions are not sent to the browser.
@@ -68,9 +68,9 @@ Data compatibility:
   pending saves before committing; a failed HTTP response keeps the participant
   on the survey so they can retry.
 
-`AUDIENCE_TEST` starts a dummy preview and skips both autosaves and final writes.
-The existing insufficient-pool fallback also starts an explicitly labeled dummy
-preview when fewer than two real poems are available in either condition.
+`AUDIENCE_TEST` starts an explicit dummy preview and skips both autosaves and final writes.
+Normal participant entry never falls back to dummy poems. An unprepared pilot,
+insufficient pool, or missing interpretation keeps the participant at the entry screen.
 
 Validation (Node 20.19+ or 22.12+):
 
@@ -105,12 +105,81 @@ poem rating, not during statement matching or creator-AI estimates.
 `AUDIENCE_TEST` randomizes the condition. All use visibly identified dummy
 stimuli and skip study writes, including exposure autosaves.
 
+### Pilot with the existing poems
+
+This branch defaults to `audience-existing-poems-2026-09-08-v1`, stored in the
+`audiencePilot` collection in Firebase project `llm-create-2`. Its immutable pool
+contains the 27 prepared poems (20 `LLM`, 7 `NO_AI`). Every assignment still
+contains two poems from each creator condition. Newly arriving creator records
+do not alter this pilot or block it with missing interpretations.
+
+The manifest stores the original candidate snapshots and a digest covering poem
+content, source geometry, creator condition, creator statement, and interpretation
+identity. Each assignment and completed audience record includes `pilotId` and
+`poolHash`, alongside the existing round, condition, rating, and exposure fields.
+The server verifies the manifest and the complete interpretation cache before
+allocating either audience condition.
+
+Run the local pilot with the existing Firebase CLI login in one terminal:
+
+```sh
+npm --prefix server run dev:audience:cli
+```
+
+Then start the frontend in another terminal:
+
+```sh
+npm run dev:client -- --host 127.0.0.1 --port 5178
+```
+
+At the captcha screen, `AUDIENCE_PREVIEW_AI` and `AUDIENCE_PREVIEW_NO_AI` use
+the actual pilot poems and cached interpretations. `AUDIENCE_PREVIEW` randomizes
+the interpretation condition. These previews use the same assignment code and
+pool as the study, but never persist an allocation, autosave, or final response.
+The server also rejects attempts to save an assignment marked as a preview.
+Entering the normal displayed captcha starts a recorded participant session.
+
+To prepare a new fixed pool after generating all its interpretations:
+
+```sh
+# Read-only readiness check; omit :cli when using server Firebase credentials.
+npm --prefix server run audience:pilot:prepare:cli
+
+# Creates an immutable manifest; safely resumes when the same pool already exists.
+npm --prefix server run audience:pilot:prepare:cli -- --write
+```
+
+Set a new `AUDIENCE_PILOT_ID` on both the preparation command and server for a new
+collection wave. An existing manifest is never overwritten. The deployed API
+uses the regular server entry point and its Firebase admin credentials; audience
+assignment only reads cached interpretations and does not need an OpenRouter key.
+The hosting layer must forward `/api/firebase/*` to that API. The repository's
+Firebase hosting config alone serves the frontend and does not deploy an API.
+
 ### Preparing interpretations after creator collection
 
-Use Node 22.12+ with the existing Firebase admin credentials in `server/.env`.
-Add `OPENROUTER_API_KEY` there (see
+Use Node 22.12+ and add `OPENROUTER_API_KEY` to `server/.env` (see
 `server/.env.audience-interpretations.example`). Never use a `VITE_` variable for
 this key. The preparation command is an administrator CLI, not a public route.
+For Firebase authentication, reuse the existing Firebase CLI login used by the
+download pipeline:
+
+```sh
+# Read-only readiness check using the existing Firebase CLI login.
+npm --prefix server run interpretations:prepare:cli
+
+# Generate and cache missing interpretations with the same login.
+npm --prefix server run interpretations:prepare:cli -- --write
+```
+
+This uses the default project in `.firebaserc` (`FIREBASE_CLI_PROJECT` can
+explicitly override it). The installed `firebase` executable is discovered on
+PATH, or its package directory can be supplied in `FIREBASE_TOOLS_PATH`.
+OAuth credentials stay in memory and are never copied into `.env`, the browser,
+or interpretation audit records. This preload is only used by the local CLI;
+the deployed server continues using its configured Firebase admin credentials.
+
+Alternatively, with Firebase admin credentials already in `server/.env`:
 
 ```sh
 # Read-only: report eligible, already prepared, and pending counts. No model calls.
@@ -121,19 +190,28 @@ npm --prefix server run interpretations:prepare -- --write
 ```
 
 Generation uses `openai/gpt-6-astra` through OpenRouter with the revised
-`blackout-interpretation-poem-only-v2` prompt. The model receives only the final
+`blackout-interpretation-poem-only-v3` prompt. The model receives only the final
 poem and a general explanation of blackout poetry. It is asked for one possible
 reading grounded only in that poem, without claiming creator intent, evaluating
-quality, suggesting revisions, or exceeding one paragraph of 100 words. The
+quality, or suggesting revisions. It asks for one short paragraph in everyday
+language, with no numeric word limit. The
 exact system prompt and user template are in
-`server/api/utils/audienceInterpretations.ts`. The request contains only `model` and `messages`;
-temperature, top-p, reasoning, seed, token limits, and provider routing are left
-at service/model defaults. No unredacted source, source title/author, creator statement, survey answer, or
+`server/api/utils/audienceInterpretations.ts`. Requests explicitly set
+`reasoning.effort: low` and `provider.require_parameters: true`.
+Strict provider routing prevents unsupported settings from being silently ignored.
+The verbosity parameter is omitted: a strict request for `verbosity: low` was
+rejected by OpenRouter's Astra providers on September 8, 2026 (UTC). Brevity is
+requested through the short-paragraph instruction instead, as agreed for this run.
+Temperature, top-p, seed, and token limits remain at service/model defaults.
+The exact generation configuration participates in the cache ID, so earlier
+default-setting interpretations cannot be reused for this configuration.
+No unredacted source, source title/author, creator statement, survey answer, or
 creator AI label is sent. GPT-6 Astra is documented by
 [OpenAI](https://developers.openai.com/api/docs/models/gpt-6-astra) and listed by
 [OpenRouter](https://openrouter.ai/openai/gpt-6-astra) (checked September 7, 2026).
 The command checks the live OpenRouter catalog and fails if this exact model is
-absent; it never substitutes a model.
+absent; it never substitutes a model. HTTP failures stop the batch after saving
+the failed attempt; re-running resumes any remaining poems.
 
 The existing creator format stores word indexes, not manually arranged lines.
 Reconstruction follows the passage's word order, preserving punctuation and
@@ -153,8 +231,9 @@ UTC dates, runtime, and full response usage/router metadata. API keys are never
 stored. Undisclosed underlying model snapshots/defaults remain unknown; the
 service alias alone is not a guarantee of future reproducibility.
 
-Only complete, nonempty, single-paragraph outputs of at most 100 words are
-accepted. Truncated or malformed outputs remain in the attempt audit and block
+Only complete, nonempty, single-paragraph outputs are accepted; there is no
+hard word-count filter and accepted outputs are not shortened. Truncated or
+malformed outputs remain in the attempt audit and block
 readiness. Re-running skips cached, matching stimuli and retries missing ones;
 accepted stimuli are never overwritten. Changed poem/prompt inputs get new IDs. The new prompt version produces
 different cache IDs, so earlier source-informed interpretations cannot be reused;
@@ -162,10 +241,10 @@ run preparation again before launching this protocol. For an intentional new gen
 preparing the new pool. No automatic regeneration occurs during audience use.
 
 Both audience conditions require valid cached interpretations for **every**
-eligible poem. A missing or changed stimulus returns
+poem in the fixed pilot. A missing or changed stimulus returns
 `AUDIENCE_INTERPRETATIONS_NOT_READY`; it does not remove that poem from sampling
 or start a dummy session. Prepare the final pool before audience recruitment.
-A newly eligible creator poem requires another preparation run.
+Newly eligible creator poems can be included in a later generation and pilot wave.
 
 ### Assignment and exposure logging
 
@@ -194,5 +273,5 @@ A newly eligible creator poem requires another preparation run.
 
 Tests cover both participant conditions and creator-condition balancing,
 legacy assignments, cache readiness/staleness, immutable assignment validation,
-exposure joins, prompt/transcription fidelity, generation defaults/provenance,
+exposure joins, prompt/transcription fidelity, generation settings/provenance,
 resumption, and rejected model responses, with mocked Firestore and OpenRouter.

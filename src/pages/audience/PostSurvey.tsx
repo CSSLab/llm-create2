@@ -41,7 +41,7 @@ const AudiencePostSurvey = () => {
       },
     };
 
-    if (isTestMode) {
+    if (isTestMode || audienceData.assignment?.preview) {
       navigate("/audience/thank-you");
       return;
     }

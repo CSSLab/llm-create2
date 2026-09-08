@@ -91,6 +91,9 @@ export interface StatementTrial {
 // member at captcha time, fixed for the rest of the study.
 export interface AudienceAssignment {
   id: string;
+  pilotId?: string;
+  poolHash?: string;
+  preview?: boolean;
   protocolVersion?: string;
   presentationVersion?: string;
   samplingStrategy?: string;

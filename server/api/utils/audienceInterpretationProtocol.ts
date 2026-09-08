@@ -34,5 +34,4 @@ export interface InterpretationExposure {
 
 export const isInterpretationText = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0 &&
-  value === value.trim() && !/[\r\n]/.test(value) &&
-  value.split(/\s+/u).length <= 100;
+  value === value.trim() && !/[\r\n]/.test(value);
