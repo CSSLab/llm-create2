@@ -17,7 +17,7 @@ const AudiencePostSurvey = () => {
     throw new Error("Component must be used within a DataContext.Provider");
   }
 
-  const { userData, sessionId, prolific, isTestMode, flushSaves } =
+  const { userData, sessionId, prolific, isTestMode, flushSaves, disableRefreshGuard } =
     context;
 
   const submitDb = async (answers: SurveyAnswers) => {
@@ -59,7 +59,8 @@ const AudiencePostSurvey = () => {
         }),
       });
 
-      if (!response.ok) throw new Error(`Audience submission failed: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Audience submission failed: ${response.status}`);
 
       toaster.create({
         description: "Survey successfully submitted!",
@@ -67,7 +68,14 @@ const AudiencePostSurvey = () => {
         duration: 5000,
       });
 
-      navigate("/audience/thank-you");
+      if (prolific && !isTestMode) {
+        disableRefreshGuard();
+        window.location.replace(
+          "https://app.prolific.com/submissions/complete?cc=C4O2N8X4",
+        );
+      } else {
+        navigate("/audience/thank-you");
+      }
     } catch (error) {
       console.error("Error saving data:", error);
       toaster.create({
@@ -91,7 +99,11 @@ const AudiencePostSurvey = () => {
 
   return (
     <PageTemplate description="Please fill out the following questions before we end! (Scroll to view all questions)">
-      <fieldset disabled={isSubmitting} aria-busy={isSubmitting} className="min-w-0">
+      <fieldset
+        disabled={isSubmitting}
+        aria-busy={isSubmitting}
+        className="min-w-0"
+      >
         <SurveyScroll
           survey={AudiencePostSurveyQuestions}
           onSubmit={handleSubmit}

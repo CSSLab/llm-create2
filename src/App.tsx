@@ -75,6 +75,7 @@ interface DataContextValue {
   flushSaves: () => Promise<void>;
   isTestMode: boolean;
   setIsTestMode: (value: boolean) => void;
+  disableRefreshGuard: () => void;
 }
 
 export const DataContext = createContext<DataContextValue | null>(null);
@@ -87,7 +88,7 @@ function App() {
   const saveTimerRef = useRef<number | null>(null);
   const pendingSaveRef = useRef<UserData | null>(null);
 
-  usePreventRefresh(
+  const disableRefreshGuard = usePreventRefresh(
     "To make sure your session counts, please avoid refreshing the page. Do you still want to refresh?",
   );
   usePreventBack(
@@ -411,6 +412,7 @@ function App() {
         flushSaves,
         isTestMode,
         setIsTestMode,
+        disableRefreshGuard,
       }}
     >
       <Provider>
