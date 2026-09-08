@@ -1,4 +1,22 @@
+import { loadAudienceCandidates } from "../utils/audienceCandidates";
+import { isDeepStrictEqual } from "node:util";
+import { INTERPRETATION_COLLECTION, interpretationIdentity, isReadyInterpretation } from "../utils/audienceInterpretations";
+import { assignInterpretationCondition, INTERPRETATION_DISPLAY } from "../utils/audienceInterpretationProtocol";
 import express from "express";
+import {
+  AUDIENCE_PROTOCOL_VERSION,
+  AUDIENCE_PREVIOUS_PROTOCOL_VERSION,
+  AUDIENCE_PRESENTATION,
+  hasAudienceInterpretations,
+  AUDIENCE_SAMPLING_STRATEGY,
+  AUDIENCE_PASSAGE_POOL_VERSION,
+  AUDIENCE_PASSAGE_ID_LIST,
+  shuffle,
+  sampleAudienceCandidates,
+  isValidAudienceAssignment,
+  hasCompleteCreativityRatings,
+  hasCompleteInterpretationExposure,
+} from "../utils/audienceAssignment";
 import { db, FieldValue } from "../firebase/firebase";
 
 const router = express.Router();
@@ -12,34 +30,15 @@ const AUDIENCE_COLLECTION = "audience";
 const AUDIENCE_SURVEY_COLLECTION = "audienceSurvey";
 const AUDIENCE_INCOMPLETE_SESSION_COLLECTION = "audienceIncompleteSession";
 
-const AUDIENCE_PASSAGE_POOL_VERSION = "creator-passages-2026-08-05-v1";
 // Tags audience records with which pilot round produced them, so different
 // rounds (different assignment logic, decoy pools, etc.) can be told apart
 // later in Firestore. Set via server/.env - bump it there and restart the
 // server when starting a new pilot round.
 const AUDIENCE_PILOT_VERSION =
   process.env.AUDIENCE_PILOT_VERSION ?? "unset-audience-pilot-version";
-const AUDIENCE_PASSAGE_ID_LIST = [
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "nyt-1",
-  "nyt-2",
-  "nyt-3",
-  "nyt-4",
-] as const;
-const AUDIENCE_PASSAGE_IDS = new Set<string>(AUDIENCE_PASSAGE_ID_LIST);
 
-// TEMPORARY (for the time being): hand-written decoy statements, kept in
-// sync with src/consts/audienceDistractors.ts (server can't import from
-// src/ - its tsconfig roots at ./api). While the real submission pool is
-// thin, every statement-match trial draws its 3 wrong options from here
-// instead of from other real candidates on the same passage, so a passage
-// only needs 2 LLM + 2 NO_AI real submissions to be eligible, not a further
-// 3 same-passage decoys on top. Revert by deleting this block and restoring
-// the same-passage decoyCandidates logic in POST /audience-assignment below.
+// Temporary hand-written decoys, kept in sync with the client preview.
+// Each trial uses decoys for its own source passage.
 const PASSAGE_DISTRACTOR_STATEMENTS: Record<string, string[]> = {
   "3": [
     "Mostly, this poem is about senses waking up all at once after being shut off for a long time.",
@@ -124,59 +123,6 @@ const PASSAGE_DISTRACTOR_STATEMENTS: Record<string, string[]> = {
   ],
 };
 
-// Real Prolific PIDs are a random string of letters/digits; anything with
-// "test" in it (case-insensitive) was typed in by hand during development
-// and shouldn't be treated as a real participant submission.
-const isRealProlificId = (value: unknown): value is string =>
-  typeof value === "string" &&
-  value.trim().length > 0 &&
-  !value.toLowerCase().includes("test");
-
-interface AudienceCandidate {
-  id: string;
-  condition: "LLM" | "NO_AI";
-  passageId: string;
-  passage: {
-    id: string;
-    text: string;
-    title: string;
-    author: string;
-    publication?: string;
-  };
-  selectedWordIndexes: number[];
-  statement: string;
-}
-
-const shuffle = <T,>(items: T[]): T[] => {
-  const copy = [...items];
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    const otherIndex = Math.floor(Math.random() * (index + 1));
-    [copy[index], copy[otherIndex]] = [copy[otherIndex], copy[index]];
-  }
-  return copy;
-};
-
-const asRecord = (value: unknown): Record<string, unknown> | undefined =>
-  typeof value === "object" && value !== null
-    ? (value as Record<string, unknown>)
-    : undefined;
-
-// Reads an artist's own "artist's statement" answer from their post-survey,
-// checking both this branch's legacy `q14` field and the newer
-// `final_intended_meaning` id.
-const getStatement = (surveyData: Record<string, unknown> | undefined) => {
-  const nestedSurveyResponse = asRecord(surveyData?.surveyResponse);
-  const postAnswers =
-    asRecord(surveyData?.postSurveyAnswers) ??
-    asRecord(surveyData?.postAnswers) ??
-    asRecord(nestedSurveyResponse?.postAnswers);
-  const statement =
-    postAnswers?.final_intended_meaning ?? postAnswers?.q14 ?? null;
-  return typeof statement === "string" && statement.trim()
-    ? statement.trim()
-    : null;
-};
-
 const WORD_PATTERN = /[\p{L}\p{N}']+/gu;
 const FIRST_PERSON_PATTERN = /\b(i|me|my|mine|we|us|our|ours)\b/i;
 const POSITIVE_WORDS = new Set([
@@ -256,73 +202,6 @@ const decoyMatchScore = (
   );
 };
 
-const loadAudienceCandidates = async (): Promise<AudienceCandidate[]> => {
-  const artistSnapshot = await db
-    .collection(ARTIST_COLLECTION)
-    .where("condition", "in", ["LLM", "NO_AI"])
-    .get();
-
-  const candidates = await Promise.all(
-    artistSnapshot.docs.map(async (artistDoc) => {
-      const artistData = artistDoc.data();
-      const condition = artistData.condition as "LLM" | "NO_AI";
-      const passagePoolVersion = artistData.assignment?.passagePoolVersion;
-      const poemRef = artistData.poem;
-      const surveyRef = artistData.surveyResponse;
-      if (
-        passagePoolVersion !== AUDIENCE_PASSAGE_POOL_VERSION ||
-        !poemRef ||
-        !surveyRef ||
-        !isRealProlificId(artistData.prolific?.prolificPid)
-      ) {
-        return null;
-      }
-
-      const [poemDoc, surveyDoc] = await Promise.all([
-        poemRef.get(),
-        surveyRef.get(),
-      ]);
-      if (!poemDoc.exists || !surveyDoc.exists) return null;
-
-      const poemData = poemDoc.data();
-      const passage = poemData?.passage;
-      // Group/validate by the passage actually embedded on the poem, not by
-      // the separate passageId/taskPassageId field - some docs have those
-      // two disagree (stale field vs. the passage that's actually stored
-      // and rendered), which let poems from two different passages end up
-      // in the same participant's assignment.
-      const passageId = String(passage?.id ?? "");
-      const statement = getStatement(surveyDoc.data());
-      const selectedWordIndexes =
-        poemData?.selectedWordIndexes ?? poemData?.text;
-
-      if (
-        !AUDIENCE_PASSAGE_IDS.has(passageId) ||
-        !passage?.text ||
-        !passage?.title ||
-        !passage?.author ||
-        !statement ||
-        !Array.isArray(selectedWordIndexes)
-      ) {
-        return null;
-      }
-
-      return {
-        id: poemDoc.id,
-        condition,
-        passageId,
-        passage,
-        selectedWordIndexes: selectedWordIndexes.filter(Number.isInteger),
-        statement,
-      } satisfies AudienceCandidate;
-    }),
-  );
-
-  return candidates.filter(
-    (candidate): candidate is AudienceCandidate => candidate !== null,
-  );
-};
-
 // Full poem content and distractor statement text already live in the
 // poem/artistSurvey collections — only store the poem IDs on an audience
 // record instead of duplicating that content every time.
@@ -360,8 +239,16 @@ const autosaveHandler: express.RequestHandler = async (req, res) => {
       7: "post-survey",
     };
 
+    const audienceStatusMap: Record<number, string> = {
+      1: "captcha", 2: "consent", 3: "reading", 4: "statement-match",
+      5: "ai-detection", 6: "post-survey", 7: "submitted",
+    };
+    const currentStatusMap = data.role === "audience" &&
+      (hasAudienceInterpretations(data.data?.assignment?.protocolVersion) ||
+        data.data?.assignment?.protocolVersion === AUDIENCE_PREVIOUS_PROTOCOL_VERSION)
+      ? audienceStatusMap : statusMap;
     const status = data.data?.timeStamps
-      ? statusMap[data.data.timeStamps.length] || "started"
+      ? currentStatusMap[data.data.timeStamps.length] || "started"
       : "started";
 
     const partialData = trimAudiencePoemRefs(data.data);
@@ -444,61 +331,45 @@ router.post("/artist/commit-session", async (req, res) => {
   }
 });
 
-// Build a fresh audience assignment: a passage with a pool of real artist
-// submissions, 4 focal poems all drawn from that same passage, blinded
-// (condition is never sent to the client) and randomized (both which real
-// submissions are picked and the on-screen order), and for each one a set of
-// decoy statements alongside the real one.
-//
-// TEMPORARY (for the time being): decoys come from the fixed
-// PASSAGE_DISTRACTOR_STATEMENTS pool above instead of other real submissions
-// on the same passage, so eligibility only needs 4 real candidates total
-// (not a further 3 same-passage decoys on top). Also TEMPORARY: the 4 poems
-// can be any mix of LLM/NO_AI - no 2/2 balance is enforced. To restore a
-// balanced split, filter passageCandidates by condition before sampling,
-// as before.
+// Sample two distinct poems per condition across all eligible passages, then
+// randomize their presentation order. Source passages may repeat; poems do not.
+// Creator condition remains server-side and can be joined by poem ID in analysis.
 router.post("/audience-assignment", async (_req, res) => {
   try {
-    const candidates = await loadAudienceCandidates();
-    const candidatesByPassage = new Map<string, AudienceCandidate[]>();
-    candidates.forEach((candidate) => {
-      const passageCandidates = candidatesByPassage.get(candidate.passageId) ?? [];
-      passageCandidates.push(candidate);
-      candidatesByPassage.set(candidate.passageId, passageCandidates);
-    });
-
-    const eligiblePassages = shuffle(
-      [...candidatesByPassage.entries()].filter(([passageId, passageCandidates]) => {
-        return (
-          passageCandidates.length >= 4 &&
-          (PASSAGE_DISTRACTOR_STATEMENTS[passageId]?.length ?? 0) >= 3
-        );
-      }),
-    );
-
-    if (eligiblePassages.length === 0) {
+    const candidates = (await loadAudienceCandidates()).filter((candidate) =>
+      (PASSAGE_DISTRACTOR_STATEMENTS[candidate.passageId]?.length ?? 0) >= 3);
+    const focalCandidates = sampleAudienceCandidates(candidates);
+    if (!focalCandidates) {
       return res.status(409).json({
         code: "INSUFFICIENT_AUDIENCE_POOL",
-        error:
-          "No current source passage has four focal poems from real, non-test Prolific submissions",
+        error: "At least two AI and two non-AI poems from real, non-test Prolific submissions are required",
       });
     }
-
-    const [passageId, passageCandidates] = eligiblePassages[0];
+    // Require readiness across the entire eligible pool, before assigning an
+    // audience condition. Missing generations must not alter poem eligibility.
+    const interpretations = new Map<string, { id: string; text: string }>();
+    await Promise.all(candidates.map(async (poem) => {
+      const record = await db.collection(INTERPRETATION_COLLECTION).doc(interpretationIdentity(poem).id).get();
+      const data = record.data();
+      if (isReadyInterpretation(data, poem)) interpretations.set(poem.id, data);
+    }));
+    if (candidates.some((poem) => !interpretations.has(poem.id))) {
+      return res.status(409).json({ code: "AUDIENCE_INTERPRETATIONS_NOT_READY",
+        error: "Poem preparation is not complete. Please contact the study administrator." });
+    }
+    const interpretationCondition = assignInterpretationCondition();
+    const roundPassageIds = focalCandidates.map((candidate) => candidate.passageId);
     const tutorialPassageId = shuffle(
-      AUDIENCE_PASSAGE_ID_LIST.filter(
-        (candidatePassageId) => candidatePassageId !== passageId,
-      ),
+      AUDIENCE_PASSAGE_ID_LIST.filter((id) => !roundPassageIds.includes(id)),
     )[0];
-    const focalCandidates = shuffle(passageCandidates).slice(0, 4);
-    const staticDecoyCandidates = PASSAGE_DISTRACTOR_STATEMENTS[passageId].map(
-      (statement, index) => ({
-        id: `static-decoy-${passageId}-${index + 1}`,
-        statement,
-      }),
-    );
 
     const statementTrials = focalCandidates.map((focal) => {
+      const staticDecoyCandidates = PASSAGE_DISTRACTOR_STATEMENTS[focal.passageId].map(
+        (statement, index) => ({
+          id: `static-decoy-${focal.passageId}-${index + 1}`,
+          statement,
+        }),
+      );
       const poemText = focal.selectedWordIndexes
         .map((index) => focal.passage.text.split(" ")[index])
         .filter(Boolean)
@@ -524,20 +395,32 @@ router.post("/audience-assignment", async (_req, res) => {
     });
 
     const assignmentId = db.collection(AUDIENCE_COLLECTION).doc().id;
-    res.json({
+    const assignment = {
       id: assignmentId,
-      passageId,
+      protocolVersion: AUDIENCE_PROTOCOL_VERSION,
+      presentationVersion: AUDIENCE_PRESENTATION,
+      samplingStrategy: AUDIENCE_SAMPLING_STRATEGY,
+      interpretationCondition,
+      interpretationDisplayVersion: INTERPRETATION_DISPLAY.version,
+      roundPassageIds,
       tutorialPassageId,
-      taskPassageId: passageId,
       passagePoolVersion: AUDIENCE_PASSAGE_POOL_VERSION,
       poems: focalCandidates.map((candidate) => ({
         id: candidate.id,
         passageId: candidate.passageId,
         passage: candidate.passage,
         selectedWordIndexes: candidate.selectedWordIndexes,
+        interpretationId: interpretations.get(candidate.id)!.id,
+        ...(interpretationCondition === "AI" && {
+          interpretationText: interpretations.get(candidate.id)!.text,
+        }),
       })),
       statementTrials,
-    });
+    };
+    // Fix the randomization and stimuli server-side before the participant starts.
+    await db.collection("audienceAssignment").doc(assignmentId).create({ assignment,
+      createdAt: FieldValue.serverTimestamp(), audiencePilotVersion: AUDIENCE_PILOT_VERSION });
+    res.json(assignment);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to create audience assignment" });
@@ -554,17 +437,20 @@ router.post("/commit-audience-session", async (req, res) => {
     }
 
     const assignment = audienceData.assignment;
-    if (
-      !assignment?.id ||
-      !Array.isArray(assignment.poems) ||
-      assignment.poems.length !== 4 ||
-      assignment.passagePoolVersion !== AUDIENCE_PASSAGE_POOL_VERSION ||
-      assignment.passageId !== assignment.taskPassageId ||
-      assignment.tutorialPassageId === assignment.taskPassageId ||
-      !AUDIENCE_PASSAGE_IDS.has(assignment.tutorialPassageId) ||
-      !AUDIENCE_PASSAGE_IDS.has(assignment.taskPassageId)
-    ) {
+    if (!isValidAudienceAssignment(assignment)) {
       return res.status(400).json({ error: "Invalid audience assignment" });
+    }
+    if (assignment.protocolVersion &&
+        !hasCompleteCreativityRatings(audienceData.surveyResponse,
+          assignment.poems.map((poem: { id: string }) => poem.id))) {
+      return res.status(400).json({ error: "Missing or inconsistent poem creativity ratings" });
+    }
+    if (hasAudienceInterpretations(assignment.protocolVersion)) {
+      const stored = await db.collection("audienceAssignment").doc(assignment.id).get();
+      if (!isDeepStrictEqual(stored.data()?.assignment, assignment) ||
+          !hasCompleteInterpretationExposure(audienceData.surveyResponse, assignment)) {
+        return res.status(400).json({ error: "Invalid assignment or interpretation exposure records" });
+      }
     }
 
     const batch = db.batch();
@@ -575,9 +461,26 @@ router.post("/commit-audience-session", async (req, res) => {
       .doc(sessionId);
     const assignmentSummary = {
       id: assignment.id,
-      passageId: assignment.passageId,
+      ...(assignment.protocolVersion ? {
+        protocolVersion: assignment.protocolVersion,
+        samplingStrategy: assignment.samplingStrategy,
+        ...(assignment.presentationVersion && { presentationVersion: assignment.presentationVersion }),
+        ...(hasAudienceInterpretations(assignment.protocolVersion) && {
+          interpretationCondition: assignment.interpretationCondition,
+          interpretationDisplayVersion: assignment.interpretationDisplayVersion,
+        }),
+      } : {
+        passageId: assignment.passageId,
+        taskPassageId: assignment.taskPassageId,
+      }),
       tutorialPassageId: assignment.tutorialPassageId,
-      taskPassageId: assignment.taskPassageId,
+      roundPassageIds: assignment.poems.map((poem: { passageId: string }) => poem.passageId),
+      rounds: assignment.poems.map((poem: { id: string; passageId: string; interpretationId?: string }, index: number) => ({
+        round: index + 1,
+        poemId: poem.id,
+        passageId: poem.passageId,
+        ...(poem.interpretationId && { interpretationId: poem.interpretationId }),
+      })),
       passagePoolVersion: assignment.passagePoolVersion,
       poemIds: assignment.poems.map((poem: { id: string }) => poem.id),
       statementTrials: assignment.statementTrials.map(

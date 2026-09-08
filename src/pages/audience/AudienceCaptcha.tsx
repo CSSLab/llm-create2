@@ -5,22 +5,11 @@ import { Button, Input } from "@chakra-ui/react";
 import { toaster } from "../../components/ui/toaster";
 import { DataContext } from "../../App";
 import { createAudienceTestAssignment } from "../../consts/audienceTestAssignment";
-import { CREATOR_PASSAGE_POOL_VERSION, Passages } from "../../consts/passages";
-import type { AudienceAssignment } from "../../types";
+import type { AudienceAssignment, InterpretationCondition } from "../../types";
+import { isValidAudienceAssignment } from "../../../server/api/utils/audienceAssignment";
 
 const TEST_CAPTCHA = "AUDIENCE_TEST";
 const INSUFFICIENT_AUDIENCE_POOL = "INSUFFICIENT_AUDIENCE_POOL";
-const AUDIENCE_PASSAGE_IDS = new Set(Passages.map((passage) => passage.id));
-
-const isValidAssignment = (assignment: AudienceAssignment) =>
-  assignment.poems.length === 4 &&
-  assignment.statementTrials.length === 4 &&
-  assignment.passagePoolVersion === CREATOR_PASSAGE_POOL_VERSION &&
-  assignment.passageId === assignment.taskPassageId &&
-  assignment.tutorialPassageId !== assignment.taskPassageId &&
-  AUDIENCE_PASSAGE_IDS.has(assignment.tutorialPassageId) &&
-  AUDIENCE_PASSAGE_IDS.has(assignment.taskPassageId) &&
-  assignment.poems.every((poem) => poem.passageId === assignment.taskPassageId);
 
 const Captcha = () => {
   const navigate = useNavigate();
@@ -90,11 +79,12 @@ const Captcha = () => {
       data: {
         assignment,
         surveyResponse: {
-          id: "audience-survey-v1",
+          id: "audience-survey-v4",
           poemAnswers: [],
           statementMatches: [],
           creativityRatings: [],
           aiLikelihoodRatings: [],
+          interpretationExposures: [],
           postAnswers: {},
         },
         timeStamps: [new Date()],
@@ -104,22 +94,23 @@ const Captcha = () => {
     navigate("/consent");
   };
 
-  const startAudiencePreview = (description: string) => {
+  const startAudiencePreview = (description: string, condition?: InterpretationCondition) => {
     setIsTestMode(true);
     toaster.create({
       description,
       type: "info",
       duration: 8000,
     });
-    startAudience(createAudienceTestAssignment());
+    startAudience(createAudienceTestAssignment(condition));
   };
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
-    if (inputCaptcha === TEST_CAPTCHA) {
+    if ([TEST_CAPTCHA, "AUDIENCE_TEST_AI", "AUDIENCE_TEST_NO_AI"].includes(inputCaptcha)) {
       startAudiencePreview(
         "Audience preview started with dummy poems. Preview responses will not be saved.",
+        inputCaptcha === "AUDIENCE_TEST_AI" ? "AI" : inputCaptcha === "AUDIENCE_TEST_NO_AI" ? "NO_AI" : undefined,
       );
       return;
     }
@@ -154,10 +145,20 @@ const Captcha = () => {
           );
           return;
         }
+        if (typeof errorBody === "object" && errorBody !== null &&
+            "code" in errorBody && errorBody.code === "AUDIENCE_INTERPRETATIONS_NOT_READY") {
+          toaster.create({
+            description: "The study is not ready yet. Please contact the study administrator.",
+            type: "error",
+            duration: 8000,
+          });
+          setIsSubmitting(false);
+          return;
+        }
         throw new Error(`Assignment failed with status ${response.status}`);
       }
       const assignment = (await response.json()) as AudienceAssignment;
-      if (!isValidAssignment(assignment)) {
+      if (!isValidAudienceAssignment(assignment)) {
         throw new Error("Audience assignment response was invalid");
       }
       startAudience(assignment);

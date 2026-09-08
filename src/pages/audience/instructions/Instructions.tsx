@@ -33,9 +33,9 @@ const AudienceInstructions = () => {
         {/* Intro */}
         <p className="text-main">
           In this study you will read <strong>blackout poems</strong> written by
-          participants in a previous study. A blackout poem is made by selecting
-          words from an existing passage of text to create a new poem. Read only
-          the words that remain visible.
+          participants in a previous study. These poems were made by keeping
+          selected words from longer passages and removing the rest. Read the
+          remaining words in order. The questions ask about the poem they form.
         </p>
 
         <Image
@@ -56,22 +56,17 @@ const AudienceInstructions = () => {
 
         {/* Steps */}
         <div className="space-y-3">
-          <p className="text-main">The task has four steps:</p>
+          <p className="text-main">The task has three steps:</p>
           {[
             {
               label: "Read the poems & share your thoughts",
               timing: "~4 min per poem",
-              desc: "Read several blackout poems one at a time and answer a few questions about each one.",
+              desc: "Read four completed blackout poems one at a time. Share your interpretation, feelings, and creativity rating for each poem.",
             },
             {
               label: "Match each poem to its statement",
               timing: "~1 min per poem",
               desc: "For each poem, choose which of a few short statements you think the creator actually wrote about it.",
-            },
-            {
-              label: "Rate each poem's creativity",
-              timing: "~1 min per poem",
-              desc: "See the original passage each poem was created from and rate how creative you think it is.",
             },
             {
               label: "Share your impression",

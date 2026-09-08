@@ -54,7 +54,7 @@ const StatementMatch = () => {
     });
 
     if (isLastTrial) {
-      navigate("/audience/creativity");
+      navigate("/audience/ai-detection");
     } else {
       setTrialIndex((current) => current + 1);
       setSelectedStatementId("");

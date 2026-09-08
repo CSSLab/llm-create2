@@ -63,7 +63,7 @@ const AIDetection = () => {
   return (
     <PageTemplate
       title={`AI assistance estimate (${poemIndex + 1} of ${poems.length})`}
-      description="For each poem, give your own estimate. There may be any number of poems whose creator had access to AI assistance."
+      description="For each poem, give your own estimate of whether the creator had access to AI assistance."
     >
       <div className="flex flex-col md:grid md:[grid-template-columns:1fr_1fr] gap-6 py-4 md:py-8 md:items-start">
         <div className="md:sticky md:top-4 flex justify-center">

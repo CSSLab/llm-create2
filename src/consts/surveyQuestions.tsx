@@ -745,8 +745,18 @@ const audienceLiking7 = [
   { label: "7 · Very much", value: 7 },
 ];
 
+export const AUDIENCE_CREATIVITY_OPTIONS = [
+  { label: "1 · Not at all creative", value: 1 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+  { label: "4", value: 4 },
+  { label: "5", value: 5 },
+  { label: "6", value: 6 },
+  { label: "7 · Extremely creative", value: 7 },
+];
+
 export const AudiencePoemQuestions: PoemSurveyDefinition = {
-  id: "audience-poem-reception-v1",
+  id: "audience-poem-reception-v3",
   title: "Your response to this poem",
   sections: [
     {
@@ -837,6 +847,14 @@ export const AudiencePoemQuestions: PoemSurveyDefinition = {
           question:
             "I would be interested in reading another poem by this creator.",
           options: agreement7,
+          required: true,
+        },
+        {
+          id: "creativity",
+          type: "likertScale",
+          question:
+            "How creative do you find this poem?",
+          options: AUDIENCE_CREATIVITY_OPTIONS,
           required: true,
         },
       ],
@@ -1041,15 +1059,7 @@ export const AudiencePostSurveyQuestions: SurveyDefinition = {
   ],
 };
 
-export const AUDIENCE_CREATIVITY_OPTIONS = [
-  { label: "1 · Not at all creative", value: 1 },
-  { label: "2", value: 2 },
-  { label: "3", value: 3 },
-  { label: "4", value: 4 },
-  { label: "5", value: 5 },
-  { label: "6", value: 6 },
-  { label: "7 · Extremely creative", value: 7 },
-];
+
 
 export const AudienceReRankingQuestions: SurveyDefinition = {
   id: "survey2",

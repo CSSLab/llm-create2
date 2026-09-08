@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import type { InterpretationCondition, InterpretationExposure } from "../server/api/utils/audienceInterpretationProtocol";
+export type { InterpretationCondition, InterpretationExposure } from "../server/api/utils/audienceInterpretationProtocol";
 
 // ARTIST TYPES
 export interface Artist {
@@ -71,6 +73,8 @@ export interface AudiencePoem {
   passageId: string;
   passage: Passage;
   selectedWordIndexes: number[];
+  interpretationId?: string;
+  interpretationText?: string;
 }
 
 export interface StatementOption {
@@ -87,9 +91,16 @@ export interface StatementTrial {
 // member at captcha time, fixed for the rest of the study.
 export interface AudienceAssignment {
   id: string;
-  passageId: string;
+  protocolVersion?: string;
+  presentationVersion?: string;
+  samplingStrategy?: string;
+  interpretationCondition?: InterpretationCondition;
+  interpretationDisplayVersion?: string;
+  roundPassageIds?: string[];
+  // Legacy single-passage assignments only.
+  passageId?: string;
   tutorialPassageId: string;
-  taskPassageId: string;
+  taskPassageId?: string;
   passagePoolVersion: string;
   poems: AudiencePoem[];
   statementTrials: StatementTrial[];
@@ -126,6 +137,7 @@ export interface AudienceSurvey {
   statementMatches: AudienceStatementMatch[];
   creativityRatings: AudienceRating[];
   aiLikelihoodRatings: AudienceRating[];
+  interpretationExposures?: InterpretationExposure[];
   postSurvey?: SurveyDefinition;
   postAnswers: SurveyAnswers;
 }

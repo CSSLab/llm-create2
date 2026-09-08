@@ -39,6 +39,7 @@ import type {
   RankingData,
   ReRankingData,
   ProlificMeta,
+  InterpretationExposure,
 } from "./types";
 import { Provider } from "./components/ui/provider";
 import { Toaster } from "./components/ui/toaster";
@@ -47,7 +48,6 @@ import AudienceInstructions from "./pages/audience/instructions/Instructions";
 import AudiencePostSurvey from "./pages/audience/PostSurvey";
 import AudienceThankYou from "./pages/audience/ThankYou";
 import AudienceStatementMatch from "./pages/audience/step2/StatementMatch";
-import AudienceCreativity from "./pages/audience/step2/Creativity";
 import AudienceAIDetection from "./pages/audience/step2/AIDetection";
 
 
@@ -55,6 +55,7 @@ interface DataContextValue {
   userData: UserData | null;
   addUserData: (newData: Partial<UserData>) => void;
   addRoleSpecificData: (updates: Partial<Artist> | Partial<Audience>) => void;
+  recordInterpretationExposure: (exposure: InterpretationExposure) => void;
   addPreSurvey: (
     updates: Partial<ArtistSurvey> | Partial<AudienceSurvey>,
   ) => void;
@@ -117,7 +118,7 @@ function App() {
   const runPendingSave = () => {
     const data = pendingSaveRef.current;
     pendingSaveRef.current = null;
-    if (!data || !sessionId) return Promise.resolve();
+    if (!data || !sessionId || (isTestMode && data.role === "audience")) return Promise.resolve();
 
     const endpoint =
       data.role === "artist"
@@ -129,8 +130,14 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, data }),
-      }).then(() => undefined),
-    );
+      }).then((response) => {
+        if (!response.ok) throw new Error(`Autosave failed: ${response.status}`);
+      }),
+    ).catch((error) => {
+      // Keep the newest snapshot available for a retry on the next save/flush.
+      pendingSaveRef.current ??= data;
+      throw error;
+    });
   };
 
   const enqueueAutosave = (data: UserData | null) => {
@@ -140,18 +147,21 @@ function App() {
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null;
-      runPendingSave();
+      runPendingSave().catch((error) => console.error("Autosave failed:", error));
     }, 500);
   };
 
   // Cancels the debounce timer and saves immediately — used when the tab is
   // being hidden/closed, so a save doesn't get lost waiting on the timeout.
-  const flushSaves = () => {
+  const flushSaves = async () => {
     if (saveTimerRef.current) {
       window.clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
-    return runPendingSave().then(() => globalSaveQueue.flush());
+    await runPendingSave();
+    await globalSaveQueue.flush();
+    // An in-flight save may have failed and restored a retry snapshot.
+    if (pendingSaveRef.current) await runPendingSave();
   };
 
   const addUserData = (newData: Partial<UserData>) => {
@@ -187,6 +197,22 @@ function App() {
         },
       };
       enqueueAutosave(next as UserData);
+      return next;
+    });
+  };
+
+  const recordInterpretationExposure = (exposure: InterpretationExposure) => {
+    setUserData((prev) => {
+      if (prev?.role !== "audience") return prev;
+      const survey = prev.data.surveyResponse;
+      const next: UserData = { ...prev, data: { ...prev.data, surveyResponse: {
+        ...survey,
+        interpretationExposures: [
+          ...(survey.interpretationExposures ?? []).filter((entry) => entry.poemId !== exposure.poemId),
+          exposure,
+        ],
+      } } };
+      enqueueAutosave(next);
       return next;
     });
   };
@@ -350,7 +376,7 @@ function App() {
     const onVisibility = () => {
       if (document.visibilityState !== "visible") {
         // best effort flush queued writes
-        flushSaves();
+        flushSaves().catch((error) => console.error("Autosave flush failed:", error));
       }
     };
     const onBeforeUnload = () => {
@@ -373,6 +399,7 @@ function App() {
         userData,
         addUserData,
         addRoleSpecificData,
+        recordInterpretationExposure,
         addPostSurvey,
         addPreSurvey,
         addPoemEvaluation,
@@ -409,10 +436,6 @@ function App() {
                   <Route
                     path="/audience/statements"
                     element={<AudienceStatementMatch />}
-                  />
-                  <Route
-                    path="/audience/creativity"
-                    element={<AudienceCreativity />}
                   />
                   <Route
                     path="/audience/ai-detection"
