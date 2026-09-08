@@ -7,8 +7,10 @@ interface Props {
 }
 
 // Shared blackout-poem renderer for the audience flow (poem reading,
-// statement match, creativity, AI detection). Word styling matches the
-// rest of this app's blackout poems exactly.
+// statement match, AI detection). Word styling matches the
+// rest of this app's blackout poems exactly. Width is fixed (not fluid),
+// same as the artist side's blackout poem (src/components/shared/pages/poemPage.tsx
+// on main) - it should render at the same size regardless of its container.
 const AudiencePoemDisplay: React.FC<Props> = ({
   poem,
   label,
@@ -19,15 +21,15 @@ const AudiencePoemDisplay: React.FC<Props> = ({
 
   return (
     <figure
-      className={`flex flex-wrap select-none h-max ${
+      className={`flex mx-auto flex-wrap select-none h-max w-[350px] min-w-[350px]  ${
         smallOnMedium
-          ? "w-[350px] min-w-[350px] md:min-w-[350px] md:w-[350px] lg:min-w-[400px] lg:w-[400px]"
-          : "w-[350px] min-w-[350px] md:min-w-[400px] md:w-[400px]"
+          ? "md:w-[350px] md:min-w-[350px]"
+          : "md:w-[400px] md:min-w-[400px]"
       }`}
       onCopy={(e) => e.preventDefault()}
     >
       {label && (
-        <figcaption className="text-sub font-semibold mb-2 w-full">
+        <figcaption className="text-sub mb-3 w-full font-semibold text-dark-grey">
           {label}
         </figcaption>
       )}
@@ -36,20 +38,19 @@ const AudiencePoemDisplay: React.FC<Props> = ({
         return (
           <span
             key={i}
+            // Retain word geometry for the artwork, but keep removed words
+            // out of the accessibility tree and obscured in forced colors.
+            aria-hidden={!isVisible}
             className={`text-main font-serif tracking-[0] antialiased [font-optical-sizing:none] [font-variation-settings:'opsz'_0] [text-rendering:geometricPrecision] transition duration-200 ${
               isVisible
                 ? "text-black bg-white"
-                : "text-transparent bg-dark-grey"
-            } ${smallOnMedium ? "md:text-sm lg:text-base" : ""}`}
+                : "text-transparent bg-dark-grey [forced-color-adjust:none]"
+            } ${smallOnMedium ? "md:text-sm" : ""}`}
           >
             {word + " "}
           </span>
         );
       })}
-      <figcaption className="text-xs text-grey text-left pt-2 w-full">
-        <span className="italic">{'"' + poem.passage.title + '"'}</span>
-        <span>{", " + poem.passage.author}</span>
-      </figcaption>
     </figure>
   );
 };

@@ -1,8 +1,12 @@
-import type { AudienceAssignment, AudiencePoem } from "../types";
+import type { AudienceAssignment, AudiencePoem, InterpretationCondition } from "../types";
 import {
   CREATOR_PASSAGE_POOL_VERSION,
-  sampleDistinctPassages,
+  Passages,
 } from "./passages";
+import { AUDIENCE_PROTOCOL_VERSION, AUDIENCE_PRESENTATION, AUDIENCE_SAMPLING_STRATEGY, shuffle } from "../../server/api/utils/audienceAssignment";
+import { PASSAGE_DISTRACTOR_STATEMENTS } from "./audienceDistractors";
+
+import { assignInterpretationCondition, INTERPRETATION_DISPLAY } from "../../server/api/utils/audienceInterpretationProtocol";
 
 const TEST_SELECTIONS = [
   [0, 1, 4, 8, 12, 18, 24],
@@ -11,7 +15,9 @@ const TEST_SELECTIONS = [
   [1, 10, 14, 19, 22, 27, 34],
 ];
 
-const TEST_STATEMENTS = [
+// Generic fallback if a passage ever lands here without a hand-written set
+// in PASSAGE_DISTRACTOR_STATEMENTS (shouldn't happen - every passage has one).
+const FALLBACK_STATEMENTS = [
   "The poem reflects the tension between anticipation and the unknown.",
   "The poem is about finding moments of beauty inside an unsettled world.",
   "The poem explores how a place can hold memories that feel alive.",
@@ -29,30 +35,42 @@ const rotate = <T,>(items: T[], offset: number) => [
 // Dummy 4-poem assignment used when previewing the audience flow without
 // real artist submissions to draw from (explicit test captcha code, or the
 // server reporting an insufficient candidate pool).
-export const createAudienceTestAssignment = (): AudienceAssignment => {
-  const { tutorialPassage, taskPassage } = sampleDistinctPassages();
-  const wordCount = taskPassage.text.split(" ").length;
-  const poems: AudiencePoem[] = TEST_SELECTIONS.map((selection, index) => ({
-    id: `test-poem-${index + 1}`,
-    passageId: taskPassage.id,
-    passage: taskPassage,
-    selectedWordIndexes: selection.filter((wordIndex) => wordIndex < wordCount),
-  }));
+export const createAudienceTestAssignment = (condition: InterpretationCondition = assignInterpretationCondition()): AudienceAssignment => {
+  const poems: AudiencePoem[] = shuffle(TEST_SELECTIONS).map((selection, index) => {
+    const passage = Passages[Math.floor(Math.random() * Passages.length)];
+    return {
+      id: `test-poem-${index + 1}`,
+      passageId: passage.id,
+      passage,
+      interpretationId: `preview-interpretation-${index + 1}`,
+      ...(condition === "AI" && {
+        interpretationText: `The poem may suggest a moment of change, with a speaker noticing details that feel uncertain or unfamiliar. Its wording leaves room to read it as fragments of a memory or an unfinished thought. This is sample interpretation text for preview poem ${index + 1}.`,
+      }),
+      selectedWordIndexes: selection.filter((wordIndex) => wordIndex < passage.text.split(" ").length),
+    };
+  });
+  const roundPassageIds = poems.map((poem) => poem.passageId);
+  const tutorialPassage = shuffle(Passages.filter((passage) => !roundPassageIds.includes(passage.id)))[0];
 
   return {
     id: "audience-test-assignment",
-    passageId: taskPassage.id,
+    protocolVersion: AUDIENCE_PROTOCOL_VERSION,
+    presentationVersion: AUDIENCE_PRESENTATION,
+    samplingStrategy: AUDIENCE_SAMPLING_STRATEGY,
+    interpretationCondition: condition,
+    interpretationDisplayVersion: INTERPRETATION_DISPLAY.version,
+    roundPassageIds,
     tutorialPassageId: tutorialPassage.id,
-    taskPassageId: taskPassage.id,
     passagePoolVersion: CREATOR_PASSAGE_POOL_VERSION,
     poems,
     statementTrials: poems.map((poem, index) => {
+      const statements = PASSAGE_DISTRACTOR_STATEMENTS[poem.passageId] ?? FALLBACK_STATEMENTS;
       const decoyIndexes = [4, 5, 6];
       const options = [
-        { id: poem.id, statement: TEST_STATEMENTS[index] },
+        { id: poem.id, statement: statements[index] },
         ...decoyIndexes.map((statementIndex) => ({
           id: `test-decoy-${statementIndex}`,
-          statement: TEST_STATEMENTS[statementIndex],
+          statement: statements[statementIndex],
         })),
       ];
       return { poemId: poem.id, options: rotate(options, index % 4) };

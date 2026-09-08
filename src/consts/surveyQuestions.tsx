@@ -745,8 +745,18 @@ const audienceLiking7 = [
   { label: "7 · Very much", value: 7 },
 ];
 
+export const AUDIENCE_CREATIVITY_OPTIONS = [
+  { label: "1 · Not at all creative", value: 1 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+  { label: "4", value: 4 },
+  { label: "5", value: 5 },
+  { label: "6", value: 6 },
+  { label: "7 · Extremely creative", value: 7 },
+];
+
 export const AudiencePoemQuestions: PoemSurveyDefinition = {
-  id: "audience-poem-reception-v1",
+  id: "audience-poem-reception-v3",
   title: "Your response to this poem",
   sections: [
     {
@@ -839,6 +849,14 @@ export const AudiencePoemQuestions: PoemSurveyDefinition = {
           options: agreement7,
           required: true,
         },
+        {
+          id: "creativity",
+          type: "likertScale",
+          question:
+            "How creative do you find this poem?",
+          options: AUDIENCE_CREATIVITY_OPTIONS,
+          required: true,
+        },
       ],
     },
   ],
@@ -921,6 +939,92 @@ export const AudiencePostSurveyQuestions: SurveyDefinition = {
   title: "About you",
   sections: [
     {
+      id: "creative-tasks",
+      title: "About you",
+      questions: [
+        {
+          id: "q2",
+          type: "likertScale",
+          question: "I engage in creative tasks ____.",
+          options: [
+            { label: "Very Rarely or Never", value: 1 },
+            { label: "Rarely", value: 2 },
+            { label: "Sometimes", value: 3 },
+            { label: "Often", value: 4 },
+            { label: "Very Often or Always", value: 5 },
+          ],
+          required: true,
+        },
+      ],
+    },
+    {
+      id: "poetry-familiarity",
+      title: "Poetry familiarity",
+      description:
+        "Please indicate your level of agreement with the following statements:",
+      questions: [
+        {
+          id: "q1",
+          type: "likertScale",
+          question: "I consider myself a creative person.",
+          options: [
+            { label: "Strongly Disagree", value: 1 },
+            { label: "Disagree", value: 2 },
+            { label: "Neutral", value: 3 },
+            { label: "Agree", value: 4 },
+            { label: "Strongly Agree", value: 5 },
+          ],
+          required: true,
+          sideTitle: true,
+        },
+        {
+          id: "q3",
+          type: "likertScale",
+          question: "I consider myself knowledgeable about poetry.",
+          options: [
+            { label: "Strongly Disagree", value: 1 },
+            { label: "Disagree", value: 2 },
+            { label: "Neutral", value: 3 },
+            { label: "Agree", value: 4 },
+            { label: "Strongly Agree", value: 5 },
+          ],
+          required: true,
+          sideTitle: true,
+          removeValues: true,
+        },
+        {
+          id: "q4",
+          type: "likertScale",
+          question: "I usually understand poetry.",
+          options: [
+            { label: "Strongly Disagree", value: 1 },
+            { label: "Disagree", value: 2 },
+            { label: "Neutral", value: 3 },
+            { label: "Agree", value: 4 },
+            { label: "Strongly Agree", value: 5 },
+          ],
+          required: true,
+          sideTitle: true,
+          removeValues: true,
+        },
+        {
+          id: "q5",
+          type: "likertScale",
+          question: "I like poetry.",
+          options: [
+            { label: "Strongly Disagree", value: 1 },
+            { label: "Disagree", value: 2 },
+            { label: "Neutral", value: 3 },
+            { label: "Agree", value: 4 },
+            { label: "Strongly Agree", value: 5 },
+          ],
+          required: true,
+          sideTitle: true,
+          removeValues: true,
+        },
+      ],
+    },
+    {
       id: "ai-background",
       title: "Your experience with AI",
       questions: [
@@ -955,15 +1059,7 @@ export const AudiencePostSurveyQuestions: SurveyDefinition = {
   ],
 };
 
-export const AUDIENCE_CREATIVITY_OPTIONS = [
-  { label: "1 · Not at all creative", value: 1 },
-  { label: "2", value: 2 },
-  { label: "3", value: 3 },
-  { label: "4", value: 4 },
-  { label: "5", value: 5 },
-  { label: "6", value: 6 },
-  { label: "7 · Extremely creative", value: 7 },
-];
+
 
 export const AudienceReRankingQuestions: SurveyDefinition = {
   id: "survey2",

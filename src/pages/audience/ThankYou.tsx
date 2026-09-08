@@ -19,7 +19,7 @@ const AudienceThankYou = () => {
           </p>
           <p className="text-main-dark text-sm text-center mb-4">
             {isTestMode
-              ? "This was a preview using dummy poems, so nothing was saved. Thanks for trying it out!"
+              ? "This was a preview, so your responses were not saved. Thanks for trying it out!"
               : "We are grateful for your time and we hope you found this enjoyable!"}
           </p>
         </div>

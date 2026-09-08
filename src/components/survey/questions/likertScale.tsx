@@ -9,99 +9,96 @@ interface Props {
 }
 
 const LikertScale: React.FC<Props> = ({ question, value, onChange }) => {
+  // The sideTitle column is a fixed width (not a fraction) so it renders
+  // identically across every stacked LikertScale instance — each row is its
+  // own independent grid, so a `1fr` label column can't be trusted to come
+  // out the same width row to row, which is what threw the circles out of
+  // alignment. The option columns stay `1fr` and divide the *remaining*
+  // width, which is identical row to row as long as the container width and
+  // option count match, so the circles line up.
+  const gridStyle = {
+    gridTemplateColumns: question.sideTitle
+      ? `8rem repeat(${question.options.length}, minmax(0, 1fr))`
+      : `repeat(${question.options.length}, minmax(0, 1fr))`,
+  };
+
+  // horizontal layout: always shown (doNotCollapse) or only on md+
+  const horizontalLayout = (
+    <div className={question.doNotCollapse ? "block" : "hidden md:block"}>
+      {/* Labels row — full text, no clipping */}
+      {!question.removeValues && (
+        <div className="grid mb-3" style={gridStyle}>
+          {/* Empty placeholder to keep label columns aligned under their radios */}
+          {question.sideTitle && <div />}
+          {question.options.map((opt) => (
+            <span
+              key={opt.value}
+              className="text-sub text-center break-words leading-tight px-1"
+            >
+              {opt.label}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Radio buttons row — all on the same baseline */}
+      <div className="grid" style={gridStyle}>
+        {question.sideTitle && (
+          <div className="pr-2 flex items-center text-sub">
+            {question.question}
+            <span className="text-red-700">{question.required ? "*" : ""}</span>
+          </div>
+        )}
+        {question.options.map((opt) => (
+          <div key={opt.value} className="flex justify-center">
+            <RadioGroup.Item
+              value={opt.value.toString()}
+              className="cursor-pointer"
+              aria-label={opt.label}
+            >
+              <RadioGroup.ItemHiddenInput />
+              <RadioGroup.ItemIndicator className="border border-light-grey-1 rounded-full w-4 h-4 focus:border-grey focus:border-2 hover:cursor-pointer" />
+            </RadioGroup.Item>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // vertical layout: one option per row, label beside radio
+  const verticalLayout = (
+    <div className={`flex flex-col gap-3 ${question.doNotCollapse ? "hidden" : "md:hidden"}`}>
+      {question.options.map((opt) => (
+        <div key={opt.value} className="flex items-center gap-3">
+          <RadioGroup.Item
+            value={opt.value.toString()}
+            className="cursor-pointer flex-shrink-0"
+            aria-label={opt.label}
+          >
+            <RadioGroup.ItemHiddenInput />
+            <RadioGroup.ItemIndicator className="border border-light-grey-1 rounded-full w-4 h-4 focus:border-grey focus:border-2 hover:cursor-pointer" />
+          </RadioGroup.Item>
+          <span className="text-sub break-words">{opt.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="mb-4 space-y-4">
-      <p
-        className={
-          `text-main h-max` + (question.sideTitle ? " block md:hidden" : "")
-        }
-      >
+      <p className={`text-main` + (question.sideTitle ? " block md:hidden" : "")}>
         {question.question}
-        {question.required && <span className="text-red-700">*</span>}
+        <span className="text-red-700">{question.required ? "*" : ""}</span>
       </p>
 
       <RadioGroup.Root
         value={value != null ? value.toString() : ""}
         onValueChange={(e) => onChange(question.id, parseInt(e.value!, 10))}
         className="w-full"
+        aria-label={question.question}
       >
-        <div
-          className={
-            `flex w-full flex-row md:items-center md:justify-around ` +
-            (question.doNotCollapse ? " items-center justify-around" : "")
-          }
-        >
-          <div
-            className={
-              `
-            flex flex-col gap-3 mb-1 w-full min-w-0
-            md:grid md:gap-6
-          ` + (question.doNotCollapse ? " flex-row grid gap-6" : "")
-            }
-            style={{
-              gridTemplateColumns: `repeat(${
-                question.options.length + (question.sideTitle ? 1 : 0)
-              }, minmax(0, 1fr))`,
-            }}
-          >
-            <div
-              className={
-                `text-sub  ` +
-                (question.sideTitle
-                  ? " hidden h-0 md:block md:h-full w-full md:w-24 lg:w-32 text-left "
-                  : " hidden ")
-              }
-            >
-              {!question.removeValues && (
-                <div className="h-0 md:h-10 md:mb-3"></div>
-              )}
-              <div className="flex items-center w-full">
-                <p>
-                  {question.question}
-                  {question.required && <span className="text-red-700">*</span>}
-                </p>
-              </div>
-            </div>
-            {question.options.map((opt) => (
-              <div
-                key={opt.value}
-                className={
-                  `
-                /* mobile layout: horizontal row */
-
-                /* desktop layout: stacked column */
-                min-w-0 md:flex md:flex-col md:items-center md:text-center md:justify-center h-full
-              ` +
-                  (question.doNotCollapse
-                    ? " items-center flex flex-col text-center md:justify-center"
-                    : " flex items-center gap-3 text-left ")
-                }
-              >
-                {/* Radio */}
-                <RadioGroup.Item
-                  value={opt.value.toString()}
-                  className="cursor-pointer flex-shrink-0 flex items-center justify-center md:justify-self-center"
-                >
-                  <RadioGroup.ItemHiddenInput />
-                  <RadioGroup.ItemIndicator className="border border-light-grey-1  rounded-full w-4 h-4 focus:border-grey focus:border-2" />
-                </RadioGroup.Item>
-
-                {/* Label */}
-                <span
-                  className={
-                    `
-                  text-sub break-words  overflow-hidden text-ellipsis min-w-0
-                  /* desktop: label above */
-                  md:max-w-24 md:order-first md:mb-1 md:h-10 md:flex md:items-start md:justify-center md:text-center
-                ` + (question.removeValues ? "block md:hidden " : "")
-                  }
-                >
-                  {opt.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        {horizontalLayout}
+        {verticalLayout}
       </RadioGroup.Root>
     </div>
   );

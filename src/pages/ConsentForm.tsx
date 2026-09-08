@@ -20,7 +20,7 @@ const ConsentForm = () => {
         timeStamps: [...(userData?.data?.timeStamps ?? []), new Date()],
       });
       if (userData?.role === "audience") {
-        navigate("/audience/pre-survey");
+        navigate("/audience/instructions");
       } else {
         navigate("/artist/pre-survey");
       }

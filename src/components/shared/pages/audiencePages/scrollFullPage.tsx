@@ -18,6 +18,7 @@ interface PageTemplateProps {
   buttonText?: string;
   afterDuration?: () => void;
   timerComponent?: ReactNode;
+  wide?: boolean;
 }
 
 interface Button {
@@ -36,6 +37,7 @@ const BACKGROUNDS: Record<string, string> = {
 
 function PageTemplate({
   children,
+  wide = false,
   background = "none",
   title,
   description,
@@ -126,7 +128,7 @@ function PageTemplate({
   return (
     <div
       className={
-        `relative w-full grid h-full min-w-96 overflow-y-auto p-10 md:p-20 md:px-16 lg:px-32` +
+        `relative w-full grid h-full min-w-0 overflow-y-auto ${wide ? "px-6 scroll-pt-[calc(55dvh+3rem)] scroll-pb-6 sm:px-10 md:scroll-pt-[calc(55dvh+3rem)] xl:px-16" : "p-6 sm:p-10 md:p-20 md:px-16 lg:px-32"}` +
         (background == "bg4" || background == "bg5"
           ? ` bg-dark-grey`
           : ` bg-white `)
@@ -153,7 +155,7 @@ function PageTemplate({
           {title && (
             <div
               className={
-                `w-full h-max flex text-h1 justify-between items-center flex-row sticky ` +
+                `w-full h-max flex text-h1 justify-between items-center flex-row sticky ${wide ? "pt-6 md:pt-8" : ""} ` +
                 (background == "bg4" || background == "bg5"
                   ? `text-h1-dark`
                   : `text-h1`)

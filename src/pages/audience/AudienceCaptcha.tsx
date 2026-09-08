@@ -1,26 +1,16 @@
 import { useState, useEffect, useRef, useContext } from "react";
+import type { ChangeEvent, KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import HalfPageTemplate from "../../components/shared/pages/halfPage";
 import { Button, Input } from "@chakra-ui/react";
 import { toaster } from "../../components/ui/toaster";
 import { DataContext } from "../../App";
 import { createAudienceTestAssignment } from "../../consts/audienceTestAssignment";
-import { CREATOR_PASSAGE_POOL_VERSION, Passages } from "../../consts/passages";
-import type { AudienceAssignment } from "../../types";
+import type { AudienceAssignment, InterpretationCondition } from "../../types";
+import { isValidAudienceAssignment } from "../../../server/api/utils/audienceAssignment";
 
 const TEST_CAPTCHA = "AUDIENCE_TEST";
-const INSUFFICIENT_AUDIENCE_POOL = "INSUFFICIENT_AUDIENCE_POOL";
-const AUDIENCE_PASSAGE_IDS = new Set(Passages.map((passage) => passage.id));
-
-const isValidAssignment = (assignment: AudienceAssignment) =>
-  assignment.poems.length === 4 &&
-  assignment.statementTrials.length === 4 &&
-  assignment.passagePoolVersion === CREATOR_PASSAGE_POOL_VERSION &&
-  assignment.passageId === assignment.taskPassageId &&
-  assignment.tutorialPassageId !== assignment.taskPassageId &&
-  AUDIENCE_PASSAGE_IDS.has(assignment.tutorialPassageId) &&
-  AUDIENCE_PASSAGE_IDS.has(assignment.taskPassageId) &&
-  assignment.poems.every((poem) => poem.passageId === assignment.taskPassageId);
+const PREVIEW_CODES = ["AUDIENCE_PREVIEW", "AUDIENCE_PREVIEW_AI", "AUDIENCE_PREVIEW_NO_AI"];
 
 const Captcha = () => {
   const navigate = useNavigate();
@@ -38,7 +28,7 @@ const Captcha = () => {
     generateCaptchaCheck();
   }, []);
 
-  const handleChange = (event: any) => setInputCaptcha(event.target.value);
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => setInputCaptcha(event.target.value);
 
   const generateCaptchaCheck = () => {
     let captcha_text = "";
@@ -78,7 +68,7 @@ const Captcha = () => {
     }
   }, [captchaMessage]);
 
-  const handleKeyDown = (event: any) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       handleSubmit();
     }
@@ -90,11 +80,12 @@ const Captcha = () => {
       data: {
         assignment,
         surveyResponse: {
-          id: "audience-survey-v1",
+          id: "audience-survey-v4",
           poemAnswers: [],
           statementMatches: [],
           creativityRatings: [],
           aiLikelihoodRatings: [],
+          interpretationExposures: [],
           postAnswers: {},
         },
         timeStamps: [new Date()],
@@ -104,27 +95,29 @@ const Captcha = () => {
     navigate("/consent");
   };
 
-  const startAudiencePreview = (description: string) => {
+  const startAudiencePreview = (description: string, condition?: InterpretationCondition) => {
     setIsTestMode(true);
     toaster.create({
       description,
       type: "info",
       duration: 8000,
     });
-    startAudience(createAudienceTestAssignment());
+    startAudience(createAudienceTestAssignment(condition));
   };
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
-    if (inputCaptcha === TEST_CAPTCHA) {
+    if ([TEST_CAPTCHA, "AUDIENCE_TEST_AI", "AUDIENCE_TEST_NO_AI"].includes(inputCaptcha)) {
       startAudiencePreview(
         "Audience preview started with dummy poems. Preview responses will not be saved.",
+        inputCaptcha === "AUDIENCE_TEST_AI" ? "AI" : inputCaptcha === "AUDIENCE_TEST_NO_AI" ? "NO_AI" : undefined,
       );
       return;
     }
 
-    if (inputCaptcha !== captchaMessage) {
+    const realPreview = PREVIEW_CODES.includes(inputCaptcha);
+    if (!realPreview && inputCaptcha !== captchaMessage) {
       toaster.create({
         description: "Captcha does not match! Try again.",
         type: "error",
@@ -137,28 +130,35 @@ const Captcha = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/firebase/audience-assignment", {
+      const response = await fetch(realPreview ? "/api/firebase/audience-preview-assignment" : "/api/firebase/audience-assignment", {
         method: "POST",
+        ...(realPreview && {
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ interpretationCondition: inputCaptcha === "AUDIENCE_PREVIEW_AI" ? "AI"
+            : inputCaptcha === "AUDIENCE_PREVIEW_NO_AI" ? "NO_AI" : undefined }),
+        }),
       });
       if (!response.ok) {
         const errorBody: unknown = await response.json().catch(() => null);
-        if (
-          response.status === 409 &&
-          typeof errorBody === "object" &&
-          errorBody !== null &&
-          "code" in errorBody &&
-          errorBody.code === INSUFFICIENT_AUDIENCE_POOL
-        ) {
-          startAudiencePreview(
-            "Not enough completed artist responses are available yet, so this preview is using dummy poems. Preview responses will not be saved.",
-          );
+        if (typeof errorBody === "object" && errorBody !== null &&
+            "code" in errorBody && ["AUDIENCE_INTERPRETATIONS_NOT_READY", "AUDIENCE_PILOT_NOT_READY", "INSUFFICIENT_AUDIENCE_POOL"].includes(String(errorBody.code))) {
+          toaster.create({
+            description: "The study is not ready yet. Please contact the study administrator.",
+            type: "error",
+            duration: 8000,
+          });
+          setIsSubmitting(false);
           return;
         }
         throw new Error(`Assignment failed with status ${response.status}`);
       }
       const assignment = (await response.json()) as AudienceAssignment;
-      if (!isValidAssignment(assignment)) {
+      if (!isValidAudienceAssignment(assignment) || !!assignment.preview !== realPreview) {
         throw new Error("Audience assignment response was invalid");
+      }
+      setIsTestMode(realPreview);
+      if (realPreview) {
+        toaster.create({ description: "Previewing the pilot's existing poems. Preview responses will not be saved.", type: "info", duration: 8000 });
       }
       startAudience(assignment);
     } catch (err) {

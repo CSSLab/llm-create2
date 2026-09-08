@@ -1,4 +1,22 @@
+import { loadAudiencePilot, AUDIENCE_PILOT_ID } from "../utils/audiencePilot";
+import { isDeepStrictEqual } from "node:util";
+import { INTERPRETATION_COLLECTION, interpretationIdentity, isReadyInterpretation } from "../utils/audienceInterpretations";
+import { assignInterpretationCondition, INTERPRETATION_DISPLAY } from "../utils/audienceInterpretationProtocol";
 import express from "express";
+import {
+  AUDIENCE_PROTOCOL_VERSION,
+  AUDIENCE_PREVIOUS_PROTOCOL_VERSION,
+  AUDIENCE_PRESENTATION,
+  hasAudienceInterpretations,
+  AUDIENCE_SAMPLING_STRATEGY,
+  AUDIENCE_PASSAGE_POOL_VERSION,
+  AUDIENCE_PASSAGE_ID_LIST,
+  shuffle,
+  sampleAudienceCandidates,
+  isValidAudienceAssignment,
+  hasCompleteCreativityRatings,
+  hasCompleteInterpretationExposure,
+} from "../utils/audienceAssignment";
 import { db, FieldValue } from "../firebase/firebase";
 
 const router = express.Router();
@@ -12,63 +30,97 @@ const AUDIENCE_COLLECTION = "audience";
 const AUDIENCE_SURVEY_COLLECTION = "audienceSurvey";
 const AUDIENCE_INCOMPLETE_SESSION_COLLECTION = "audienceIncompleteSession";
 
-const AUDIENCE_PASSAGE_POOL_VERSION = "creator-passages-2026-08-05-v1";
-const AUDIENCE_PASSAGE_ID_LIST = [
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "nyt-1",
-  "nyt-2",
-  "nyt-3",
-  "nyt-4",
-] as const;
-const AUDIENCE_PASSAGE_IDS = new Set<string>(AUDIENCE_PASSAGE_ID_LIST);
+// Tags audience records with which pilot round produced them, so different
+// rounds (different assignment logic, decoy pools, etc.) can be told apart
+// later in Firestore. Set via server/.env - bump it there and restart the
+// server when starting a new pilot round.
+const AUDIENCE_PILOT_VERSION =
+  process.env.AUDIENCE_PILOT_VERSION ?? AUDIENCE_PILOT_ID;
 
-interface AudienceCandidate {
-  id: string;
-  condition: "LLM" | "NO_AI";
-  passageId: string;
-  passage: {
-    id: string;
-    text: string;
-    title: string;
-    author: string;
-    publication?: string;
-  };
-  selectedWordIndexes: number[];
-  statement: string;
-}
-
-const shuffle = <T,>(items: T[]): T[] => {
-  const copy = [...items];
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    const otherIndex = Math.floor(Math.random() * (index + 1));
-    [copy[index], copy[otherIndex]] = [copy[otherIndex], copy[index]];
-  }
-  return copy;
-};
-
-const asRecord = (value: unknown): Record<string, unknown> | undefined =>
-  typeof value === "object" && value !== null
-    ? (value as Record<string, unknown>)
-    : undefined;
-
-// Reads an artist's own "artist's statement" answer from their post-survey,
-// checking both this branch's legacy `q14` field and the newer
-// `final_intended_meaning` id.
-const getStatement = (surveyData: Record<string, unknown> | undefined) => {
-  const nestedSurveyResponse = asRecord(surveyData?.surveyResponse);
-  const postAnswers =
-    asRecord(surveyData?.postSurveyAnswers) ??
-    asRecord(surveyData?.postAnswers) ??
-    asRecord(nestedSurveyResponse?.postAnswers);
-  const statement =
-    postAnswers?.final_intended_meaning ?? postAnswers?.q14 ?? null;
-  return typeof statement === "string" && statement.trim()
-    ? statement.trim()
-    : null;
+// Temporary hand-written decoys, kept in sync with the client preview.
+// Each trial uses decoys for its own source passage.
+const PASSAGE_DISTRACTOR_STATEMENTS: Record<string, string[]> = {
+  "3": [
+    "Mostly, this poem is about senses waking up all at once after being shut off for a long time.",
+    "I wanted to express the hush that comes right before something wonderful happens.",
+    "This is about a fragile body finally catching up to a world it's only just starting to notice.",
+    "A private thrill, kept quiet on purpose.",
+    "My goal was to capture the difference between looking and truly listening, without spelling it out.",
+    "I wanted the poem to feel like a held breath, even if it never says so directly.",
+    "I kept coming back to the idea of tiptoeing somewhere you're not sure you're allowed to be.",
+  ],
+  "4": [
+    "I was trying to convey how ordinary routines can turn into the best part of a day.",
+    "You can feel the comfort of shared chores and simple mornings underneath all of it.",
+    "The poem explores contentment that sneaks up on you when you weren't expecting a good time at all.",
+    "Small rituals, happily repeated. That's the whole poem, really.",
+    "There's a kind of ease I wanted the reader to sit with, the sense that a place can start to feel like home almost by accident.",
+    "What does it mean when the people around you turn into easy companions without either of you noticing?",
+    "A lazy, satisfied morning - that's what I was chasing.",
+  ],
+  "2": [
+    "I kept thinking about the pull of imagining a future bigger than the room you're sitting in while choosing these words.",
+    "This is about drifting into hope while everyone around you is talking about small things.",
+    "I wanted to express the gap between practical chatter and a private, sweeping sense of possibility.",
+    "My goal was to capture daydreams that feel like certainty, without spelling it out.",
+    "Youth as permission to imagine.",
+    "Mostly, this poem is quiet ambition dressed up as idle conversation.",
+    "I wanted the poem to feel like watching a sunset and mistaking it for a promise, even if it never says so directly.",
+  ],
+  "1": [
+    "The poem explores what it feels like to return to a place that has changed without you.",
+    "I kept coming back to the idea of weather rewriting a landscape almost overnight.",
+    "You can feel a house aging right along with the people who left it underneath all of it.",
+    "Old walls, still holding on. That's the whole poem, really.",
+    "I wanted to express how memory clings to a place the way dampness clings to stone.",
+    "What does an uneasy homecoming actually feel like, once you're standing back inside it?",
+    "There's a kind of familiar-but-wrong feeling I wanted the reader to sit with.",
+  ],
+  "5": [
+    "This is about a love too large for the small life it was given.",
+    "I was trying to convey how someone can be capable of enormous feeling and still end up isolated.",
+    "My goal was to capture the mismatch between what a person is capable of and the life circumstance hands them, without spelling it out.",
+    "Too much feeling, too little room.",
+    "I kept thinking about the difference between grand emotion and everyday warmth while choosing these words.",
+    "I wanted the poem to feel like a fire kept banked instead of let out, even if it never says so directly.",
+    "Mostly, this poem is quiet devotion with nowhere left to go.",
+  ],
+  "nyt-1": [
+    "I wanted to express how close we all are, constantly, to an ending we never see.",
+    "What if every possible outcome actually happened, and we only remember the one we survived?",
+    "Luck, treated like a math problem instead of a personal story. That's the whole poem, really.",
+    "I kept coming back to the idea of every version of the story happening at once.",
+    "There's a kind of vertigo I wanted the reader to sit with, the feeling of many futures collapsing into one.",
+    "The poem explores how much of survival really just comes down to timing.",
+    "You can feel a near-miss replaying itself underneath all of it.",
+  ],
+  "nyt-2": [
+    "Mostly, this poem is about how much effort goes into looking like you're not trying.",
+    "I kept thinking about the performance underneath a crowd that thinks it's just having fun while choosing these words.",
+    "This is about the gap between how a moment looks and how it actually feels the morning after.",
+    "Curated carelessness.",
+    "I was trying to convey how identity gets assembled out of borrowed pieces.",
+    "My goal was to capture a restless kind of self-consciousness without spelling it out.",
+    "I wanted the poem to feel like a party photographed a beat too late, even if it never says so directly.",
+  ],
+  "nyt-3": [
+    "How does something small from childhood end up quietly deciding who we become?",
+    "The poem explores loyalty as something we inherit more than choose.",
+    "You can feel an old pattern, set young and followed for decades, underneath all of it.",
+    "A habit formed early, never questioned since. That's the whole poem, really.",
+    "I wanted to express how data can explain something as personal as devotion.",
+    "I kept coming back to the idea of inherited attachment as I worked on this.",
+    "There's a kind of grown-up habit I wanted the reader to sit with, one that traces straight back to a much younger version of yourself.",
+  ],
+  "nyt-4": [
+    "I was trying to convey how being looked at constantly can start to feel like a kind of erasure.",
+    "This is about the pressure of being ranked and measured against everyone else in the room.",
+    "My goal was to capture what it costs to keep reinventing yourself for an audience that's always watching, without spelling it out.",
+    "Famous for a moment, judged forever.",
+    "I wanted to express the difference between being seen and being truly known.",
+    "I wanted the poem to feel like flipping through a magazine and forgetting the face on the cover by the next page, even if it never says so directly.",
+    "Mostly, this poem is restless ambition dressed up as confidence.",
+  ],
 };
 
 const WORD_PATTERN = /[\p{L}\p{N}']+/gu;
@@ -150,69 +202,6 @@ const decoyMatchScore = (
   );
 };
 
-const loadAudienceCandidates = async (): Promise<AudienceCandidate[]> => {
-  const artistSnapshot = await db
-    .collection(ARTIST_COLLECTION)
-    .where("condition", "in", ["LLM", "NO_AI"])
-    .get();
-
-  const candidates = await Promise.all(
-    artistSnapshot.docs.map(async (artistDoc) => {
-      const artistData = artistDoc.data();
-      const condition = artistData.condition as "LLM" | "NO_AI";
-      const passagePoolVersion = artistData.assignment?.passagePoolVersion;
-      const poemRef = artistData.poem;
-      const surveyRef = artistData.surveyResponse;
-      if (
-        passagePoolVersion !== AUDIENCE_PASSAGE_POOL_VERSION ||
-        !poemRef ||
-        !surveyRef
-      ) {
-        return null;
-      }
-
-      const [poemDoc, surveyDoc] = await Promise.all([
-        poemRef.get(),
-        surveyRef.get(),
-      ]);
-      if (!poemDoc.exists || !surveyDoc.exists) return null;
-
-      const poemData = poemDoc.data();
-      const passageId = String(
-        poemData?.taskPassageId ?? poemData?.passageId ?? "",
-      );
-      const passage = poemData?.passage;
-      const statement = getStatement(surveyDoc.data());
-      const selectedWordIndexes =
-        poemData?.selectedWordIndexes ?? poemData?.text;
-
-      if (
-        !AUDIENCE_PASSAGE_IDS.has(passageId) ||
-        !passage?.text ||
-        !passage?.title ||
-        !passage?.author ||
-        !statement ||
-        !Array.isArray(selectedWordIndexes)
-      ) {
-        return null;
-      }
-
-      return {
-        id: poemDoc.id,
-        condition,
-        passageId,
-        passage,
-        selectedWordIndexes: selectedWordIndexes.filter(Number.isInteger),
-        statement,
-      } satisfies AudienceCandidate;
-    }),
-  );
-
-  return candidates.filter(
-    (candidate): candidate is AudienceCandidate => candidate !== null,
-  );
-};
-
 // Full poem content and distractor statement text already live in the
 // poem/artistSurvey collections — only store the poem IDs on an audience
 // record instead of duplicating that content every time.
@@ -239,6 +228,9 @@ const autosaveHandler: express.RequestHandler = async (req, res) => {
         .status(400)
         .json({ error: "Missing sessionId or data objects" });
     }
+    if (data.role === "audience" && data.data?.assignment?.preview) {
+      return res.status(400).json({ error: "Preview responses are not study data" });
+    }
 
     const statusMap: Record<number, string> = {
       1: "captcha",
@@ -250,8 +242,16 @@ const autosaveHandler: express.RequestHandler = async (req, res) => {
       7: "post-survey",
     };
 
+    const audienceStatusMap: Record<number, string> = {
+      1: "captcha", 2: "consent", 3: "reading", 4: "statement-match",
+      5: "ai-detection", 6: "post-survey", 7: "submitted",
+    };
+    const currentStatusMap = data.role === "audience" &&
+      (hasAudienceInterpretations(data.data?.assignment?.protocolVersion) ||
+        data.data?.assignment?.protocolVersion === AUDIENCE_PREVIOUS_PROTOCOL_VERSION)
+      ? audienceStatusMap : statusMap;
     const status = data.data?.timeStamps
-      ? statusMap[data.data.timeStamps.length] || "started"
+      ? currentStatusMap[data.data.timeStamps.length] || "started"
       : "started";
 
     const partialData = trimAudiencePoemRefs(data.data);
@@ -262,13 +262,16 @@ const autosaveHandler: express.RequestHandler = async (req, res) => {
         : INCOMPLETE_SESSION_COLLECTION;
 
     const ref = db.collection(incompleteCollection).doc(sessionId);
-    const payload = {
+    const payload: Record<string, unknown> = {
       sessionId,
       role: data.role,
       partialData,
       lastUpdated: FieldValue.serverTimestamp(),
       completionStatus: status,
     };
+    if (data.role === "audience") {
+      payload.audiencePilotVersion = AUDIENCE_PILOT_VERSION;
+    }
 
     await ref.set(payload, { merge: true });
     res.json({ success: true });
@@ -331,64 +334,59 @@ router.post("/artist/commit-session", async (req, res) => {
   }
 });
 
-// Build a fresh audience assignment: a passage with a balanced pool of real
-// artist submissions, 4 focal poems (2 LLM + 2 NO_AI), and for each one a
-// set of difficulty-matched decoy statements alongside the real one.
-router.post("/audience-assignment", async (_req, res) => {
+// Sample two distinct poems per condition across all eligible passages, then
+// randomize their presentation order. Source passages may repeat; poems do not.
+// Creator condition remains server-side and can be joined by poem ID in analysis.
+async function audienceAssignmentHandler(req: express.Request, res: express.Response, preview = false) {
   try {
-    const candidates = await loadAudienceCandidates();
-    const candidatesByPassage = new Map<string, AudienceCandidate[]>();
-    candidates.forEach((candidate) => {
-      const passageCandidates = candidatesByPassage.get(candidate.passageId) ?? [];
-      passageCandidates.push(candidate);
-      candidatesByPassage.set(candidate.passageId, passageCandidates);
-    });
-
-    const eligiblePassages = shuffle(
-      [...candidatesByPassage.entries()].filter(([, passageCandidates]) => {
-        const llmCount = passageCandidates.filter(
-          (candidate) => candidate.condition === "LLM",
-        ).length;
-        const noAiCount = passageCandidates.filter(
-          (candidate) => candidate.condition === "NO_AI",
-        ).length;
-        return llmCount >= 2 && noAiCount >= 2 && passageCandidates.length >= 7;
-      }),
-    );
-
-    if (eligiblePassages.length === 0) {
+    if (preview && req.body?.interpretationCondition !== undefined &&
+        !["AI", "NO_AI"].includes(req.body.interpretationCondition)) {
+      return res.status(400).json({ error: "Invalid preview condition" });
+    }
+    const pilot = await loadAudiencePilot();
+    if (!pilot || pilot.poems.some(candidate =>
+      (PASSAGE_DISTRACTOR_STATEMENTS[candidate.passageId]?.length ?? 0) < 3)) {
+      return res.status(409).json({ code: "AUDIENCE_PILOT_NOT_READY", error: "The audience pilot has not been prepared" });
+    }
+    const candidates = pilot.poems;
+    const focalCandidates = sampleAudienceCandidates(candidates);
+    if (!focalCandidates) {
       return res.status(409).json({
         code: "INSUFFICIENT_AUDIENCE_POOL",
-        error:
-          "No current source passage has four balanced focal poems and three same-source decoys",
+        error: "At least two AI and two non-AI poems from real, non-test Prolific submissions are required",
       });
     }
-
-    const [passageId, passageCandidates] = eligiblePassages[0];
+    // Require readiness across the entire eligible pool, before assigning an
+    // audience condition. Missing generations must not alter poem eligibility.
+    const interpretations = new Map<string, { id: string; text: string }>();
+    await Promise.all(candidates.map(async (poem) => {
+      const record = await db.collection(INTERPRETATION_COLLECTION).doc(interpretationIdentity(poem).id).get();
+      const data = record.data();
+      if (isReadyInterpretation(data, poem)) interpretations.set(poem.id, data);
+    }));
+    if (candidates.some((poem) => !interpretations.has(poem.id))) {
+      return res.status(409).json({ code: "AUDIENCE_INTERPRETATIONS_NOT_READY",
+        error: "Poem preparation is not complete. Please contact the study administrator." });
+    }
+    const interpretationCondition = preview && req.body?.interpretationCondition
+      ? req.body.interpretationCondition : assignInterpretationCondition();
+    const roundPassageIds = focalCandidates.map((candidate) => candidate.passageId);
     const tutorialPassageId = shuffle(
-      AUDIENCE_PASSAGE_ID_LIST.filter(
-        (candidatePassageId) => candidatePassageId !== passageId,
-      ),
+      AUDIENCE_PASSAGE_ID_LIST.filter((id) => !roundPassageIds.includes(id)),
     )[0];
-    const focalCandidates = shuffle([
-      ...shuffle(
-        passageCandidates.filter((candidate) => candidate.condition === "LLM"),
-      ).slice(0, 2),
-      ...shuffle(
-        passageCandidates.filter((candidate) => candidate.condition === "NO_AI"),
-      ).slice(0, 2),
-    ]);
-    const focalIds = new Set(focalCandidates.map((candidate) => candidate.id));
-    const decoyCandidates = passageCandidates.filter(
-      (candidate) => !focalIds.has(candidate.id),
-    );
 
     const statementTrials = focalCandidates.map((focal) => {
+      const staticDecoyCandidates = PASSAGE_DISTRACTOR_STATEMENTS[focal.passageId].map(
+        (statement, index) => ({
+          id: `static-decoy-${focal.passageId}-${index + 1}`,
+          statement,
+        }),
+      );
       const poemText = focal.selectedWordIndexes
         .map((index) => focal.passage.text.split(" ")[index])
         .filter(Boolean)
         .join(" ");
-      const decoys = [...decoyCandidates]
+      const decoys = [...staticDecoyCandidates]
         .sort(
           (left, right) =>
             decoyMatchScore(focal.statement, left.statement, poemText) -
@@ -408,26 +406,46 @@ router.post("/audience-assignment", async (_req, res) => {
       };
     });
 
-    const assignmentId = db.collection(AUDIENCE_COLLECTION).doc().id;
-    res.json({
+    const assignmentId = `${preview ? "preview-" : ""}${db.collection(AUDIENCE_COLLECTION).doc().id}`;
+    const assignment = {
       id: assignmentId,
-      passageId,
+      pilotId: pilot.id,
+      poolHash: pilot.poolHash,
+      ...(preview && { preview: true }),
+      protocolVersion: AUDIENCE_PROTOCOL_VERSION,
+      presentationVersion: AUDIENCE_PRESENTATION,
+      samplingStrategy: AUDIENCE_SAMPLING_STRATEGY,
+      interpretationCondition,
+      interpretationDisplayVersion: INTERPRETATION_DISPLAY.version,
+      roundPassageIds,
       tutorialPassageId,
-      taskPassageId: passageId,
       passagePoolVersion: AUDIENCE_PASSAGE_POOL_VERSION,
       poems: focalCandidates.map((candidate) => ({
         id: candidate.id,
         passageId: candidate.passageId,
         passage: candidate.passage,
         selectedWordIndexes: candidate.selectedWordIndexes,
+        interpretationId: interpretations.get(candidate.id)!.id,
+        ...(interpretationCondition === "AI" && {
+          interpretationText: interpretations.get(candidate.id)!.text,
+        }),
       })),
       statementTrials,
-    });
+    };
+    // Fix the randomization and stimuli server-side before the participant starts.
+    if (!preview) {
+      await db.collection("audienceAssignment").doc(assignmentId).create({ assignment,
+        createdAt: FieldValue.serverTimestamp(), audiencePilotVersion: AUDIENCE_PILOT_VERSION });
+    }
+    res.json(assignment);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to create audience assignment" });
   }
-});
+}
+
+router.post("/audience-assignment", (req, res) => audienceAssignmentHandler(req, res));
+router.post("/audience-preview-assignment", (req, res) => audienceAssignmentHandler(req, res, true));
 
 router.post("/commit-audience-session", async (req, res) => {
   try {
@@ -439,17 +457,20 @@ router.post("/commit-audience-session", async (req, res) => {
     }
 
     const assignment = audienceData.assignment;
-    if (
-      !assignment?.id ||
-      !Array.isArray(assignment.poems) ||
-      assignment.poems.length !== 4 ||
-      assignment.passagePoolVersion !== AUDIENCE_PASSAGE_POOL_VERSION ||
-      assignment.passageId !== assignment.taskPassageId ||
-      assignment.tutorialPassageId === assignment.taskPassageId ||
-      !AUDIENCE_PASSAGE_IDS.has(assignment.tutorialPassageId) ||
-      !AUDIENCE_PASSAGE_IDS.has(assignment.taskPassageId)
-    ) {
+    if (assignment?.preview || !isValidAudienceAssignment(assignment)) {
       return res.status(400).json({ error: "Invalid audience assignment" });
+    }
+    if (assignment.protocolVersion &&
+        !hasCompleteCreativityRatings(audienceData.surveyResponse,
+          assignment.poems.map((poem: { id: string }) => poem.id))) {
+      return res.status(400).json({ error: "Missing or inconsistent poem creativity ratings" });
+    }
+    if (hasAudienceInterpretations(assignment.protocolVersion)) {
+      const stored = await db.collection("audienceAssignment").doc(assignment.id).get();
+      if (!isDeepStrictEqual(stored.data()?.assignment, assignment) ||
+          !hasCompleteInterpretationExposure(audienceData.surveyResponse, assignment)) {
+        return res.status(400).json({ error: "Invalid assignment or interpretation exposure records" });
+      }
     }
 
     const batch = db.batch();
@@ -460,9 +481,27 @@ router.post("/commit-audience-session", async (req, res) => {
       .doc(sessionId);
     const assignmentSummary = {
       id: assignment.id,
-      passageId: assignment.passageId,
+      ...(assignment.pilotId && { pilotId: assignment.pilotId, poolHash: assignment.poolHash }),
+      ...(assignment.protocolVersion ? {
+        protocolVersion: assignment.protocolVersion,
+        samplingStrategy: assignment.samplingStrategy,
+        ...(assignment.presentationVersion && { presentationVersion: assignment.presentationVersion }),
+        ...(hasAudienceInterpretations(assignment.protocolVersion) && {
+          interpretationCondition: assignment.interpretationCondition,
+          interpretationDisplayVersion: assignment.interpretationDisplayVersion,
+        }),
+      } : {
+        passageId: assignment.passageId,
+        taskPassageId: assignment.taskPassageId,
+      }),
       tutorialPassageId: assignment.tutorialPassageId,
-      taskPassageId: assignment.taskPassageId,
+      roundPassageIds: assignment.poems.map((poem: { passageId: string }) => poem.passageId),
+      rounds: assignment.poems.map((poem: { id: string; passageId: string; interpretationId?: string }, index: number) => ({
+        round: index + 1,
+        poemId: poem.id,
+        passageId: poem.passageId,
+        ...(poem.interpretationId && { interpretationId: poem.interpretationId }),
+      })),
       passagePoolVersion: assignment.passagePoolVersion,
       poemIds: assignment.poems.map((poem: { id: string }) => poem.id),
       statementTrials: assignment.statementTrials.map(
@@ -477,6 +516,7 @@ router.post("/commit-audience-session", async (req, res) => {
       surveyResponse: surveyRef,
       timestamps: audienceData.timeStamps ?? [],
       completedAt: FieldValue.serverTimestamp(),
+      audiencePilotVersion: AUDIENCE_PILOT_VERSION,
     };
     if (prolific) audienceRecord.prolific = prolific;
 

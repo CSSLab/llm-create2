@@ -110,7 +110,7 @@ const EmotionWheel = ({ question, value, onChange }: Props) => {
             type="button"
             role="radio"
             aria-checked={value?.emotion === NO_EMOTION}
-            className={`absolute left-1/2 top-1/2 z-20 flex aspect-square w-[18%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border px-1 text-center text-[9px] leading-tight transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-grey sm:text-xs ${
+            className={`absolute left-1/2 top-1/2 z-10 flex aspect-square w-[18%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border px-1 text-center text-[9px] leading-tight transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-grey sm:text-xs ${
               value?.emotion === NO_EMOTION
                 ? "border-dark-grey bg-dark-grey text-white"
                 : "border-light-grey-1 bg-white text-dark-grey hover:bg-light-grey-4"
