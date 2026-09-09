@@ -63,6 +63,40 @@ interface DataContextValue {
 
 export const DataContext = createContext<DataContextValue | null>(null);
 
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" &&
+  value !== null &&
+  !Array.isArray(value) &&
+  !(value instanceof Date);
+
+/**
+ * Recursively diffs `next` against `prev`, returning an object containing
+ * only the keys whose value actually changed (nested plain objects are
+ * diffed further; arrays/primitives/dates are compared as a whole). Used so
+ * autosave only ships the sections of the session that changed instead of
+ * the entire Artist/Audience payload every time - conversations and edit
+ * snapshots make the full object grow large fast. Firestore's `set(...,
+ * { merge: true })` on the server already merges nested objects
+ * recursively, so sending a sparse object is enough to update just those
+ * fields without clobbering the rest of the stored document.
+ */
+const diffForAutosave = (prev: unknown, next: unknown): unknown => {
+  if (!isPlainObject(prev) || !isPlainObject(next)) {
+    return prev === next ? undefined : next;
+  }
+  const out: Record<string, unknown> = {};
+  let changed = false;
+  const keys = new Set([...Object.keys(prev), ...Object.keys(next)]);
+  for (const key of keys) {
+    const diffed = diffForAutosave(prev[key], next[key]);
+    if (diffed !== undefined) {
+      out[key] = diffed;
+      changed = true;
+    }
+  }
+  return changed ? out : undefined;
+};
+
 function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -107,16 +141,45 @@ function App() {
     }
   }, []);
 
+  const lastSyncedDataRef = useRef<UserData["data"] | null>(null);
+
   const enqueueAutosave = (data: UserData | null) => {
     if (!data || !sessionId) return;
 
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(async () => {
-      await fetch("/api/firebase/autosave", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, data }),
-      });
+      const diffed = diffForAutosave(
+        lastSyncedDataRef.current,
+        data.data,
+      ) as Record<string, unknown> | undefined;
+
+      // The server derives `completionStatus` from timeStamps/poemNumber on
+      // every call, so those two (small) fields always ride along even when
+      // unchanged - everything else (poem conversations, snapshots, survey
+      // answers, etc.) only goes out when it actually changed.
+      const partialData: Record<string, unknown> = {
+        ...diffed,
+        timeStamps: (data.data as { timeStamps?: unknown })?.timeStamps,
+        poemNumber: (data.data as { poemNumber?: unknown })?.poemNumber,
+      };
+
+      try {
+        const response = await fetch("/api/firebase/autosave", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId,
+            data: { role: data.role, data: partialData, prolific: data.prolific },
+          }),
+        });
+        if (response.ok) {
+          lastSyncedDataRef.current = data.data;
+        }
+        // On failure, leave lastSyncedDataRef stale so the next autosave's
+        // diff still includes whatever didn't make it through this time.
+      } catch {
+        // Network error - same as above, next attempt will resend the diff.
+      }
     }, 500);
   };
 

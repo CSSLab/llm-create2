@@ -22,7 +22,7 @@ const STEPS = [
   },
   {
     heading: "You're all set!",
-    body: "Now take a moment to build a short poem with this passage. When you're ready, continue to the main task.",
+    body: "Now take a moment to build a short poem with this passage. When you're ready, continue to your first poem.",
   },
 ];
 
@@ -113,7 +113,7 @@ const ArtistTutorial = () => {
         {step === 3 && (
           <div className="flex justify-center pt-2 animate-fade-in">
             <Button className="btn-primary" onClick={handleContinue}>
-              Continue to Task
+              Continue to Poem 1
             </Button>
           </div>
         )}

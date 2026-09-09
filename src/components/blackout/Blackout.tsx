@@ -187,16 +187,14 @@ const BlackoutPoetry: React.FC<BlackoutProps> = ({
                 ? "text-main font-serif text-dark-grey"
                 : "text-main font-serif text-dark-grey bg-dark-grey";
 
-              return (
-                <>
+                return (
                   <span
                     key={i}
                     className={` tracking-[0] antialiased [font-optical-sizing:none] [font-variation-settings:'opsz'_0] [text-rendering:geometricPrecision] transition duration-200 ${blackoutStyle}`}
                   >
                     {word + "\u00A0"}
                   </span>
-                </>
-              );
+                );
             })}
           </div>
         </div>

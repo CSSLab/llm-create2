@@ -5,17 +5,33 @@ import { Button, Input } from "@chakra-ui/react";
 import { toaster } from "../components/ui/toaster";
 import { DataContext } from "../App";
 import { ArtistCondition } from "../types";
-import type { ArtistAssignment, Poem } from "../types";
-import { ARTIST_DATA_LOGGING_VERSION } from "../consts/dataLogging";
+import type { ArtistAssignment } from "../types";
 import {
   CREATOR_PASSAGE_POOL_VERSION,
   Passages,
-  sampleDistinctPassages,
-  type PassagePair,
 } from "../consts/passages";
 import type { ChangeEvent, KeyboardEvent } from "react";
+import {
+  createEmptyPoem,
+  createPassageSequence,
+  getPassageForPoem,
+  TOTAL_ARTIST_POEMS,
+} from "../utils/artistRounds";
 
 const TEST_CAPTCHA = "TEST";
+
+interface ArtistPassagePlan {
+  tutorialPassageId: string;
+  passageIds: string[];
+}
+
+const createArtistPassagePlan = (): ArtistPassagePlan => {
+  const sequence = createPassageSequence(Passages, TOTAL_ARTIST_POEMS + 1);
+  return {
+    tutorialPassageId: sequence[0],
+    passageIds: sequence.slice(1),
+  };
+};
 
 const Captcha = () => {
   const navigate = useNavigate();
@@ -87,43 +103,26 @@ const Captcha = () => {
     }
   };
 
-  const makePoem = (passageId = "1"): Poem => {
-    const passage = Passages.find((p) => p.id === passageId) ?? Passages[0];
-    return {
-      loggingSchemaVersion: ARTIST_DATA_LOGGING_VERSION,
-      passageId: passage.id,
-      passage,
-      text: [],
-      sparkConversation: [],
-      writeConversation: [],
-      sparkNotes: "",
-      writeNotes: "",
-      poemSnapshot: [],
-      taskTiming: { phases: {} },
-      llmUsage: {
-        chatAvailability: [],
-        inputActivity: [],
-        requests: [],
-      },
-    };
-  };
-
   const startArtist = (
     condition: ArtistCondition,
-    passages: PassagePair = sampleDistinctPassages(),
+    passagePlan = createArtistPassagePlan(),
     strategy: ArtistAssignment["strategy"] = "TEST_OVERRIDE",
     passagePoolVersion = CREATOR_PASSAGE_POOL_VERSION,
   ) => {
-    const { tutorialPassage, taskPassage } = passages;
+    const { tutorialPassageId, passageIds } = passagePlan;
+    const firstPassage = getPassageForPoem(Passages, passageIds, 1);
     addUserData({ role: "artist", prolific: prolific ?? undefined });
     addRoleSpecificData({
       condition,
-      poem: makePoem(taskPassage.id),
+      poem: createEmptyPoem(firstPassage),
+      poemNumber: 1,
+      totalPoems: TOTAL_ARTIST_POEMS,
       assignment: {
         strategy,
-        passageId: taskPassage.id,
-        tutorialPassageId: tutorialPassage.id,
-        taskPassageId: taskPassage.id,
+        passageId: firstPassage.id,
+        passageIds,
+        tutorialPassageId,
+        taskPassageId: firstPassage.id,
         passagePoolVersion,
         condition,
         assignedAt: new Date(),
@@ -160,14 +159,15 @@ const Captcha = () => {
 
       setIsAssigning(true);
       try {
-        const proposedPassages = sampleDistinctPassages();
+        const proposedPassagePlan = createArtistPassagePlan();
         const response = await fetch("/api/firebase/artist-assignment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             sessionId,
-            passageId: proposedPassages.taskPassage.id,
-            tutorialPassageId: proposedPassages.tutorialPassage.id,
+            passageId: proposedPassagePlan.passageIds[0],
+            passageIds: proposedPassagePlan.passageIds,
+            tutorialPassageId: proposedPassagePlan.tutorialPassageId,
             passagePoolVersion: CREATOR_PASSAGE_POOL_VERSION,
             prolificPid: prolific?.prolificPid ?? null,
           }),
@@ -180,6 +180,7 @@ const Captcha = () => {
           tutorialPassageId: string;
           taskPassageId: string;
           passagePoolVersion: string;
+          passageIds: string[];
           condition: ArtistCondition;
           strategy: ArtistAssignment["strategy"];
         };
@@ -192,8 +193,14 @@ const Captcha = () => {
         if (
           !tutorialPassage ||
           !taskPassage ||
-          tutorialPassage.id === taskPassage.id ||
-          assignment.passageId !== taskPassage.id ||
+          !Array.isArray(assignment.passageIds) ||
+          assignment.passageIds.length !== TOTAL_ARTIST_POEMS ||
+          assignment.passageId !== assignment.passageIds[0] ||
+          assignment.taskPassageId !== assignment.passageIds[0] ||
+          !assignment.passageIds.every((passageId) =>
+            Passages.some((passage) => passage.id === passageId),
+          ) ||
+          assignment.passageIds.includes(tutorialPassage.id) ||
           !assignment.passagePoolVersion ||
           assignment.condition !== ArtistCondition.LLM ||
           assignment.strategy !== "LLM_ONLY"
@@ -203,7 +210,10 @@ const Captcha = () => {
 
         startArtist(
           assignment.condition,
-          { tutorialPassage, taskPassage },
+          {
+            tutorialPassageId: tutorialPassage.id,
+            passageIds: assignment.passageIds,
+          },
           assignment.strategy,
           assignment.passagePoolVersion,
         );
